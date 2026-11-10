@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan ensuring the current Firebase sign-in system is preserved 100%, while shifting all finance data storage, updates, and synchronization to user-owned Google Sheets.",
-  "updatedAt":  "2026-11-10T08:10:33.592045891Z",
+  "summary":  "Implementation plan for aligning PayLater transactions and bill payments with Credit Card mechanics (cc_debt usage on spend, cash expense on bill payment).",
+  "updatedAt":  "2026-11-10T11:12:52.854509769Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

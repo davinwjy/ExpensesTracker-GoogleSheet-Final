@@ -1,84 +1,89 @@
-# Implementation Plan: Google Sheets Storage Integration (Preserving Firebase Login)
+# Alignment of PayLater with Credit Card Mechanics (`cc_debt` & Bill Payment)
 
-This plan integrates Google Sheets as the cloud storage destination for all financial data (expenses, accounts, investments, budgets) while preserving the current Firebase Authentication sign-in system without breaking existing user login workflows.
+Align PayLater accounts to operate identically to Credit Card accounts across WealthTrack Pro. When spending via PayLater, transactions will be categorized as `cc_debt` (increasing debt liability, excluded from cash expenses and monthly budget totals). When paying off PayLater bills via the Pay Bill modal, out-of-pocket payments from bank/cash accounts will be registered as actual cash `expense` (including settlement admin fees).
+
+---
+
+## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> **Key Revisions Based on User Feedback**:
-> 1. **Preserve Current Sign-In System (100% Firebase Auth)**: The existing login mechanism, authentication screens, and Firebase Auth state remain completely unchanged.
-> 2. **Targeted Data Storage Shift**: Only the data storage layer is replaced. All user input, update, and delete actions for expenses, accounts, investments, and budgets will target the user's Google Sheet instead of Firestore.
-> 3. **Google Sheet Authorization & Binding**: When connected, the app uses Google OAuth (via Firebase Google Auth Provider or Google OAuth Access Token) to interact with the user's Google Sheet (`https://www.googleapis.com/auth/spreadsheets`).
-> 4. **Offline-First & Auto-Sync**: Actions update local storage (`localDb`) immediately for instant UI feedback, and automatically sync queued updates to Google Sheets when online.
+> All PayLater spending will now be categorized as `cc_debt` and excluded from cash expense totals. Only paying off PayLater bills from a bank or cash wallet will count as actual cash expense.
+
+- **Confirmed Requirement 1**: PayLater spending (`paylater`) uses `cc_debt` type instead of `expense`, increasing PayLater debt liability without deducting from cash expenses or monthly budgets.
+- **Confirmed Requirement 2**: Paying PayLater bills from bank/cash accounts creates an `expense` transaction (plus any optional admin fee), which correctly records out-of-pocket cash outflow.
+- **Confirmed Requirement 3**: Enable "Pay Bill" UI action button on both Credit Card and PayLater account cards in the Accounts view and quick navigation drawers.
 
 ---
 
-## 1. Architectural Overview & System Flow
+## 1. Overview & Core Concept
+
+- **Goal**: Standardize liability account mechanics across Credit Cards and PayLater accounts (e.g. GoPayLater, ShopeePayLater, Kredivo, Akulaku).
+- **Behavior Breakdown**:
+  - **PayLater Purchase / Spending**: Registers as `cc_debt` (debt balance increase). Does NOT decrease cash balance or count toward cash expenses.
+  - **PayLater Bill Payment**: Registers as `expense` from a liquid funding account (BCA, Mandiri, Cash, etc.) to settle PayLater debt, recording actual cash outflow.
+
+---
+
+## 2. User Experience & Visual Design
+
+- **Accounts View**:
+  - Show "Pay Bill" action button for both `credit_card` and `paylater` account cards.
+  - Display used credit limit vs remaining credit limit for PayLater accounts with limit caps.
+- **Pay Bill Modal**:
+  - Title adapts dynamically: "Pay Credit Card / PayLater Bill".
+  - Select dropdown displays all active Credit Card and PayLater accounts needing bill settlement.
+  - Dynamic memo & category generation ("PayLater Payment (Kredivo)" or "Credit Card Payment (BCA Visa)").
+- **Transactions & Dashboard View**:
+  - Render `CC DEBT` badge in amber/purple pill format for PayLater spending.
+  - Sort transactions newest date first.
+
+---
+
+## 3. Key Product Decisions & Trade-Offs
+
+- **Decision 1: Shared `cc_debt` Transaction Type**:
+  - *Chosen Approach*: Reuse `cc_debt` transaction type for both Credit Card and PayLater spending rather than creating a duplicate `paylater_debt` type.
+  - *Why*: Maintains clean schema compatibility with Google Sheets, Apps Script backend, and existing analytics without requiring database migration.
+
+- **Decision 2: Universal Liability Bill Payment Handler**:
+  - *Chosen Approach*: Extend `payCreditCardBill` to accept both `credit_card` and `paylater` accounts.
+  - *Why*: Avoids duplicating bill payment state management while ensuring consistent admin fee calculation and sheet synchronization.
+
+---
+
+## 4. Technical Architecture & Data Strategy
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────┐
-│                        WealthTrack Pro Frontend Application                   │
-│                                                                               │
-│  ┌─────────────────────────────────┐      ┌────────────────────────────────┐  │
-│  │   Existing Firebase Auth System │      │  Local DB (IndexedDB Caching)  │  │
-│  │   (Login / Auth Modal - UNCHANGED)│    │  (Zero-latency local CRUD)     │  │
-│  └────────────────┬────────────────┘      └───────────────┬────────────────┘  │
-│                   │ Active User Session                   │                   │
-│                   ▼                                       ▼                   │
-│  ┌─────────────────────────────────────────────────────────────────────────┐  │
-│  │                  Google Sheets Storage & Sync Engine                    │  │
-│  │  - Manages Google Sheets OAuth Access Token for Sheet API               │  │
-│  │  - Syncs Expenses, Accounts, Investments, and Budgets to Sheet Tabs    │  │
-│  │  - Handles offline sync queue (CREATE, UPDATE, DELETE)                  │  │
-│  └───────────────────────────────────┬─────────────────────────────────────┘  │
-└──────────────────────────────────────┼────────────────────────────────────────┘
-                                       │ Google Sheets REST API
-                                       │ Authorization: Bearer <Access_Token>
-                                       ▼
-┌───────────────────────────────────────────────────────────────────────────────┐
-│                           User's Personal Google Sheet                        │
-│                           "WealthTrack Pro Finance Data"                      │
-│                                                                               │
-│  ┌─────────────────┬───────────────────┬───────────────────┬───────────────┐  │
-│  │  Tab: Expenses  │   Tab: Accounts   │  Tab: Investments │ Tab: Budgets  │  │
-│  └─────────────────┴───────────────────┴───────────────────┴───────────────┘  │
-└───────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                           PAYLATER WORKFLOW ENGINE                             │
+└────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+        ┌───────────────────────────────┴───────────────────────────────┐
+        ▼                                                               ▼
+ ┌───────────────┐                                              ┌───────────────┐
+ │ PAYLATER SPEND│                                              │ PAYLATER BILL │
+ └───────────────┘                                              └───────────────┘
+        │                                                               │
+        ▼                                                               ▼
+  Type: cc_debt                                                  Type: expense
+  Debt Balance += Amount                                         Bank Cash -= (Amount + Admin)
+  Excludes from Cash Expenses                                    PayLater Debt -= Amount
+  Synced to Sheets (Column 7)                                    Counts in Cash Expenses
 ```
 
----
+### Component & File Mapping
 
-## 2. Component & Service Blueprint
+1. `src/context/FinanceContext.tsx`:
+   - Verify `addTransaction` and `updateTransaction` automatically resolve `effectiveType = 'cc_debt'` for `targetAcc.type === 'paylater' || targetAcc.type === 'credit_card'` when type is spending/expense.
+   - Update `payCreditCardBill` validation to allow target account type `credit_card` OR `paylater`.
+   - Update sheet sync and Firestore persistence for PayLater bill settlements.
 
-### A. Authentication Layer (Preserved)
-- **Firebase Auth (`AuthContext.tsx`, `AuthModal.tsx`)**: Preserved as-is for logging users into WealthTrack Pro.
-- **Google Sheets Authorization**: A "Connect Google Sheet" action allows the user to grant Google Sheets permission via a Google Popup / OAuth token grant, or input their Google Sheet ID directly.
+2. `src/lib/localDb.ts`:
+   - Update `payCreditCardBill` in `localDb` to validate and process bill payments for both `credit_card` and `paylater` accounts.
 
-### B. Google Sheets Service (`src/lib/googleSheetsService.ts`)
-Executes direct REST calls to Google Sheets API:
-1. `initSpreadsheet(sheetId)`: Verifies and formats the required sheet tabs:
-   - **`Expenses`**: `ID, Date, Amount, Category, Description, AccountID, Type, CreatedAt, UpdatedAt`
-   - **`Accounts`**: `ID, Name, Type, Balance, Currency, AccountNumber, CreatedAt, UpdatedAt`
-   - **`Investments`**: `ID, Name, Category, Units, BuyPrice, CurrentPrice, Currency, CreatedAt, UpdatedAt`
-   - **`Budgets`**: `ID, Category, LimitAmount, Period, CreatedAt, UpdatedAt`
-2. `fetchSheetData(sheetId)`: Downloads all finance records on startup into `FinanceContext`.
-3. `appendRow(sheetId, tabName, data)`: Appends newly created expenses/accounts/investments.
-4. `updateRow(sheetId, tabName, id, data)`: Overwrites matching record row by ID.
-5. `deleteRow(sheetId, tabName, id)`: Deletes matching record row by ID.
+3. `src/components/Modals/PayBillModal.tsx`:
+   - Filter selectable liability accounts to include `a.type === 'credit_card' || a.type === 'paylater'`.
+   - Adapt title, helper text, and notes placeholder for PayLater bill settlements.
 
-### C. Offline Sync Queue (`src/lib/sheetsSyncQueue.ts`)
-- All write operations (`addExpense`, `updateAccount`, `deleteInvestment`, etc.) immediately write to `localDb`.
-- Queues pending mutations when offline and automatically flushes them to Google Sheets upon network reconnection.
-
-### D. UI Controls
-- Adds a **"Google Sheet Storage"** section in Settings / Top Header:
-  - Connect / Change Google Sheet ID.
-  - Manual "Sync Now" button.
-  - Connection indicator (`Connected to Google Sheet`, `Offline (Saved locally)`, `Needs Sheet Connection`).
-
----
-
-## 3. Implementation Steps
-
-1. **OAuth Scope Configuration**: Request Google Sheets API scopes (`spreadsheets` and `drive.file`) so Google API calls are authorized.
-2. **Implement Google Sheets REST Client (`googleSheetsService.ts`)**: Built-in sheet creation, tab initialization, row mapping, and batch updates.
-3. **Integrate with `FinanceContext.tsx`**: Route all data mutations to update local state + queue to Google Sheets.
-4. **Offline Resilience**: Enforce background queue flushing via `sheetsSyncQueue.ts`.
-5. **Verification**: Verify that sign in works unchanged, and creating/updating/deleting expenses or accounts updates the user's Google Sheet in real time.
+4. `src/components/AccountsView.tsx`:
+   - Display "Pay Bill" button for PayLater cards alongside Credit Cards.

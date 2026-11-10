@@ -13,6 +13,7 @@ import {
   InvestmentCategory,
   CategoryBudget,
 } from '../types';
+import { computeStats } from './statsHelper';
 
 export const DEFAULT_BUDGETS: Array<{ category: string; monthlyLimit: number }> = [
   { category: 'Food & Dining', monthlyLimit: 3000000 },
@@ -1097,104 +1098,7 @@ export const localDb = {
     const userInvestments = store.investments.filter(i => i.userId === userId);
     const userTransactions = store.transactions.filter(t => t.userId === userId);
 
-    const totalLiquidCashIdr = userAccounts.reduce(
-      (sum, acc) => ((acc.type === 'credit_card' || acc.type === 'paylater') ? sum - (Number(acc.balance) || 0) : sum + (Number(acc.balance) || 0)),
-      0
-    );
-
-    let totalInvestedCostIdr = 0;
-    let totalInvestmentValueIdr = 0;
-    let totalInvestmentValueUsd = 0;
-
-    const categoryAllocations: Record<string, { idrValue: number; usdValue: number; count: number }> = {
-      'Saham': { idrValue: 0, usdValue: 0, count: 0 },
-      'RDPU': { idrValue: 0, usdValue: 0, count: 0 },
-      'Bitcoin': { idrValue: 0, usdValue: 0, count: 0 },
-      'ETF USA': { idrValue: 0, usdValue: 0, count: 0 },
-      'USD': { idrValue: 0, usdValue: 0, count: 0 },
-    };
-
-    userInvestments.forEach(inv => {
-      let valIdr = 0;
-      let valUsd = 0;
-      let costIdr = 0;
-
-      if (inv.currency === 'USD') {
-        valUsd = inv.currentValue || 0;
-        valIdr = valUsd * rate;
-        costIdr = (inv.amountInvested || 0) * rate;
-        totalInvestmentValueUsd += valUsd;
-      } else {
-        valIdr = inv.currentValue || 0;
-        valUsd = valIdr / rate;
-        costIdr = inv.amountInvested || 0;
-      }
-
-      totalInvestedCostIdr += costIdr;
-      totalInvestmentValueIdr += valIdr;
-
-      if (categoryAllocations[inv.category]) {
-        categoryAllocations[inv.category].idrValue += valIdr;
-        categoryAllocations[inv.category].usdValue += valUsd;
-        categoryAllocations[inv.category].count += 1;
-      }
-    });
-
-    const totalNetWorthIdr = totalLiquidCashIdr + totalInvestmentValueIdr;
-
-    const now = new Date();
-    const currentMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const thisMonthTxs = userTransactions.filter(t => t.date && t.date.startsWith(currentMonthPrefix));
-
-    const monthlyExpenses = thisMonthTxs
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const monthlyIncomes = thisMonthTxs
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const monthlyTransfersToInv = thisMonthTxs
-      .filter(t => t.type === 'bank_to_investment')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const expenseByCategory: Record<string, number> = {};
-    thisMonthTxs
-      .filter(t => t.type === 'expense')
-      .forEach(t => {
-        const cat = t.category || 'Other';
-        expenseByCategory[cat] = (expenseByCategory[cat] || 0) + t.amount;
-      });
-
-    const expenseByAccount: Record<string, { name: string; amount: number; type: string }> = {};
-    thisMonthTxs
-      .filter(t => t.type === 'expense')
-      .forEach(t => {
-        const acc = userAccounts.find(a => a.id === t.accountId);
-        const accName = acc ? acc.name : 'Unknown Account';
-        const accType = acc ? acc.type : 'bank';
-        if (!expenseByAccount[t.accountId]) {
-          expenseByAccount[t.accountId] = { name: accName, amount: 0, type: accType };
-        }
-        expenseByAccount[t.accountId].amount += t.amount;
-      });
-
-    return {
-      rate,
-      totalNetWorthIdr,
-      totalLiquidCashIdr,
-      totalInvestmentValueIdr,
-      totalInvestmentValueUsd,
-      totalInvestedCostIdr,
-      unrealizedPnlIdr: totalInvestmentValueIdr - totalInvestedCostIdr,
-      unrealizedPnlPercentage: totalInvestedCostIdr > 0 ? ((totalInvestmentValueIdr - totalInvestedCostIdr) / totalInvestedCostIdr) * 100 : 0,
-      monthlyExpenses,
-      monthlyIncomes,
-      monthlyTransfersToInv,
-      categoryAllocations,
-      expenseByCategory,
-      expenseByAccount,
-    };
+    return computeStats(userAccounts, userTransactions, userInvestments, rate);
   },
 
   // Public Announcement

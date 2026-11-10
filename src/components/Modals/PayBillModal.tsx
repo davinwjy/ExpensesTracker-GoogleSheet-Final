@@ -131,7 +131,7 @@ export const PayBillModal: React.FC = () => {
         title: 'Bill Payment Successful',
         message: targetCard ? `Bill for ${targetCard.name} has been settled${parsedFee > 0 ? ` with Rp ${parsedFee.toLocaleString()} fee` : ''}` : undefined,
         amount: totalDeduction,
-        category: 'Credit Card Bill',
+        category: targetCard?.type === 'paylater' ? 'PayLater Bill' : 'Credit Card Bill',
         accountName: targetCard?.name || 'Credit Card',
         date,
       });
@@ -167,10 +167,10 @@ export const PayBillModal: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm tracking-wider uppercase">
-                SETTLE CREDIT CARD BILL
+                SETTLE CREDIT CARD / PAYLATER BILL
               </h3>
               <p className="text-[10px] text-slate-500 dark:text-zinc-500">
-                Transfer funds from bank/cash to clear statement balance and restore credit limit
+                Transfer funds from bank/cash to clear statement balance and restore available credit limit
               </p>
             </div>
           </div>
@@ -201,10 +201,10 @@ export const PayBillModal: React.FC = () => {
             </div>
           )}
 
-          {/* Target Credit Card */}
+          {/* Target Credit Card or PayLater */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">
-              TARGET CREDIT CARD (DEBT TO SETTLE) <span className="text-rose-500 dark:text-rose-400">*</span>
+              TARGET ACCOUNT (DEBT TO SETTLE) <span className="text-rose-500 dark:text-rose-400">*</span>
             </label>
             <select
               value={creditCardAccountId}
@@ -212,12 +212,13 @@ export const PayBillModal: React.FC = () => {
               className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-300 dark:border-[#1d2332] focus:border-amber-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono"
               required
             >
-              {creditCards.length === 0 && <option value="">No credit cards found - create one in Accounts</option>}
+              {creditCards.length === 0 && <option value="">No credit card or PayLater accounts found - create one in Accounts</option>}
               {creditCards.map((card) => {
                 const avail = Math.max(0, (card.creditLimit || 0) - card.balance);
+                const tag = card.type === 'paylater' ? 'PAYLATER' : (card.cardNetwork || 'CC');
                 return (
                   <option key={card.id} value={card.id}>
-                    {card.name} ({card.cardNetwork || 'CC'}) — Bill: {formatIdr(card.balance)} (Available Limit: {formatIdr(avail)})
+                    {card.name} ({tag}) — Bill: {formatIdr(card.balance)} (Available Limit: {formatIdr(avail)})
                   </option>
                 );
               })}

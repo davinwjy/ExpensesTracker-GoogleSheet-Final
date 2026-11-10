@@ -253,7 +253,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [transactions, setTransactions] = useState<Transaction[]>(() => cachedSnapshot?.transactions || []);
   const [investments, setInvestments] = useState<Investment[]>(() => cachedSnapshot?.investments || []);
   const [budgets, setBudgets] = useState<CategoryBudget[]>(() => cachedSnapshot?.budgets || []);
-  const [stats, setStats] = useState<DashboardStats | null>(() => cachedSnapshot?.stats || null);
+  const [stats, setStats] = useState<DashboardStats | null>(() => {
+    if (cachedSnapshot?.stats) return cachedSnapshot.stats;
+    const initAccs = cachedSnapshot?.accounts || [];
+    const initTxs = cachedSnapshot?.transactions || [];
+    const initInvs = cachedSnapshot?.investments || [];
+    const initRate = cachedSnapshot?.usdIdrRate || 15850;
+    if (initAccs.length > 0 || initTxs.length > 0 || initInvs.length > 0) {
+      return computeStats(initAccs, initTxs, initInvs, initRate);
+    }
+    return null;
+  });
   const [settings, setSettings] = useState<UserSettings | null>(() => cachedSnapshot?.settings || null);
   const [usdIdrRate, setUsdIdrRate] = useState<number>(() => cachedSnapshot?.usdIdrRate || 15850);
   const [rateSource, setRateSource] = useState<string>(() => {
@@ -1339,13 +1349,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const now = new Date().toISOString();
     const txId = 'tx_cc_' + Date.now();
     const txDate = data.date || now.split('T')[0];
+    const isPayLater = ccAcc.type === 'paylater';
 
-    const updatedSource = {
+    const updatedSource: Account = {
       ...sourceAcc,
       balance: sourceAcc.balance - totalDeduction,
       updatedAt: now,
     };
-    const updatedCc = {
+    const updatedCc: Account = {
       ...ccAcc,
       balance: Math.max(0, ccAcc.balance - amount),
       updatedAt: now,
@@ -1358,9 +1369,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       amount,
       accountId: data.sourceAccountId,
       toAccountId: data.creditCardAccountId,
-      category: `Credit Card Payment (${ccAcc.name})`,
+      category: isPayLater ? `PayLater Payment (${ccAcc.name})` : `Credit Card Payment (${ccAcc.name})`,
       date: txDate,
-      notes: data.notes || `Paid credit card bill for ${ccAcc.name} from ${sourceAcc.name}${adminFee > 0 ? ` (Admin Fee: Rp ${adminFee.toLocaleString()})` : ''}`,
+      notes: data.notes || `Paid ${isPayLater ? 'PayLater' : 'credit card'} bill for ${ccAcc.name} from ${sourceAcc.name}${adminFee > 0 ? ` (Admin Fee: Rp ${adminFee.toLocaleString()})` : ''}`,
       createdAt: now,
     };
 
@@ -1378,6 +1389,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         createdAt: now,
       };
     }
+
+    // Immediate optimistic state update
+    const updatedAccounts = accounts.map((a) => (a.id === updatedSource.id ? updatedSource : a.id === updatedCc.id ? updatedCc : a));
+    const updatedTxs = [tx, ...(feeTx ? [feeTx] : []), ...transactions];
+    setAccounts(updatedAccounts);
+    setTransactions(updatedTxs);
+    const nextStats = computeStats(updatedAccounts, updatedTxs, investments, usdIdrRate);
+    setStats(nextStats);
+
+    // Save to snapshot immediately for instant offline dashboard access
+    offlineSyncManager.saveSnapshot({
+      accounts: updatedAccounts,
+      transactions: updatedTxs,
+      investments,
+      stats: nextStats,
+    });
 
     // Auto sync to Google Sheets / Apps Script
     syncToSheets(SHEET_TAB_NAMES.ACCOUNTS, 'UPDATE', updatedSource.id, [
