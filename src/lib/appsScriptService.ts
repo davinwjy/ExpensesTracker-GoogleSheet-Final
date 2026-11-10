@@ -116,9 +116,25 @@ function ensureTabs(ss) {
 
 function getTabData(ss, tabName) {
   const sheet = ss.getSheetByName(tabName);
-  if (!sheet || sheet.getLastRow() <= 1) return [];
-  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
-  return range.getDisplayValues();
+  if (!sheet) return [];
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return [];
+  const range = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
+  const rows = range.getValues();
+  const tz = ss.getSpreadsheetTimeZone();
+
+  return rows
+    .filter(function(row) {
+      return row && row[0] !== undefined && row[0] !== '' && row[0] !== null;
+    })
+    .map(function(row) {
+      return row.map(function(cell) {
+        if (cell instanceof Date) {
+          return Utilities.formatDate(cell, tz, 'yyyy-MM-dd');
+        }
+        return cell === null || cell === undefined ? '' : String(cell);
+      });
+    });
 }
 
 function updateRowById(sheet, id, values) {

@@ -35,6 +35,53 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
   const THRESHOLD = 65; // px needed to trigger sync
   const MAX_PULL = 95; // max visual pull distance
 
+  const playSoftCompletionChime = useCallback(() => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+
+      // First tone (C5 - 523.25 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, now);
+      gain1.gain.setValueAtTime(0.12, now);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.25);
+
+      // Second tone (E5 - 659.25 Hz) slightly offset for a gentle arpeggio chime
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(659.25, now + 0.08);
+      gain2.gain.setValueAtTime(0.14, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.35);
+
+      setTimeout(() => {
+        try {
+          if (ctx.state !== 'closed') ctx.close();
+        } catch {}
+      }, 450);
+    } catch {
+      // Audio playback restrictions or unhandled context
+    }
+  }, []);
+
   const performSync = useCallback(async () => {
     setIsRefreshing(true);
     setSyncStatus('refreshing');
@@ -50,11 +97,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
             navigator.vibrate([20, 40, 20]);
           }
         } catch {}
-        showNotification({
-          type: 'success',
-          title: 'Google Sheet Tersinkron',
-          message: 'Data akun, transaksi, dan investasi berhasil diperbarui dari Google Sheet.',
-        });
+        playSoftCompletionChime();
       } else if (isSheetsConnected || spreadsheetId) {
         await syncGoogleSheetsNow();
         setSyncStatus('success');
@@ -64,21 +107,13 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
             navigator.vibrate([20, 40, 20]);
           }
         } catch {}
-        showNotification({
-          type: 'success',
-          title: 'Google Sheet Tersinkron',
-          message: 'Data Google Sheets berhasil disinkronkan.',
-        });
+        playSoftCompletionChime();
       } else {
         // Fallback: Google Sheet not yet connected
         await refreshData();
         setSyncStatus('info' as any);
         setStatusMessage('Data lokal diperbarui');
-        showNotification({
-          type: 'info',
-          title: 'Google Sheet Belum Terhubung',
-          message: 'Silakan isi Web App URL di Pengaturan Google Sheet untuk sinkronisasi otomatis.',
-        });
+        playSoftCompletionChime();
       }
     } catch (err: any) {
       console.warn('Pull-to-refresh sync failed:', err);
@@ -90,7 +125,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
         message: err?.message || 'Pastikan Web App URL valid dan koneksi internet stabil.',
       });
     } finally {
-      // Hold success/status message briefly for smooth UI feedback
+      // Hold status message briefly for smooth UI feedback
       setTimeout(() => {
         setIsRefreshing(false);
         setPullDistance(0);
@@ -107,6 +142,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
     syncGoogleSheetsNow,
     refreshData,
     showNotification,
+    playSoftCompletionChime,
   ]);
 
   // Touch event listeners
