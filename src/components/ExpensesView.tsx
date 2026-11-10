@@ -12,6 +12,7 @@ import {
   ArrowRightLeft,
   X,
   CreditCard,
+  Lock,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import {
@@ -23,6 +24,7 @@ import {
   EXPENSE_CATEGORIES,
   INCOME_CATEGORIES,
   sortTransactionsNewestFirst,
+  isTransactionLocked,
 } from '../lib/formatters';
 import { Transaction } from '../types';
 
@@ -568,6 +570,8 @@ export const ExpensesView: React.FC = () => {
                 const destAcc = accounts.find((a) => a.id === tx.toAccountId);
                 const targetInv = investments.find((i) => i.id === tx.toInvestmentId);
 
+                const lockStatus = isTransactionLocked(tx, accounts);
+
                 return (
                   <tr
                     key={tx.id}
@@ -580,7 +584,15 @@ export const ExpensesView: React.FC = () => {
 
                     {/* Type */}
                     <td className="py-2 px-3 text-[10px] uppercase whitespace-nowrap">
-                      {tx.type === 'cc_debt' || (tx.type === 'expense' && sourceAcc && (sourceAcc.type === 'credit_card' || sourceAcc.type === 'paylater')) ? (
+                      {lockStatus.isBillPayment ? (
+                        <span className="font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          BILL PAY
+                        </span>
+                      ) : lockStatus.isAdminFee ? (
+                        <span className="font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                          ADMIN FEE
+                        </span>
+                      ) : tx.type === 'cc_debt' || (tx.type === 'expense' && sourceAcc && (sourceAcc.type === 'credit_card' || sourceAcc.type === 'paylater')) ? (
                         <span className="font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                           CC DEBT
                         </span>
@@ -651,45 +663,54 @@ export const ExpensesView: React.FC = () => {
 
                     {/* Actions */}
                     <td className="py-2 px-3 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1">
-                        {(tx.type === 'expense' || tx.type === 'income' || tx.type === 'cc_debt') && (
-                          <button
-                            onClick={() => {
-                              setEditingTransaction(tx);
-                              setIsAddExpenseOpen(true);
-                            }}
-                            className="p-1 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
-                            title="Edit transaction"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                        )}
+                      {lockStatus.locked ? (
+                        <div
+                          className="flex items-center justify-center p-1 text-slate-400 dark:text-zinc-500 cursor-help"
+                          title={lockStatus.reason || 'Locked record (protected from modification)'}
+                        >
+                          <Lock className="w-3.5 h-3.5 opacity-70 hover:opacity-100 transition-opacity" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1">
+                          {(tx.type === 'expense' || tx.type === 'income' || tx.type === 'cc_debt') && (
+                            <button
+                              onClick={() => {
+                                setEditingTransaction(tx);
+                                setIsAddExpenseOpen(true);
+                              }}
+                              className="p-1 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+                              title="Edit transaction"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
 
-                        {deletingId === tx.id ? (
-                          <div className="flex items-center gap-1">
+                          {deletingId === tx.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDelete(tx.id)}
+                                className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded cursor-pointer"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setDeletingId(null)}
+                                className="px-1 py-0.5 text-slate-500 dark:text-zinc-400 text-[10px] cursor-pointer"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
                             <button
-                              onClick={() => handleDelete(tx.id)}
-                              className="px-1.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded cursor-pointer"
+                              onClick={() => setDeletingId(tx.id)}
+                              className="p-1 text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              title="Delete transaction"
                             >
-                              Yes
+                              <Trash2 className="w-3 h-3" />
                             </button>
-                            <button
-                              onClick={() => setDeletingId(null)}
-                              className="px-1 py-0.5 text-slate-500 dark:text-zinc-400 text-[10px] cursor-pointer"
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeletingId(tx.id)}
-                            className="p-1 text-slate-400 dark:text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 rounded hover:bg-rose-500/10 transition-colors cursor-pointer"
-                            title="Delete transaction"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

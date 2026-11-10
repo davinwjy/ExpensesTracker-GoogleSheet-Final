@@ -22,6 +22,7 @@ import { firestoreService } from '../lib/firestoreService';
 import { computeStats } from '../lib/statsHelper';
 import { exchangeRateService } from '../lib/exchangeRateService';
 import { offlineSyncManager } from '../lib/offlineSync';
+import { isTransactionLocked } from '../lib/formatters';
 import {
   googleSheetsService,
   SHEET_TAB_NAMES,
@@ -244,7 +245,7 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isAuthenticated, isFirebase } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading, isFirebase } = useAuth();
 
   // Load cached snapshot for immediate 0ms offline dashboard availability
   const cachedSnapshot = offlineSyncManager.getSnapshot();
@@ -266,6 +267,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
   const [settings, setSettings] = useState<UserSettings | null>(() => cachedSnapshot?.settings || null);
   const [usdIdrRate, setUsdIdrRate] = useState<number>(() => cachedSnapshot?.usdIdrRate || 15850);
+  const usdIdrRateRef = useRef<number>(usdIdrRate);
+  useEffect(() => {
+    usdIdrRateRef.current = usdIdrRate;
+  }, [usdIdrRate]);
+
   const [rateSource, setRateSource] = useState<string>(() => {
     return cachedSnapshot?.rateSource || exchangeRateService.getLastRateInfo().source;
   });
@@ -896,7 +902,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setTransactions(fresh.transactions);
             setInvestments(fresh.investments);
             if (fresh.budgets.length > 0) setBudgets(fresh.budgets);
-            setStats(computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRate));
+            setStats(computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRateRef.current || 15850));
           })
           .catch((err) => console.warn('Apps Script initial load error:', err))
           .finally(() => setIsLoading(false));
@@ -918,7 +924,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTransactions(data.transactions);
       setInvestments(normalizedInvestments);
       setSettings(data.settings);
-      const rate = data.settings?.usdIdrRate || 15850;
+      const rate = data.settings?.usdIdrRate || usdIdrRateRef.current || 15850;
       setUsdIdrRate(rate);
       if (data.settings?.rateSource) setRateSource(data.settings.rateSource);
       if (data.settings?.rateLastUpdated) setRateLastUpdated(data.settings.rateLastUpdated);
@@ -945,7 +951,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
 
     return () => unsubscribe();
-  }, [isFirebase, user, appsScriptUrl, spreadsheetId, usdIdrRate]);
+  }, [isFirebase, user, appsScriptUrl, spreadsheetId]);
 
   // 2. STANDARD SERVER / LOCAL REFRESH (when not Firebase)
   const refreshData = useCallback(async () => {
@@ -1010,6 +1016,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [isAuthenticated, isFirebase]);
 
   useEffect(() => {
+    // Preserve cached snapshot while authentication session is resolving
+    if (isAuthLoading) return;
+
     if (isAuthenticated && !isFirebase) {
       refreshData();
     } else if (!isAuthenticated) {
@@ -1018,7 +1027,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setInvestments([]);
       setStats(null);
     }
-  }, [isAuthenticated, isFirebase, refreshData]);
+  }, [isAuthenticated, isFirebase, isAuthLoading, refreshData]);
 
   // ---------------- OPERATIONS ----------------
 
@@ -1446,6 +1455,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const oldTx = transactions.find((t) => t.id === id);
     if (!oldTx) return;
 
+    const lockStatus = isTransactionLocked(oldTx, accounts);
+    if (lockStatus.locked) {
+      throw new Error(lockStatus.reason || 'This transaction is locked and cannot be modified.');
+    }
+
     const newAmount = data.amount !== undefined ? Math.abs(Number(data.amount)) : oldTx.amount;
     const requestedType = data.type || oldTx.type;
     const newAccountId = data.accountId || oldTx.accountId;
@@ -1630,6 +1644,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const deleteTransaction = async (id: string) => {
     const target = transactions.find((t) => t.id === id);
     if (!target) return;
+
+    const lockStatus = isTransactionLocked(target, accounts);
+    if (lockStatus.locked) {
+      throw new Error(lockStatus.reason || 'This transaction is locked and cannot be deleted.');
+    }
 
     const targetAcc = accounts.find((a) => a.id === target.accountId);
     let updatedAccounts = [...accounts];

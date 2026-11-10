@@ -14,6 +14,7 @@ import {
   CategoryBudget,
 } from '../types';
 import { computeStats } from './statsHelper';
+import { isTransactionLocked } from './formatters';
 
 export const DEFAULT_BUDGETS: Array<{ category: string; monthlyLimit: number }> = [
   { category: 'Food & Dining', monthlyLimit: 3000000 },
@@ -560,6 +561,11 @@ export const localDb = {
     const tx = store.transactions.find(t => t.id === id && t.userId === userId);
     if (!tx) throw new Error('Transaction not found');
 
+    const lockStatus = isTransactionLocked(tx, store.accounts);
+    if (lockStatus.locked) {
+      throw new Error(lockStatus.reason || 'This transaction is locked and cannot be modified.');
+    }
+
     const newAmount = data.amount !== undefined ? Math.abs(Number(data.amount)) : tx.amount;
     const newType = data.type || tx.type;
     const targetAccId = data.accountId || tx.accountId;
@@ -633,6 +639,11 @@ export const localDb = {
     if (idx === -1) throw new Error('Transaction not found');
 
     const tx = store.transactions[idx];
+    const lockStatus = isTransactionLocked(tx, store.accounts);
+    if (lockStatus.locked) {
+      throw new Error(lockStatus.reason || 'This transaction is locked and cannot be deleted.');
+    }
+
     const acc = store.accounts.find(a => a.id === tx.accountId && a.userId === userId);
     if (acc) {
       if (acc.type === 'credit_card' || acc.type === 'paylater') {

@@ -13,9 +13,18 @@ import {
   AlertCircle,
   CheckCircle2,
   CreditCard,
+  Lock,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatIdr, formatUsd, formatMasked, formatDate, CATEGORY_COLORS, sortTransactionsNewestFirst } from '../lib/formatters';
+import {
+  formatIdr,
+  formatUsd,
+  formatMasked,
+  formatDate,
+  CATEGORY_COLORS,
+  sortTransactionsNewestFirst,
+  isTransactionLocked,
+} from '../lib/formatters';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -557,22 +566,29 @@ export const DashboardView: React.FC = () => {
                 const sourceAcc = accounts.find((a) => a.id === tx.accountId);
                 const destAcc = accounts.find((a) => a.id === tx.toAccountId);
                 const targetInv = investments.find((i) => i.id === tx.toInvestmentId);
+                const lockStatus = isTransactionLocked(tx, accounts);
 
                 return (
                   <div
                     key={tx.id}
                     onClick={() => {
-                      if (tx.type === 'expense' || tx.type === 'income' || tx.type === 'cc_debt') {
+                      if (!lockStatus.locked && (tx.type === 'expense' || tx.type === 'income' || tx.type === 'cc_debt')) {
                         setEditingTransaction(tx);
                         setIsAddExpenseOpen(true);
                       }
                     }}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] hover:border-slate-300 dark:hover:border-[#2b354a] transition-all cursor-pointer"
+                    className={`flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] hover:border-slate-300 dark:hover:border-[#2b354a] transition-all ${
+                      lockStatus.locked ? 'cursor-default' : 'cursor-pointer'
+                    }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          tx.type === 'cc_debt'
+                          lockStatus.isBillPayment
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                            : lockStatus.isAdminFee
+                            ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30'
+                            : tx.type === 'cc_debt'
                             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                             : tx.type === 'expense'
                             ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
@@ -583,21 +599,41 @@ export const DashboardView: React.FC = () => {
                             : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
                         }`}
                       >
-                        {tx.type === 'cc_debt' && <CreditCard className="w-3.5 h-3.5" />}
-                        {tx.type === 'expense' && <Receipt className="w-3.5 h-3.5" />}
-                        {tx.type === 'income' && <ArrowDownRight className="w-3.5 h-3.5" />}
-                        {tx.type === 'bank_to_investment' && <TrendingUp className="w-3.5 h-3.5" />}
-                        {tx.type === 'transfer' && <ArrowRightLeft className="w-3.5 h-3.5" />}
+                        {lockStatus.isBillPayment ? (
+                          <CreditCard className="w-3.5 h-3.5" />
+                        ) : lockStatus.isAdminFee ? (
+                          <Receipt className="w-3.5 h-3.5" />
+                        ) : tx.type === 'cc_debt' ? (
+                          <CreditCard className="w-3.5 h-3.5" />
+                        ) : tx.type === 'expense' ? (
+                          <Receipt className="w-3.5 h-3.5" />
+                        ) : tx.type === 'income' ? (
+                          <ArrowDownRight className="w-3.5 h-3.5" />
+                        ) : tx.type === 'bank_to_investment' ? (
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                        )}
                       </div>
 
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 truncate">
-                          {tx.type === 'bank_to_investment'
-                            ? `Funded ${targetInv?.name || 'Investment'}`
-                            : tx.type === 'transfer'
-                            ? `Transfer to ${destAcc?.name || 'Cash'}`
-                            : tx.category || 'General'}
-                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 truncate">
+                            {tx.type === 'bank_to_investment'
+                              ? `Funded ${targetInv?.name || 'Investment'}`
+                              : tx.type === 'transfer'
+                              ? `Transfer to ${destAcc?.name || 'Cash'}`
+                              : tx.category || 'General'}
+                          </p>
+                          {lockStatus.locked && (
+                            <span
+                              className="text-[9px] text-slate-400 dark:text-zinc-500 flex items-center"
+                              title={lockStatus.reason}
+                            >
+                              <Lock className="w-2.5 h-2.5" />
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 flex-wrap truncate">
                           <span>{sourceAcc?.name || 'Bank'}</span>
                           <span>·</span>

@@ -181,17 +181,35 @@ export const firestoreService = {
   ): () => void {
     if (!firestoreDb) return () => {};
 
-    let currentAccounts: Account[] = [];
-    let currentTransactions: Transaction[] = [];
-    let currentInvestments: Investment[] = [];
-    let currentSettings: UserSettings = {
+    // Pre-populate from existing cached snapshot if present to prevent 0-value glitch
+    let cachedSnapshot: any = null;
+    try {
+      const raw = localStorage.getItem('wealthtrack_financial_snapshot_v1');
+      if (raw) cachedSnapshot = JSON.parse(raw);
+    } catch {
+      // Ignore parse failure
+    }
+
+    let currentAccounts: Account[] = cachedSnapshot?.accounts || [];
+    let currentTransactions: Transaction[] = cachedSnapshot?.transactions || [];
+    let currentInvestments: Investment[] = cachedSnapshot?.investments || [];
+    let currentSettings: UserSettings = cachedSnapshot?.settings || {
       userId,
-      usdIdrRate: 15850,
+      usdIdrRate: cachedSnapshot?.usdIdrRate || 15850,
       privacyModeDefault: false,
       theme: 'dark',
     };
 
-    const trigger = () => {
+    let accountsReady = false;
+    let transactionsReady = false;
+    let investmentsReady = false;
+    let settingsReady = false;
+    let initialSettled = false;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const emitData = () => {
       onData({
         accounts: [...currentAccounts],
         transactions: [...currentTransactions],
@@ -200,10 +218,40 @@ export const firestoreService = {
       });
     };
 
+    const trigger = () => {
+      // During initial load, only emit once all 4 collections have fired at least once,
+      // or once initialSettled is true via fallback timer.
+      if (!initialSettled) {
+        if (accountsReady && transactionsReady && investmentsReady && settingsReady) {
+          initialSettled = true;
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+        } else {
+          // Still waiting for initial batch of collections to resolve
+          return;
+        }
+      }
+
+      // Debounce updates by 16ms (1 animation frame) so rapid multi-listener events coalesce into 1 atomic render
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        emitData();
+      }, 16);
+    };
+
+    // Safety fallback: if a collection is empty or takes longer to respond,
+    // settle after 120ms so the user is never stuck without realtime data.
+    fallbackTimer = setTimeout(() => {
+      if (!initialSettled) {
+        initialSettled = true;
+        trigger();
+      }
+    }, 120);
+
     // 1. Accounts listener
     const qAccounts = query(collection(firestoreDb, 'accounts'), where('userId', '==', userId));
     const unsubAccounts = onSnapshot(qAccounts, (snapshot) => {
       currentAccounts = snapshot.docs.map((d) => d.data() as Account);
+      accountsReady = true;
       trigger();
     });
 
@@ -214,6 +262,7 @@ export const firestoreService = {
       // Sort newest first
       list.sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime());
       currentTransactions = list;
+      transactionsReady = true;
       trigger();
     });
 
@@ -221,6 +270,7 @@ export const firestoreService = {
     const qInvestments = query(collection(firestoreDb, 'investments'), where('userId', '==', userId));
     const unsubInvestments = onSnapshot(qInvestments, (snapshot) => {
       currentInvestments = snapshot.docs.map((d) => d.data() as Investment);
+      investmentsReady = true;
       trigger();
     });
 
@@ -230,10 +280,13 @@ export const firestoreService = {
       if (snapshot.exists()) {
         currentSettings = snapshot.data() as UserSettings;
       }
+      settingsReady = true;
       trigger();
     });
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       unsubAccounts();
       unsubTransactions();
       unsubInvestments();

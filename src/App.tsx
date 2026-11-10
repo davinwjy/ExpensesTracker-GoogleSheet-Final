@@ -25,6 +25,7 @@ import { MobileAppModal } from './components/Modals/MobileAppModal';
 import { AuthModal } from './components/AuthModal';
 import { GlobalNotificationPopup } from './components/GlobalNotificationPopup';
 import { OfflineSyncBanner } from './components/OfflineSyncBanner';
+import { PullToRefresh } from './components/PullToRefresh';
 import { Wallet, Loader2 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -126,15 +127,17 @@ const MainAppContent: React.FC = () => {
           />
           <OfflineSyncBanner />
 
-          <main ref={mainRef} className="flex-1 max-w-[1520px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 pb-24 lg:pb-10">
-            {activeTab === 'dashboard' && <DashboardView />}
-            {activeTab === 'expenses' && <ExpensesView />}
-            {activeTab === 'budgeting' && <BudgetingView />}
-            {activeTab === 'accounts' && <AccountsView />}
-            {activeTab === 'investments' && <InvestmentsView />}
-            {activeTab === 'stats' && <StatsView />}
-            {activeTab === 'admin' && <AdminView />}
-          </main>
+          <PullToRefresh>
+            <main ref={mainRef} className="flex-1 max-w-[1520px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 pb-24 lg:pb-10">
+              {activeTab === 'dashboard' && <DashboardView />}
+              {activeTab === 'expenses' && <ExpensesView />}
+              {activeTab === 'budgeting' && <BudgetingView />}
+              {activeTab === 'accounts' && <AccountsView />}
+              {activeTab === 'investments' && <InvestmentsView />}
+              {activeTab === 'stats' && <StatsView />}
+              {activeTab === 'admin' && <AdminView />}
+            </main>
+          </PullToRefresh>
         </div>
       </div>
 

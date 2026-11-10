@@ -180,3 +180,73 @@ export const INVESTMENT_CATEGORY_DETAILS: Record<
     iconBg: 'bg-purple-500/20 text-purple-400',
   },
 };
+
+export interface TransactionLockStatus {
+  locked: boolean;
+  reason?: string;
+  isBillPayment?: boolean;
+  isAdminFee?: boolean;
+  isOlderThan7Days?: boolean;
+}
+
+export function isTransactionLocked(
+  tx: { accountId?: string; toAccountId?: string; category?: string; date?: string; notes?: string },
+  accounts: Array<{ id: string; type: string }> = []
+): TransactionLockStatus {
+  // 1. Bill Payment to Credit Card or PayLater
+  if (tx.toAccountId) {
+    const dest = accounts.find((a) => a.id === tx.toAccountId);
+    if (dest && (dest.type === 'credit_card' || dest.type === 'paylater')) {
+      return {
+        locked: true,
+        reason: 'Bill payment records are locked to protect credit limit accuracy',
+        isBillPayment: true,
+      };
+    }
+  }
+
+  const category = tx.category || '';
+  if (
+    category.startsWith('Credit Card Payment') ||
+    category.startsWith('PayLater Payment') ||
+    category.startsWith('Credit Card Bill') ||
+    category.startsWith('PayLater Bill')
+  ) {
+    return {
+      locked: true,
+      reason: 'Bill payment records are locked to protect credit limit accuracy',
+      isBillPayment: true,
+    };
+  }
+
+  // 2. Admin Settlement Fee
+  if (category === 'Admin / Settlement Fee') {
+    return {
+      locked: true,
+      reason: 'Admin settlement fees are locked',
+      isAdminFee: true,
+    };
+  }
+
+  // 3. Time-based lock (> 7 days old)
+  if (tx.date) {
+    const txDateStr = tx.date.slice(0, 10);
+    const txDate = new Date(txDateStr + 'T00:00:00');
+    if (!isNaN(txDate.getTime())) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffMs = today.getTime() - txDate.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays > 7) {
+        return {
+          locked: true,
+          reason: `Locked (> 7 days old, archived on day ${diffDays})`,
+          isOlderThan7Days: true,
+        };
+      }
+    }
+  }
+
+  return { locked: false };
+}
+

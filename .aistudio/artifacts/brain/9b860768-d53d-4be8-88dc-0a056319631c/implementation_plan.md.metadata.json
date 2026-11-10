@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for aligning PayLater transactions and bill payments with Credit Card mechanics (cc_debt usage on spend, cash expense on bill payment).",
-  "updatedAt":  "2026-11-10T11:12:52.854509769Z",
+  "summary":  "Implementation plan to fix the numbers glitching/flickering when Google Apps Script Web App URL is not filled. Diagnoses root cause in Firestore unbatched listener callbacks and effect dependency loops, and details the atomic batching and debouncing solution.",
+  "updatedAt":  "2026-11-10T13:24:40.855458101Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

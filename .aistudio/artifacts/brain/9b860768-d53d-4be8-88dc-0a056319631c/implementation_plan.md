@@ -1,89 +1,55 @@
-# Alignment of PayLater with Credit Card Mechanics (`cc_debt` & Bill Payment)
+# Implementation Plan: Fix Financial Numbers Glitching When Web App URL is Empty
 
-Align PayLater accounts to operate identically to Credit Card accounts across WealthTrack Pro. When spending via PayLater, transactions will be categorized as `cc_debt` (increasing debt liability, excluded from cash expenses and monthly budget totals). When paying off PayLater bills via the Pay Bill modal, out-of-pocket payments from bank/cash accounts will be registered as actual cash `expense` (including settlement admin fees).
+## Root Cause Analysis
+When the **Google Apps Script Web App URL is configured**, all financial data is fetched in a single atomic payload via `readAllData(appsScriptUrl)`, resulting in zero glitching.
 
----
+However, when the **Web App URL is NOT filled**, the application falls back to Firestore real-time synchronization (`firestoreService.subscribeToUserData`). This triggers severe visual glitching of dashboard numbers (Net Worth, Investments, Expenses, and Inflow) due to three interacting issues:
 
-## User Review & Critical Decisions
+1. **Unbatched Multi-Listener Race Conditions**:
+   `firestoreService.subscribeToUserData` attaches 4 independent Firestore `onSnapshot` listeners (`accounts`, `transactions`, `investments`, and `settings`). Each listener immediately invoked `trigger()`. When `accounts` arrived first, `currentInvestments` and `currentTransactions` were still empty arrays (`[]`). `FinanceContext` immediately computed stats with `0` investments and `0` transactions, causing Net Worth and Investments to plunge to zero. Milliseconds later, `investments` arrived and jumped the numbers back up. Milliseconds later, `transactions` arrived and jumped monthly expenses and inflow from zero back up. This caused 3–4 rapid visible jumps within ~100ms.
 
-> [!IMPORTANT]
-> All PayLater spending will now be categorized as `cc_debt` and excluded from cash expense totals. Only paying off PayLater bills from a bank or cash wallet will count as actual cash expense.
+2. **Re-subscription Loop via `usdIdrRate` in Effect Dependencies**:
+   In `FinanceContext.tsx` line 949, the subscription `useEffect` included `usdIdrRate` in its dependency array `[isFirebase, user, appsScriptUrl, spreadsheetId, usdIdrRate]`. When Firestore settings updated `usdIdrRate`, the effect re-triggered, tore down all 4 listeners, re-subscribed, and restarted the empty-state flicker cycle.
 
-- **Confirmed Requirement 1**: PayLater spending (`paylater`) uses `cc_debt` type instead of `expense`, increasing PayLater debt liability without deducting from cash expenses or monthly budgets.
-- **Confirmed Requirement 2**: Paying PayLater bills from bank/cash accounts creates an `expense` transaction (plus any optional admin fee), which correctly records out-of-pocket cash outflow.
-- **Confirmed Requirement 3**: Enable "Pay Bill" UI action button on both Credit Card and PayLater account cards in the Accounts view and quick navigation drawers.
-
----
-
-## 1. Overview & Core Concept
-
-- **Goal**: Standardize liability account mechanics across Credit Cards and PayLater accounts (e.g. GoPayLater, ShopeePayLater, Kredivo, Akulaku).
-- **Behavior Breakdown**:
-  - **PayLater Purchase / Spending**: Registers as `cc_debt` (debt balance increase). Does NOT decrease cash balance or count toward cash expenses.
-  - **PayLater Bill Payment**: Registers as `expense` from a liquid funding account (BCA, Mandiri, Cash, etc.) to settle PayLater debt, recording actual cash outflow.
+3. **Loss of Cached Snapshot State During Asynchronous Handshake**:
+   Even though `cachedSnapshot` is loaded on initial render, `subscribeToUserData` initialized its internal state with empty arrays (`let currentAccounts = []`), temporarily wiping out cached data before all snapshots settled.
 
 ---
 
-## 2. User Experience & Visual Design
+## User Review Required
 
-- **Accounts View**:
-  - Show "Pay Bill" action button for both `credit_card` and `paylater` account cards.
-  - Display used credit limit vs remaining credit limit for PayLater accounts with limit caps.
-- **Pay Bill Modal**:
-  - Title adapts dynamically: "Pay Credit Card / PayLater Bill".
-  - Select dropdown displays all active Credit Card and PayLater accounts needing bill settlement.
-  - Dynamic memo & category generation ("PayLater Payment (Kredivo)" or "Credit Card Payment (BCA Visa)").
-- **Transactions & Dashboard View**:
-  - Render `CC DEBT` badge in amber/purple pill format for PayLater spending.
-  - Sort transactions newest date first.
+> [!NOTE]
+> All existing functionality (Google Apps Script sync, offline caching, Firebase sync, and lock rules) will remain 100% intact. We are making data delivery atomic and smooth.
+
+No functional breaking changes or configuration changes required from the user.
 
 ---
 
-## 3. Key Product Decisions & Trade-Offs
+## Proposed Changes
 
-- **Decision 1: Shared `cc_debt` Transaction Type**:
-  - *Chosen Approach*: Reuse `cc_debt` transaction type for both Credit Card and PayLater spending rather than creating a duplicate `paylater_debt` type.
-  - *Why*: Maintains clean schema compatibility with Google Sheets, Apps Script backend, and existing analytics without requiring database migration.
+### 1. Atomic Snapshot Synchronization & Debounce in `src/lib/firestoreService.ts`
+- **Initial Load Barrier**: Track readiness of all 4 collections (`accountsReady`, `transactionsReady`, `investmentsReady`, `settingsReady`). Wait until all 4 initial snapshots have resolved (with a 120ms safety fallback timeout so an empty collection never blocks initial display) before emitting the first snapshot.
+- **Microtask / Frame Debouncing**: Debounce `trigger()` by 16ms (1 animation frame) so that rapid consecutive snapshot events (e.g. initial burst or multi-document writes) coalesce into a single atomic update.
+- **Initial State Seeding**: Pre-populate `currentAccounts`, `currentTransactions`, and `currentInvestments` from local snapshot cache if available so there is never an intermediate empty array emitted to React.
 
-- **Decision 2: Universal Liability Bill Payment Handler**:
-  - *Chosen Approach*: Extend `payCreditCardBill` to accept both `credit_card` and `paylater` accounts.
-  - *Why*: Avoids duplicating bill payment state management while ensuring consistent admin fee calculation and sheet synchronization.
+### 2. Stabilize Realtime Subscription in `src/context/FinanceContext.tsx`
+- **Remove `usdIdrRate` from `useEffect` Dependencies**:
+  Change `useEffect(..., [isFirebase, user, appsScriptUrl, spreadsheetId])` so exchange rate updates do not destroy and re-create Firestore subscriptions.
+- **Atomic State Dispatch**:
+  Apply incoming accounts, transactions, investments, and settings in a single coherent render pass using the incoming snapshot's rate directly for `computeStats`.
+- **Preserve Non-Empty Data During Connection**:
+  Guard against replacing existing populated cache with empty arrays unless the Firestore collection is confirmed empty by a fully resolved snapshot.
 
 ---
 
-## 4. Technical Architecture & Data Strategy
+## Verification Plan
 
-```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                           PAYLATER WORKFLOW ENGINE                             │
-└────────────────────────────────────────────────────────────────────────────────┘
-                                        │
-        ┌───────────────────────────────┴───────────────────────────────┐
-        ▼                                                               ▼
- ┌───────────────┐                                              ┌───────────────┐
- │ PAYLATER SPEND│                                              │ PAYLATER BILL │
- └───────────────┘                                              └───────────────┘
-        │                                                               │
-        ▼                                                               ▼
-  Type: cc_debt                                                  Type: expense
-  Debt Balance += Amount                                         Bank Cash -= (Amount + Admin)
-  Excludes from Cash Expenses                                    PayLater Debt -= Amount
-  Synced to Sheets (Column 7)                                    Counts in Cash Expenses
-```
+### Automated Verification
+- Run `compile_applet` to ensure TypeScript compilation passes with zero errors.
+- Run `lint_applet` to ensure ESLint passes with zero syntax or import errors.
 
-### Component & File Mapping
-
-1. `src/context/FinanceContext.tsx`:
-   - Verify `addTransaction` and `updateTransaction` automatically resolve `effectiveType = 'cc_debt'` for `targetAcc.type === 'paylater' || targetAcc.type === 'credit_card'` when type is spending/expense.
-   - Update `payCreditCardBill` validation to allow target account type `credit_card` OR `paylater`.
-   - Update sheet sync and Firestore persistence for PayLater bill settlements.
-
-2. `src/lib/localDb.ts`:
-   - Update `payCreditCardBill` in `localDb` to validate and process bill payments for both `credit_card` and `paylater` accounts.
-
-3. `src/components/Modals/PayBillModal.tsx`:
-   - Filter selectable liability accounts to include `a.type === 'credit_card' || a.type === 'paylater'`.
-   - Adapt title, helper text, and notes placeholder for PayLater bill settlements.
-
-4. `src/components/AccountsView.tsx`:
-   - Display "Pay Bill" button for PayLater cards alongside Credit Cards.
+### Manual / Browser Verification
+1. Open the application with **no Apps Script URL** (default state).
+2. Hard reload the page (F5 / browser refresh).
+3. Verify that Net Worth, Liquid Cash, Total Investments, and Monthly Expenses appear smoothly from the cached snapshot and stay completely stable without any numbers jumping, flashing to 0, or flickering.
+4. Verify that adding a transaction, updating an account, or connecting the Web App URL continues to work seamlessly.
