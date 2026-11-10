@@ -1,0 +1,8 @@
+{
+  "name": "Remix Remix WealthTrack Pro - Expense \u0026 Portfolio Manager with Google Sheet (2)",
+  "description": "Multi-device personal finance tracker with daily IDR expense tracking, bank-to-cash transfers, direct investment funding, privacy mode, and multi-asset portfolio stats (USD, Bitcoin, Saham, RDPU, ETF USA).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
