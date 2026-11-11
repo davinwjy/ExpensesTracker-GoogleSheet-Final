@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { isFirebaseActive, firebaseAuth } from '../lib/firebase';
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 export const AuthModal: React.FC = () => {
   const { login, register, quickDemoLogin } = useAuth();
@@ -53,9 +55,6 @@ export const AuthModal: React.FC = () => {
       }
       setIsSubmitting(true);
       try {
-        const { isFirebaseActive, firebaseAuth } = await import('../lib/firebase');
-        const { sendPasswordResetEmail } = await import('firebase/auth');
-
         let resetSent = false;
         if (isFirebaseActive() && firebaseAuth) {
           try {

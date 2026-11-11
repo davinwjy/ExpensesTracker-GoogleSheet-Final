@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
@@ -6,11 +6,27 @@ import { Sidebar } from './components/Sidebar';
 import { TopHeader } from './components/TopHeader';
 import { MobileNav } from './components/MobileNav';
 import { DashboardView } from './components/DashboardView';
+import { ExpensesView } from './components/ExpensesView';
+import { AccountsView } from './components/AccountsView';
+import { InvestmentsView } from './components/InvestmentsView';
+import { BudgetingView } from './components/BudgetingView';
+import { StatsView } from './components/StatsView';
+import { AdminView } from './components/AdminView';
 import { GlobalAnnouncementBanner } from './components/GlobalAnnouncementBanner';
 import { AuthModal } from './components/AuthModal';
 import { GlobalNotificationPopup } from './components/GlobalNotificationPopup';
 import { OfflineSyncBanner } from './components/OfflineSyncBanner';
 import { PullToRefresh } from './components/PullToRefresh';
+import { AddExpenseModal } from './components/Modals/AddExpenseModal';
+import { TransferModal } from './components/Modals/TransferModal';
+import { AccountModal } from './components/Modals/AccountModal';
+import { InvestmentModal } from './components/Modals/InvestmentModal';
+import { HoldingTypesModal } from './components/Modals/HoldingTypesModal';
+import { PayBillModal } from './components/Modals/PayBillModal';
+import { BudgetModal } from './components/Modals/BudgetModal';
+import { FirebaseSetupModal } from './components/Modals/FirebaseSetupModal';
+import { GoogleSheetSetupModal } from './components/Modals/GoogleSheetSetupModal';
+import { MobileAppModal } from './components/Modals/MobileAppModal';
 import { Wallet, Loader2 } from 'lucide-react';
 
 const TAB_ORDER = [
@@ -51,72 +67,6 @@ const tabTransitionVariants = {
     },
   }),
 };
-
-// Lazy-loaded secondary views for faster initial bundle parse and first paint
-const ExpensesView = lazy(() =>
-  import('./components/ExpensesView').then((m) => ({ default: m.ExpensesView }))
-);
-const AccountsView = lazy(() =>
-  import('./components/AccountsView').then((m) => ({ default: m.AccountsView }))
-);
-const InvestmentsView = lazy(() =>
-  import('./components/InvestmentsView').then((m) => ({ default: m.InvestmentsView }))
-);
-const BudgetingView = lazy(() =>
-  import('./components/BudgetingView').then((m) => ({ default: m.BudgetingView }))
-);
-const StatsView = lazy(() =>
-  import('./components/StatsView').then((m) => ({ default: m.StatsView }))
-);
-const AdminView = lazy(() =>
-  import('./components/AdminView').then((m) => ({ default: m.AdminView }))
-);
-
-// Lazy-loaded global modals
-const AddExpenseModal = lazy(() =>
-  import('./components/Modals/AddExpenseModal').then((m) => ({ default: m.AddExpenseModal }))
-);
-const TransferModal = lazy(() =>
-  import('./components/Modals/TransferModal').then((m) => ({ default: m.TransferModal }))
-);
-const AccountModal = lazy(() =>
-  import('./components/Modals/AccountModal').then((m) => ({ default: m.AccountModal }))
-);
-const InvestmentModal = lazy(() =>
-  import('./components/Modals/InvestmentModal').then((m) => ({ default: m.InvestmentModal }))
-);
-const HoldingTypesModal = lazy(() =>
-  import('./components/Modals/HoldingTypesModal').then((m) => ({ default: m.HoldingTypesModal }))
-);
-const PayBillModal = lazy(() =>
-  import('./components/Modals/PayBillModal').then((m) => ({ default: m.PayBillModal }))
-);
-const BudgetModal = lazy(() =>
-  import('./components/Modals/BudgetModal').then((m) => ({ default: m.BudgetModal }))
-);
-const FirebaseSetupModal = lazy(() =>
-  import('./components/Modals/FirebaseSetupModal').then((m) => ({ default: m.FirebaseSetupModal }))
-);
-const GoogleSheetSetupModal = lazy(() =>
-  import('./components/Modals/GoogleSheetSetupModal').then((m) => ({
-    default: m.GoogleSheetSetupModal,
-  }))
-);
-const MobileAppModal = lazy(() =>
-  import('./components/Modals/MobileAppModal').then((m) => ({ default: m.MobileAppModal }))
-);
-
-const ViewLoadingSkeleton: React.FC = () => (
-  <div className="space-y-4 py-2 animate-pulse">
-    <div className="h-7 w-48 rounded-lg bg-slate-200 dark:bg-[#131722]" />
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="h-24 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e]" />
-      <div className="h-24 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e]" />
-      <div className="h-24 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e]" />
-    </div>
-    <div className="h-64 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e]" />
-  </div>
-);
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -243,14 +193,12 @@ const MainAppContent: React.FC = () => {
                   className="w-full min-w-0"
                 >
                   {activeTab === 'dashboard' && <DashboardView />}
-                  <Suspense fallback={<ViewLoadingSkeleton />}>
-                    {activeTab === 'expenses' && <ExpensesView />}
-                    {activeTab === 'budgeting' && <BudgetingView />}
-                    {activeTab === 'accounts' && <AccountsView />}
-                    {activeTab === 'investments' && <InvestmentsView />}
-                    {activeTab === 'stats' && <StatsView />}
-                    {activeTab === 'admin' && <AdminView />}
-                  </Suspense>
+                  {activeTab === 'expenses' && <ExpensesView />}
+                  {activeTab === 'budgeting' && <BudgetingView />}
+                  {activeTab === 'accounts' && <AccountsView />}
+                  {activeTab === 'investments' && <InvestmentsView />}
+                  {activeTab === 'stats' && <StatsView />}
+                  {activeTab === 'admin' && <AdminView />}
                 </motion.div>
               </AnimatePresence>
             </main>
@@ -261,28 +209,26 @@ const MainAppContent: React.FC = () => {
       {/* Mobile Floating Bottom Dock */}
       <MobileNav />
 
-      {/* Global Modals (Lazy-loaded via Suspense) */}
-      <Suspense fallback={null}>
-        <AddExpenseModal />
-        <TransferModal />
-        <AccountModal />
-        <InvestmentModal />
-        <HoldingTypesModal />
-        <PayBillModal />
-        <BudgetModal />
-        <FirebaseSetupModal
-          isOpen={isFirebaseSetupOpen}
-          onClose={() => setIsFirebaseSetupOpen(false)}
-        />
-        <GoogleSheetSetupModal
-          isOpen={isGoogleSheetSetupOpen}
-          onClose={() => setIsGoogleSheetSetupOpen(false)}
-        />
-        <MobileAppModal
-          isOpen={isMobileAppModalOpen}
-          onClose={() => setIsMobileAppModalOpen(false)}
-        />
-      </Suspense>
+      {/* Global Modals */}
+      <AddExpenseModal />
+      <TransferModal />
+      <AccountModal />
+      <InvestmentModal />
+      <HoldingTypesModal />
+      <PayBillModal />
+      <BudgetModal />
+      <FirebaseSetupModal
+        isOpen={isFirebaseSetupOpen}
+        onClose={() => setIsFirebaseSetupOpen(false)}
+      />
+      <GoogleSheetSetupModal
+        isOpen={isGoogleSheetSetupOpen}
+        onClose={() => setIsGoogleSheetSetupOpen(false)}
+      />
+      <MobileAppModal
+        isOpen={isMobileAppModalOpen}
+        onClose={() => setIsMobileAppModalOpen(false)}
+      />
 
       {/* Global Success & Toast Popup Notification */}
       <GlobalNotificationPopup />

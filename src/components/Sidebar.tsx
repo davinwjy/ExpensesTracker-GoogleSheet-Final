@@ -482,21 +482,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => {
-                setIsUserMenuOpen(false);
-                setIsMobileAppModalOpen(true);
-                onCloseMobile();
-              }}
-              className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Mobile App / APK</span>
-              </span>
-              <span className="text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-500/20 px-1 rounded font-mono">APK</span>
-            </button>
-
-            <button
-              onClick={() => {
                 togglePrivacyMode();
               }}
               className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"

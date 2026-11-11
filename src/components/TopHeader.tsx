@@ -329,23 +329,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       {isSyncingActive ? 'Syncing...' : 'Cloud & Sheet'}
                     </span>
                   </button>
-
-                  {/* Mobile App Modal */}
-                  <button
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      setIsMobileAppModalOpen(true);
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b29] rounded-xl cursor-pointer transition-colors"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <Smartphone className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                      <span className="font-medium">Mobile App</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 font-mono">
-                      Android APK
-                    </span>
-                  </button>
                 </div>
 
                 <div className="border-t border-slate-100 dark:border-[#1a2233] my-1" />
