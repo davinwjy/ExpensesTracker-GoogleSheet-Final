@@ -70,6 +70,7 @@ export interface Transaction {
   date: string; // YYYY-MM-DD
   notes?: string;
   createdAt: string;
+  idempotencyKey?: string;
 }
 
 export interface Investment {

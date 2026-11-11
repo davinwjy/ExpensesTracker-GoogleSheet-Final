@@ -29,12 +29,12 @@ export const MobileNav: React.FC = () => {
 
   const leftNavTabs = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'expenses' as const, label: 'Transactions', icon: Receipt },
+    { id: 'expenses' as const, label: 'Transaction', icon: Receipt },
   ];
 
   const rightNavTabs = [
-    { id: 'budgeting' as const, label: 'Budgeting', icon: Target },
     { id: 'investments' as const, label: 'Portfolio', icon: TrendingUp },
+    { id: 'accounts' as const, label: 'Accounts', icon: WalletCards },
   ];
 
   return (
@@ -145,21 +145,21 @@ export const MobileNav: React.FC = () => {
               </button>
             </div>
 
-            {/* 1-Tap Workspace Shortcuts for Analytics & Accounts */}
+            {/* 1-Tap Workspace Shortcuts for Budgeting & Analytics */}
             <div className="pt-2 border-t border-slate-200 dark:border-[#1b212e] grid grid-cols-2 gap-1.5">
               <button
                 onClick={() => {
                   setIsQuickMenuOpen(false);
-                  setActiveTab('accounts');
+                  setActiveTab('budgeting');
                 }}
                 className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-                  activeTab === 'accounts'
+                  activeTab === 'budgeting'
                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                     : 'bg-slate-50 dark:bg-[#121622] text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-[#1e2638] hover:bg-slate-100'
                 }`}
               >
-                <WalletCards className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>Accounts</span>
+                <Target className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>Budgeting</span>
               </button>
 
               <button

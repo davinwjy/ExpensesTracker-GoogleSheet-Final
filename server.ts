@@ -612,7 +612,7 @@ Return ONLY the category name as plain text (exact match from the list).`,
 app.post('/api/transactions', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
   try {
     const userId = req.user!.id;
-    const { type, amount, accountId, category, date, notes } = req.body;
+    const { type, amount, accountId, category, date, notes, idempotencyKey } = req.body;
 
     const parsedAmount = Math.abs(Number(amount));
     if (!parsedAmount || isNaN(parsedAmount)) {
@@ -629,6 +629,17 @@ app.post('/api/transactions', authenticateToken, (req: AuthenticatedRequest, res
     if (!account) {
       res.status(404).json({ error: 'Funding account not found' });
       return;
+    }
+
+    // Deduplication check: if idempotencyKey already exists, return the existing transaction
+    if (idempotencyKey) {
+      const existingTx = db.data.transactions.find(
+        (t) => t.userId === userId && t.idempotencyKey === idempotencyKey
+      );
+      if (existingTx) {
+        res.status(200).json({ transaction: existingTx, updatedAccount: account, duplicatePrevented: true });
+        return;
+      }
     }
 
     const txType = type === 'income' ? 'income' : 'expense';
@@ -679,6 +690,7 @@ app.post('/api/transactions', authenticateToken, (req: AuthenticatedRequest, res
       date: date || new Date().toISOString().split('T')[0],
       notes: notes ? String(notes).trim() : '',
       createdAt: new Date().toISOString(),
+      idempotencyKey: idempotencyKey ? String(idempotencyKey) : undefined,
     };
 
     db.data.transactions.push(newTx);

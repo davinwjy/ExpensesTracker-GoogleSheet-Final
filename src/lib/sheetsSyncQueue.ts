@@ -81,7 +81,8 @@ export class SheetsSyncQueueManager {
       try {
         if (item.action === 'CREATE') {
           if (item.rowValues) {
-            await googleSheetsService.appendRow(spreadsheetId, accessToken, item.tabName, item.rowValues);
+            // Use updateRowById (upsert) to protect against duplicate row appends if recordId already exists
+            await googleSheetsService.updateRowById(spreadsheetId, accessToken, item.tabName, item.recordId, item.rowValues);
           }
         } else if (item.action === 'UPDATE') {
           if (item.rowValues) {

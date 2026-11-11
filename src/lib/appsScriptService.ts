@@ -80,7 +80,12 @@ function handleRequest(params) {
     } else if (action === 'create' || action === 'append') {
       const sheet = ss.getSheetByName(tabName);
       if (sheet && params.values) {
-        sheet.appendRow(params.values);
+        const recordId = params.id || (params.values && params.values[0]);
+        if (recordId) {
+          updateRowById(sheet, recordId, params.values);
+        } else {
+          sheet.appendRow(params.values);
+        }
       }
     } else if (action === 'update') {
       const sheet = ss.getSheetByName(tabName);
@@ -139,21 +144,36 @@ function getTabData(ss, tabName) {
 
 function updateRowById(sheet, id, values) {
   const data = sheet.getDataRange().getValues();
+  let firstFoundIndex = -1;
+  const duplicateRowIndices = [];
+
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][0]) === String(id)) {
-      sheet.getRange(i + 1, 1, 1, values.length).setValues([values]);
-      return;
+      if (firstFoundIndex === -1) {
+        firstFoundIndex = i + 1;
+      } else {
+        duplicateRowIndices.push(i + 1);
+      }
     }
+  }
+
+  if (firstFoundIndex !== -1) {
+    sheet.getRange(firstFoundIndex, 1, 1, values.length).setValues([values]);
+    // Delete any subsequent duplicate rows from bottom to top
+    for (let d = duplicateRowIndices.length - 1; d >= 0; d--) {
+      sheet.deleteRow(duplicateRowIndices[d]);
+    }
+    return;
   }
   sheet.appendRow(values);
 }
 
 function deleteRowById(sheet, id) {
   const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
+  // Traverse backwards to safely delete all matching rows
+  for (let i = data.length - 1; i >= 1; i--) {
     if (String(data[i][0]) === String(id)) {
       sheet.deleteRow(i + 1);
-      return;
     }
   }
 }
@@ -615,6 +635,7 @@ export class AppsScriptService {
         toInvestmentId: row[8] ? String(row[8]) : undefined,
         createdAt: String(row[9] || new Date().toISOString()),
         userId: 'usr_script',
+        idempotencyKey: row[11] ? String(row[11]) : undefined,
       }));
 
     // Map Accounts
@@ -673,9 +694,11 @@ export class AppsScriptService {
   }
 
   async createRecord(scriptUrl: string, tabName: string, values: any[]): Promise<void> {
+    const recordId = values && values[0] ? String(values[0]) : undefined;
     await this.sendRequest(scriptUrl, {
       action: 'create',
       tabName,
+      id: recordId,
       values,
     });
   }

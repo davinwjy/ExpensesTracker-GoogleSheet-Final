@@ -275,6 +275,7 @@ export const api = {
     category: string;
     date: string;
     notes?: string;
+    idempotencyKey?: string;
   }): Promise<{ transaction: Transaction; updatedAccount: Account }> {
     const hasServer = await checkServer();
     if (hasServer) {

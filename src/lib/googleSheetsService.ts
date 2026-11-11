@@ -163,6 +163,7 @@ export class GoogleSheetsService {
         toInvestmentId: row[8] ? String(row[8]) : undefined,
         createdAt: String(row[9] || new Date().toISOString()),
         userId: 'usr_sheets',
+        idempotencyKey: row[11] ? String(row[11]) : undefined,
       }));
 
     // 2. Map Accounts

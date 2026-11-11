@@ -47,6 +47,7 @@ import {
   fetchServerAppsScriptUrl,
   isEmailExplicitlyDisconnected,
 } from '../lib/appsScriptService';
+import { generateIdempotencyKey } from '../lib/idempotency';
 
 interface FinanceContextType {
   // Offline & Synchronization Status
@@ -138,6 +139,7 @@ interface FinanceContextType {
     category: string;
     date: string;
     notes?: string;
+    idempotencyKey?: string;
   }) => Promise<void>;
   updateTransaction: (id: string, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
@@ -308,6 +310,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     usdIdrRateRef.current = usdIdrRate;
   }, [usdIdrRate]);
+
+  // Idempotency tracking ref to prevent duplicate transaction submissions in-flight
+  const recentIdempotencyKeysRef = useRef<Map<string, number>>(new Map());
 
   const [rateSource, setRateSource] = useState<string>(() => {
     return cachedSnapshot?.rateSource || exchangeRateService.getLastRateInfo().source;
@@ -544,7 +549,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (isOnline && token) {
         try {
           if (action === 'CREATE' && rowValues) {
-            await googleSheetsService.appendRow(spreadsheetId, token, tabName, rowValues);
+            // Use updateRowById (upsert) to protect against duplicate rows if ID already exists
+            await googleSheetsService.updateRowById(spreadsheetId, token, tabName, recordId, rowValues);
           } else if (action === 'UPDATE' && rowValues) {
             await googleSheetsService.updateRowById(spreadsheetId, token, tabName, recordId, rowValues);
           } else if (action === 'DELETE') {
@@ -1293,6 +1299,21 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // ---------------- OPERATIONS ----------------
 
+  const assertOnline = (actionLabel: string = 'Data modification') => {
+    const currentlyOnline =
+      typeof navigator !== 'undefined' ? navigator.onLine !== false && isOnline : isOnline;
+    if (!currentlyOnline) {
+      const msg = `Internet connection required. ${actionLabel} is locked while your device is offline.`;
+      showNotification({
+        title: 'Offline Protection Active',
+        message: msg,
+        type: 'warning',
+        durationMs: 4000,
+      });
+      throw new Error(msg);
+    }
+  };
+
   // Accounts
   const addAccount = async (data: {
     name: string;
@@ -1306,6 +1327,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     cardNetwork?: string;
     last4Digits?: string;
   }) => {
+    assertOnline('Creating an account');
     const now = new Date().toISOString();
     const newAccount: Account = {
       id: 'acc_' + Date.now(),
@@ -1370,6 +1392,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateAccount = async (id: string, data: Partial<Account>) => {
+    assertOnline('Updating an account');
     const target = accounts.find((a) => a.id === id);
     if (target) {
       const updated: Account = {
@@ -1424,6 +1447,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteAccount = async (id: string) => {
+    assertOnline('Deleting an account');
     setAccounts((prev) => {
       const next = prev.filter((a) => a.id !== id);
       offlineSyncManager.saveSnapshot({ accounts: next });
@@ -1463,7 +1487,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     category: string;
     date: string;
     notes?: string;
+    idempotencyKey?: string;
   }) => {
+    assertOnline('Recording a transaction');
     const parsedAmount = Math.abs(Number(data.amount));
     const now = new Date().toISOString();
     const txId = 'tx_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
@@ -1476,14 +1502,54 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         ? 'cc_debt'
         : data.type;
 
+    // 1. Generate unique idempotency key (hash of timestamp, amount, category, and account)
+    const idempotencyKey =
+      data.idempotencyKey ||
+      (await generateIdempotencyKey({
+        date: data.date,
+        amount: parsedAmount,
+        category: data.category,
+        accountId: data.accountId,
+        notes: data.notes,
+        type: effectiveType,
+      }));
+
+    // 2. Before writing to the data layer, check if this key already exists to prevent duplicate submissions
+    const keyAlreadyExistsInState = transactions.some(
+      (t) => t.idempotencyKey && t.idempotencyKey === idempotencyKey
+    );
+    const keyAlreadyInFlight = recentIdempotencyKeysRef.current.has(idempotencyKey);
+
+    if (keyAlreadyExistsInState || keyAlreadyInFlight) {
+      console.warn(`[Deduplication] Blocked duplicate submission with idempotency key: ${idempotencyKey}`);
+      showNotification({
+        title: 'Duplicate Submission Prevented',
+        message: 'This transaction was already recorded and has been prevented from duplicating.',
+        type: 'info',
+        durationMs: 3500,
+      });
+      return;
+    }
+
+    // Register idempotency key to prevent concurrent or rapid duplicate submissions
+    recentIdempotencyKeysRef.current.set(idempotencyKey, Date.now());
+    if (recentIdempotencyKeysRef.current.size > 200) {
+      const expiration = Date.now() - 5 * 60 * 1000;
+      for (const [k, time] of recentIdempotencyKeysRef.current.entries()) {
+        if (time < expiration) recentIdempotencyKeysRef.current.delete(k);
+      }
+    }
+
     if (data.type === 'expense' || effectiveType === 'cc_debt') {
       if (targetAcc.type === 'credit_card' || targetAcc.type === 'paylater') {
         if (targetAcc.creditLimit !== undefined && targetAcc.balance + parsedAmount > targetAcc.creditLimit) {
+          recentIdempotencyKeysRef.current.delete(idempotencyKey);
           const avail = Math.max(0, targetAcc.creditLimit - targetAcc.balance);
           throw new Error(`Insufficient credit limit (${avail.toLocaleString('en-US')}). Spending cannot be submitted.`);
         }
       } else {
         if (parsedAmount > targetAcc.balance) {
+          recentIdempotencyKeysRef.current.delete(idempotencyKey);
           throw new Error(`Insufficient balance (${targetAcc.balance.toLocaleString('en-US')}). Spending cannot be submitted.`);
         }
       }
@@ -1516,6 +1582,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       category: data.category,
       date: data.date,
       createdAt: now,
+      idempotencyKey,
       ...(data.notes?.trim() ? { notes: data.notes.trim() } : {}),
     };
 
@@ -1547,6 +1614,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       newTx.toInvestmentId || '',
       newTx.createdAt,
       new Date().toISOString(),
+      newTx.idempotencyKey || '',
     ]);
 
     if (updatedAcc) {
@@ -1598,7 +1666,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
 
-    await api.createTransaction(data);
+    await api.createTransaction({
+      ...data,
+      idempotencyKey,
+    });
     await refreshData();
   };
 
@@ -1610,6 +1681,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     date?: string;
     notes?: string;
   }) => {
+    assertOnline('Paying a bill');
     const sourceAcc = accounts.find((a) => a.id === data.sourceAccountId);
     const ccAcc = accounts.find((a) => a.id === data.creditCardAccountId);
     if (!sourceAcc || !ccAcc) throw new Error('Accounts not found');
@@ -1621,6 +1693,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const txId = 'tx_cc_' + Date.now();
     const txDate = data.date || now.split('T')[0];
     const isPayLater = ccAcc.type === 'paylater';
+
+    const billIdempotencyKey = await generateIdempotencyKey({
+      date: txDate,
+      amount,
+      category: isPayLater ? 'PayLater Payment' : 'Credit Card Payment',
+      accountId: data.sourceAccountId,
+      notes: data.notes,
+      type: 'expense',
+    });
+
+    if (
+      transactions.some((t) => t.idempotencyKey && t.idempotencyKey === billIdempotencyKey) ||
+      recentIdempotencyKeysRef.current.has(billIdempotencyKey)
+    ) {
+      console.warn(`[Deduplication] Blocked duplicate bill payment: ${billIdempotencyKey}`);
+      showNotification({
+        title: 'Duplicate Payment Prevented',
+        message: 'This bill payment was already submitted and has been prevented from duplicating.',
+        type: 'info',
+        durationMs: 3500,
+      });
+      return;
+    }
+    recentIdempotencyKeysRef.current.set(billIdempotencyKey, Date.now());
 
     const updatedSource: Account = {
       ...sourceAcc,
@@ -1644,6 +1740,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       date: txDate,
       notes: data.notes || `Paid ${isPayLater ? 'PayLater' : 'credit card'} bill for ${ccAcc.name} from ${sourceAcc.name}${adminFee > 0 ? ` (Admin Fee: Rp ${adminFee.toLocaleString()})` : ''}`,
       createdAt: now,
+      idempotencyKey: billIdempotencyKey,
     };
 
     let feeTx: Transaction | null = null;
@@ -1714,6 +1811,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateTransaction = async (id: string, data: Partial<Transaction>) => {
+    assertOnline('Updating a transaction');
     const oldTx = transactions.find((t) => t.id === id);
     if (!oldTx) return;
 
@@ -1904,6 +2002,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteTransaction = async (id: string) => {
+    assertOnline('Deleting a transaction');
     const target = transactions.find((t) => t.id === id);
     if (!target) return;
 
@@ -2009,6 +2108,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     date?: string;
     notes?: string;
   }) => {
+    assertOnline('Transferring funds');
     const now = new Date().toISOString();
     const txId = 'tx_' + Date.now();
 
@@ -2016,6 +2116,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const fromAcc = accounts.find((a) => a.id === data.fromAccountId);
       const toAcc = accounts.find((a) => a.id === data.toAccountId);
       if (fromAcc && toAcc) {
+        const transferKey = await generateIdempotencyKey({
+          date: data.date || now.split('T')[0],
+          amount: data.amountIdr,
+          category: `Transfer to ${toAcc.name}`,
+          accountId: data.fromAccountId,
+          notes: data.notes,
+          type: 'transfer',
+        });
+
+        if (
+          transactions.some((t) => t.idempotencyKey && t.idempotencyKey === transferKey) ||
+          recentIdempotencyKeysRef.current.has(transferKey)
+        ) {
+          console.warn(`[Deduplication] Blocked duplicate transfer: ${transferKey}`);
+          showNotification({
+            title: 'Duplicate Transfer Prevented',
+            message: 'This transfer has already been submitted.',
+            type: 'info',
+            durationMs: 3500,
+          });
+          return;
+        }
+        recentIdempotencyKeysRef.current.set(transferKey, Date.now());
+
         const updatedFrom = { ...fromAcc, balance: fromAcc.balance - data.amountIdr, updatedAt: now };
         const updatedTo = { ...toAcc, balance: toAcc.balance + data.amountIdr, updatedAt: now };
         const tx: Transaction = {
@@ -2029,6 +2153,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           date: data.date || now.split('T')[0],
           notes: data.notes,
           createdAt: now,
+          idempotencyKey: transferKey,
         };
 
         syncToSheets(SHEET_TAB_NAMES.ACCOUNTS, 'UPDATE', updatedFrom.id, [
@@ -2247,6 +2372,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     platform?: string;
     notes?: string;
   }) => {
+    assertOnline('Adding an investment');
     const now = new Date().toISOString();
     const chosenCurrency = data.currency || (data.category === 'USD' || data.category === 'ETF USA' ? 'USD' : 'IDR');
     const newInv: Investment = {
@@ -2295,6 +2421,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateInvestment = async (id: string, data: Partial<Investment>) => {
+    assertOnline('Updating an investment');
     const target = investments.find((i) => i.id === id);
     if (target) {
       const nextCategory = data.category || target.category;
@@ -2340,6 +2467,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteInvestment = async (id: string) => {
+    assertOnline('Deleting an investment');
     // Auto sync to Google Sheets / Apps Script
     syncToSheets(SHEET_TAB_NAMES.INVESTMENTS, 'DELETE', id);
 
@@ -2364,18 +2492,21 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     example?: string;
     badgeColor?: string;
   }) => {
+    assertOnline('Adding a holding type');
     const res = await api.addHoldingType(data);
     setHoldingTypes((prev) => [...prev.filter((h) => h.id !== res.holdingType.id), res.holdingType]);
     await refreshData();
   };
 
   const updateHoldingType = async (id: string, data: Partial<HoldingType>) => {
+    assertOnline('Updating a holding type');
     const res = await api.updateHoldingType(id, data);
     setHoldingTypes((prev) => prev.map((h) => (h.id === id ? res.holdingType : h)));
     await refreshData();
   };
 
   const deleteHoldingType = async (id: string) => {
+    assertOnline('Deleting a holding type');
     await api.deleteHoldingType(id);
     setHoldingTypes((prev) => prev.filter((h) => h.id !== id));
     await refreshData();
@@ -2383,6 +2514,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // ---------------- CUSTOM TRANSACTION CATEGORIES OPERATIONS ----------------
   const addCustomCategory = async (name: string, type: 'expense' | 'income', color: string = '#10b981') => {
+    assertOnline('Adding a category');
     const trimmed = name.trim();
     if (!trimmed) {
       throw new Error('Please enter a category name');
@@ -2428,6 +2560,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteCustomCategory = async (id: string) => {
+    assertOnline('Deleting a category');
     const nextCustom = customCategories.filter((c) => c.id !== id);
     setCustomCategories(nextCustom);
 
@@ -2454,6 +2587,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // ---------------- BUDGETING OPERATIONS ----------------
   const saveBudget = async (category: string, monthlyLimit: number, month?: string, id?: string) => {
+    assertOnline('Saving a budget');
     const budgetId = id || 'bgt_' + Date.now();
     const now = new Date().toISOString();
     const budgetItem: CategoryBudget = {
@@ -2514,6 +2648,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteBudget = async (id: string) => {
+    assertOnline('Deleting a budget');
     setBudgets((prev) => {
       const next = prev.filter((b) => b.id !== id);
       offlineSyncManager.saveSnapshot({ budgets: next });

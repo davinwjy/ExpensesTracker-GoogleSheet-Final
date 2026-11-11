@@ -510,11 +510,22 @@ export const localDb = {
     category: string;
     date: string;
     notes?: string;
+    idempotencyKey?: string;
   }): { transaction: Transaction; updatedAccount: Account } {
     const store = getStore();
     const userId = this.getUserId();
     const acc = store.accounts.find(a => a.id === data.accountId && a.userId === userId);
     if (!acc) throw new Error('Account not found');
+
+    // Deduplication check: if transaction with this idempotencyKey already exists, return it
+    if (data.idempotencyKey) {
+      const existing = store.transactions.find(
+        (t) => t.userId === userId && t.idempotencyKey === data.idempotencyKey
+      );
+      if (existing) {
+        return { transaction: existing, updatedAccount: acc };
+      }
+    }
 
     const amount = Math.abs(Number(data.amount));
 
@@ -556,6 +567,7 @@ export const localDb = {
       date: data.date,
       notes: data.notes?.trim() || '',
       createdAt: new Date().toISOString(),
+      idempotencyKey: data.idempotencyKey,
     };
 
     store.transactions.push(newTx);
