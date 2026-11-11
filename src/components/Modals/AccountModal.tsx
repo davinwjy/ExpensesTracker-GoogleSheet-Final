@@ -75,11 +75,18 @@ export const AccountModal: React.FC = () => {
     setBalance('0');
     setAccountNumber('');
     setColor('#3b82f6');
-    setCreditLimit('15000000');
+    setCreditLimit('0');
     setBillingDate('25');
     setDueDate('10');
     setCardNetwork('Visa');
     setLast4Digits('');
+    setError('');
+  };
+
+  const handleTypeChange = (newType: AccountType) => {
+    setType(newType);
+    setBalance('0');
+    setCreditLimit('0');
     setError('');
   };
 
@@ -237,7 +244,7 @@ export const AccountModal: React.FC = () => {
             <div className="grid grid-cols-4 p-0.5 bg-slate-100 dark:bg-[#080a0f] rounded border border-slate-300 dark:border-[#1d2332] text-xs font-semibold">
               <button
                 type="button"
-                onClick={() => setType('bank')}
+                onClick={() => handleTypeChange('bank')}
                 className={`py-1.5 rounded transition-all cursor-pointer ${
                   type === 'bank' ? 'bg-white dark:bg-[#1b212e] text-emerald-600 dark:text-emerald-400 border border-slate-300 dark:border-[#2a3449] font-bold shadow-sm' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}
@@ -246,7 +253,7 @@ export const AccountModal: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setType('credit_card')}
+                onClick={() => handleTypeChange('credit_card')}
                 className={`py-1.5 rounded transition-all cursor-pointer ${
                   type === 'credit_card' ? 'bg-white dark:bg-[#1b212e] text-amber-600 dark:text-amber-400 border border-slate-300 dark:border-[#2a3449] font-bold shadow-sm' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}
@@ -255,7 +262,7 @@ export const AccountModal: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setType('paylater')}
+                onClick={() => handleTypeChange('paylater')}
                 className={`py-1.5 rounded transition-all cursor-pointer ${
                   type === 'paylater' ? 'bg-white dark:bg-[#1b212e] text-purple-600 dark:text-purple-400 border border-slate-300 dark:border-[#2a3449] font-bold shadow-sm' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}
@@ -264,7 +271,7 @@ export const AccountModal: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setType('cash')}
+                onClick={() => handleTypeChange('cash')}
                 className={`py-1.5 rounded transition-all cursor-pointer ${
                   type === 'cash' ? 'bg-white dark:bg-[#1b212e] text-emerald-600 dark:text-emerald-400 border border-slate-300 dark:border-[#2a3449] font-bold shadow-sm' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}

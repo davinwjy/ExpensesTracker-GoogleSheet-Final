@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   LayoutDashboard,
   Receipt,
@@ -157,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onCloseMobile();
   };
 
-  const sidebarContent = (
+  const renderSidebarContent = (layoutScope: 'desktop' | 'mobile') => (
     <div className="flex flex-col h-full bg-white dark:bg-[#080a0f] border-r border-slate-200 dark:border-[#1a1f2c] text-slate-800 dark:text-zinc-200 select-none">
       {/* 1. BRAND HEADER */}
       <div className="p-3.5 border-b border-slate-200 dark:border-[#1a1f2c] flex items-center justify-between bg-slate-50 dark:bg-[#0b0e14]">
@@ -341,11 +342,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 4. MAIN NAVIGATION LINKS */}
-      <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
+      <div className="flex-1 overflow-y-auto px-2.5 py-1.5 space-y-1">
         <div className="px-2 py-1">
           {!isCollapsed && (
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-              TERMINAL WORKSPACES
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+              Workspace
             </span>
           )}
         </div>
@@ -358,28 +359,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleSelectNav(item.id)}
-              className={`w-full flex items-center gap-2.5 px-2.5 py-2 text-xs transition-all group cursor-pointer border-l-2 rounded-r-lg ${
+              className={`relative w-full flex items-center gap-2.5 px-2.5 py-2 text-xs transition-colors group cursor-pointer rounded-lg overflow-hidden ${
                 isActive
-                  ? 'bg-emerald-50 dark:bg-[#121622] text-emerald-900 dark:text-zinc-100 border-emerald-500 font-semibold'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#0f121a] border-transparent'
+                  ? 'text-emerald-700 dark:text-emerald-300 font-semibold'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-[#111520]'
               } ${isCollapsed ? 'justify-center px-1.5' : ''}`}
               title={item.label}
             >
+              {isActive && (
+                <motion.div
+                  layoutId={`sidebar-active-bg-${layoutScope}`}
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  className="absolute inset-0 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/25 shadow-2xs pointer-events-none"
+                />
+              )}
+
+              {isActive && (
+                <motion.span
+                  layoutId={`sidebar-active-bar-${layoutScope}`}
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-emerald-500 dark:bg-emerald-400 pointer-events-none"
+                />
+              )}
+
               <Icon
-                className={`w-4 h-4 shrink-0 transition-colors ${
+                className={`relative z-10 w-4 h-4 shrink-0 transition-colors ${
                   isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300'
                 }`}
               />
 
               {!isCollapsed && (
                 <>
-                  <span className="flex-1 text-left truncate">{item.label}</span>
+                  <span className="relative z-10 flex-1 text-left truncate">{item.label}</span>
                   {item.badge !== null && (
                     <span
-                      className={`text-[9px] font-mono tabular-nums px-1.5 py-0.2 rounded ${
+                      className={`relative z-10 text-[10px] font-mono tabular-nums ${
                         isActive
-                          ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300'
-                          : 'bg-slate-200 dark:bg-[#151924] text-slate-600 dark:text-zinc-500 group-hover:text-slate-900 dark:group-hover:text-zinc-400'
+                          ? 'text-emerald-700 dark:text-emerald-300 font-semibold'
+                          : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-400'
                       }`}
                     >
                       {item.badge}
@@ -543,22 +560,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }`}
       >
         <div className="fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out" style={{ width: isCollapsed ? '4.5rem' : '16rem' }}>
-          {sidebarContent}
+          {renderSidebarContent('desktop')}
         </div>
       </aside>
 
       {/* Mobile Drawer (with backdrop) */}
-      {isMobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div
-            onClick={onCloseMobile}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in"
-          />
-          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
-            {sidebarContent}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 flex">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={onCloseMobile}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+              className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10"
+            >
+              {renderSidebarContent('mobile')}
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 };

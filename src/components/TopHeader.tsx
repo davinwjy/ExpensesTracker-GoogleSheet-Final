@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   Menu,
   Eye,
@@ -152,14 +153,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <Menu className="w-4 h-4" />
           </button>
 
-          <div className="min-w-0 flex items-center gap-2">
-            <h1 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
-              {currentMeta.title}
-            </h1>
-            <span className="text-zinc-400 dark:text-zinc-600 hidden sm:inline" aria-hidden="true">·</span>
-            <span className="hidden md:inline-block text-xs text-slate-500 dark:text-zinc-400 truncate">
-              {currentMeta.subtitle}
-            </span>
+          <div className="min-w-0 overflow-hidden">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                className="min-w-0 flex items-center gap-2"
+              >
+                <h1 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
+                  {currentMeta.title}
+                </h1>
+                <span className="text-zinc-400 dark:text-zinc-600 hidden sm:inline" aria-hidden="true">·</span>
+                <span className="hidden md:inline-block text-xs text-slate-500 dark:text-zinc-400 truncate">
+                  {currentMeta.subtitle}
+                </span>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
@@ -214,33 +226,29 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             onClick={() => setIsGoogleSheetSetupOpen(true)}
             title={
               isAppsScriptConnected
-                ? 'Terhubung dengan Google Sheet via Apps Script'
+                ? 'Connected to Google Sheets via Apps Script'
                 : isSheetsConnected
-                ? `Terhubung ke Sheet ID: ${spreadsheetId}`
-                : 'Hubungkan Google Sheet via Apps Script'
+                ? `Connected to Sheet ID: ${spreadsheetId}`
+                : 'Connect Google Sheets via Apps Script'
             }
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer whitespace-nowrap ${
               isAppsScriptConnected || isSheetsConnected
                 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold'
                 : 'bg-slate-100 dark:bg-[#10141e] border-slate-200 dark:border-[#1d2433] text-slate-700 dark:text-zinc-300 hover:border-emerald-500/50'
             }`}
           >
-            <FileSpreadsheet className={`w-3.5 h-3.5 ${isAppsScriptConnected || isSheetsConnected ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-400'}`} />
+            <FileSpreadsheet className={`w-3.5 h-3.5 shrink-0 ${isAppsScriptConnected || isSheetsConnected ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-400'}`} />
             <span className="hidden sm:inline">
               {isAppsScriptConnected || isSheetsConnected ? 'Google Sheet' : 'Connect Sheet'}
             </span>
           </button>
-
-
-
-
 
           {/* User Profile Avatar Popover */}
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-[#121622] border border-slate-200/70 dark:border-[#1e2535] transition-all cursor-pointer"
-              title="Menu Profil Pengguna"
+              title="User Profile Menu"
             >
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center text-[10px] font-mono shadow-sm">
                 {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
@@ -266,7 +274,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                           {user?.name || 'User Account'}
                         </p>
                         {isUserAdmin(user) && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
                             Admin
                           </span>
                         )}
@@ -290,16 +298,16 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   >
                     <span className="flex items-center gap-2.5">
                       <FileSpreadsheet className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                      <span className="font-medium">Google Sheet</span>
+                      <span className="font-medium">Google Sheets</span>
                     </span>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
                         isAppsScriptConnected || isSheetsConnected
                           ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                           : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
                       }`}
                     >
-                      {isAppsScriptConnected || isSheetsConnected ? 'Terkoneksi' : 'Hubungkan'}
+                      {isAppsScriptConnected || isSheetsConnected ? 'Connected' : 'Connect'}
                     </span>
                   </button>
 
@@ -315,10 +323,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                           isSyncingActive ? 'animate-spin text-emerald-500' : ''
                         }`}
                       />
-                      <span className="font-medium">Sinkronkan Data</span>
+                      <span className="font-medium">Sync Data Now</span>
                     </span>
                     <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
-                      {isSyncingActive ? 'Menyinkronkan...' : 'Google Sheet'}
+                      {isSyncingActive ? 'Syncing...' : 'Cloud & Sheet'}
                     </span>
                   </button>
 
@@ -332,10 +340,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   >
                     <span className="flex items-center gap-2.5">
                       <Smartphone className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                      <span className="font-medium">Aplikasi Mobile</span>
+                      <span className="font-medium">Mobile App</span>
                     </span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 font-mono">
-                      APK Android
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 font-mono">
+                      Android APK
                     </span>
                   </button>
                 </div>
@@ -351,7 +359,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-colors font-semibold"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />
-                  <span>Keluar (Log Out)</span>
+                  <span>Sign Out</span>
                 </button>
               </div>
             )}

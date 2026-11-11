@@ -69,12 +69,21 @@ export function computeStats(
     return true;
   };
 
+  const isActualIncome = (t: Transaction) => {
+    if (t.type !== 'income') return false;
+    const acc = accounts.find((a) => a.id === t.accountId);
+    if (acc && (acc.type === 'credit_card' || acc.type === 'paylater')) {
+      return false; // Exclude credit card/paylater refunds from cash income; they reduce credit card debt instead
+    }
+    return true;
+  };
+
   const monthlyExpenses = thisMonthTxs
     .filter(isActualExpense)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const monthlyIncomes = thisMonthTxs
-    .filter((t) => t.type === 'income')
+    .filter(isActualIncome)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const monthlyTransfersToInv = thisMonthTxs
@@ -91,7 +100,7 @@ export function computeStats(
 
   const incomeByCategory: Record<string, number> = {};
   thisMonthTxs
-    .filter((t) => t.type === 'income')
+    .filter(isActualIncome)
     .forEach((t) => {
       const cat = t.category || 'Other Income';
       incomeByCategory[cat] = (incomeByCategory[cat] || 0) + t.amount;

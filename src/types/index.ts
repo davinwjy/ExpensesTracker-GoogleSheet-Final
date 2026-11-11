@@ -24,11 +24,14 @@ export interface User {
 
 export interface AdminOverviewStats {
   totalUsers: number;
-  totalAccounts: number;
-  totalTransactions: number;
-  totalInvestments: number;
-  totalVolumeIdr: number;
-  totalTrackedAssetsIdr: number;
+  totalAccounts?: number;
+  totalTransactions?: number;
+  totalInvestments?: number;
+  totalVolumeIdr?: number;
+  totalTrackedAssetsIdr?: number;
+  holdingTypesCount?: number;
+  allowNewRegistrations?: boolean;
+  maintenanceMode?: boolean;
   serverStatus: 'online' | 'degraded';
   dbType: string;
   uptimeSeconds: number;
@@ -43,9 +46,10 @@ export interface AdminUserListItem {
   email: string;
   role: 'admin' | 'user';
   createdAt: string;
-  accountsCount: number;
-  transactionsCount: number;
-  investmentsCount: number;
+  hasSheetSync?: boolean;
+  accountsCount?: number;
+  transactionsCount?: number;
+  investmentsCount?: number;
   totalNetWorthIdr?: number;
 }
 
@@ -162,6 +166,11 @@ export interface BudgetProgress {
   percentUsed: number;
   status: 'safe' | 'warning' | 'danger'; // safe (<75%), warning (75-99%), danger (>=100%)
   transactionCount: number;
+  prevMonthSpent?: number;
+  prevMonthTransactionCount?: number;
+  momDeltaAmount?: number;
+  momDeltaPercent?: number | null;
+  suggestedSmartLimit?: number;
   color?: string;
 }
 

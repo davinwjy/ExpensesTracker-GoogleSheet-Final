@@ -10,6 +10,7 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   deleteDoc,
   query,
   where,
@@ -20,6 +21,7 @@ import {
 import { firebaseAuth, firestoreDb } from './firebase';
 import { User, Account, Transaction, Investment, UserSettings, CategoryBudget } from '../types';
 import { isUserAdmin } from './admin';
+import { isEmailExplicitlyDisconnected } from './appsScriptService';
 
 /**
  * Recursively removes all properties with undefined values.
@@ -165,9 +167,8 @@ export const firestoreService = {
       usdIdrRate: 15850,
       privacyModeDefault: false,
       theme: 'dark',
-      appsScriptUrl: '',
     };
-    await setDoc(doc(firestoreDb, 'settings', userId), sanitizeForFirestore(initialSettings));
+    await setDoc(doc(firestoreDb, 'settings', userId), sanitizeForFirestore(initialSettings), { merge: true });
   },
 
   // ---------------- REALTIME DATA SUBSCRIPTION ----------------
@@ -275,14 +276,46 @@ export const firestoreService = {
       trigger();
     });
 
-    // 4. Settings listener
+    // 4. Settings & User Profile listeners (recover appsScriptUrl from users doc if settings was overwritten)
+    let userDocAppsScriptUrl = '';
     const docSettings = doc(firestoreDb, 'settings', userId);
     const unsubSettings = onSnapshot(docSettings, (snapshot) => {
       if (snapshot.exists()) {
-        currentSettings = snapshot.data() as UserSettings;
+        const data = snapshot.data() as UserSettings;
+        const currentEmail = firebaseAuth?.currentUser?.email;
+        const explicitlyDisconnected = isEmailExplicitlyDisconnected(currentEmail || undefined);
+        const effectiveUrl = explicitlyDisconnected
+          ? ''
+          : (data.appsScriptUrl !== undefined
+              ? (data.appsScriptUrl || '')
+              : (userDocAppsScriptUrl || currentSettings.appsScriptUrl || ''));
+
+        currentSettings = {
+          ...currentSettings,
+          ...data,
+          appsScriptUrl: effectiveUrl,
+        };
       }
       settingsReady = true;
       trigger();
+    });
+
+    const docUser = doc(firestoreDb, 'users', userId);
+    const unsubUser = onSnapshot(docUser, (snapshot) => {
+      if (snapshot.exists()) {
+        const uData = snapshot.data() as any;
+        const currentEmail = firebaseAuth?.currentUser?.email;
+        if (
+          uData?.appsScriptUrl &&
+          typeof uData.appsScriptUrl === 'string' &&
+          uData.appsScriptUrl.trim() &&
+          !isEmailExplicitlyDisconnected(currentEmail || undefined)
+        ) {
+          userDocAppsScriptUrl = uData.appsScriptUrl.trim();
+        } else {
+          userDocAppsScriptUrl = '';
+        }
+      }
     });
 
     return () => {
@@ -292,6 +325,7 @@ export const firestoreService = {
       unsubTransactions();
       unsubInvestments();
       unsubSettings();
+      unsubUser();
     };
   },
 
@@ -367,28 +401,72 @@ export const firestoreService = {
 
   async saveSettings(settings: UserSettings): Promise<void> {
     if (!firestoreDb) throw new Error('Firestore not ready');
-    await setDoc(doc(firestoreDb, 'settings', settings.userId), sanitizeForFirestore(settings));
+    await setDoc(doc(firestoreDb, 'settings', settings.userId), sanitizeForFirestore(settings), { merge: true });
   },
 
-  async saveUserAppsScriptUrl(userId: string, url: string): Promise<void> {
+  async getUserAppsScriptUrl(userId: string, email?: string): Promise<string> {
+    if (!firestoreDb || !userId) return '';
+    try {
+      // 1. Check users/{userId} doc first (never overwritten by theme/rate changes)
+      const userSnap = await getDoc(doc(firestoreDb, 'users', userId));
+      if (userSnap.exists()) {
+        const uUrl = (userSnap.data() as any)?.appsScriptUrl?.trim();
+        if (uUrl && uUrl.startsWith('https://script.google.com')) {
+          return uUrl;
+        }
+      }
+
+      // 2. Check settings/{userId} doc
+      const settingsSnap = await getDoc(doc(firestoreDb, 'settings', userId));
+      if (settingsSnap.exists()) {
+        const sUrl = (settingsSnap.data() as any)?.appsScriptUrl?.trim();
+        if (sUrl && sUrl.startsWith('https://script.google.com')) {
+          return sUrl;
+        }
+      }
+
+      // 3. Fallback: query users collection by email if provided
+      if (email) {
+        const qEmail = query(collection(firestoreDb, 'users'), where('email', '==', email.trim()));
+        const emailSnap = await getDocs(qEmail);
+        for (const d of emailSnap.docs) {
+          const eUrl = (d.data() as any)?.appsScriptUrl?.trim();
+          if (eUrl && eUrl.startsWith('https://script.google.com')) {
+            return eUrl;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('getUserAppsScriptUrl error:', err);
+    }
+    return '';
+  },
+
+  async saveUserAppsScriptUrl(userId: string, url: string, email?: string): Promise<void> {
     if (!firestoreDb || !userId) return;
     const cleanUrl = (url || '').trim();
-    try {
-      // 1. Update settings doc
-      await setDoc(
-        doc(firestoreDb, 'settings', userId),
-        sanitizeForFirestore({ appsScriptUrl: cleanUrl, updatedAt: new Date().toISOString() }),
-        { merge: true }
-      );
-      // 2. Also update users doc for fast auth-time retrieval
-      await setDoc(
+    const now = new Date().toISOString();
+    await Promise.allSettled([
+      setDoc(
         doc(firestoreDb, 'users', userId),
-        sanitizeForFirestore({ appsScriptUrl: cleanUrl, updatedAt: new Date().toISOString() }),
+        sanitizeForFirestore({
+          id: userId,
+          ...(email ? { email: email.trim() } : {}),
+          appsScriptUrl: cleanUrl,
+          updatedAt: now,
+        }),
         { merge: true }
-      );
-    } catch (err) {
-      console.warn('Failed to bind Apps Script URL to Firestore:', err);
-    }
+      ),
+      setDoc(
+        doc(firestoreDb, 'settings', userId),
+        sanitizeForFirestore({
+          userId,
+          appsScriptUrl: cleanUrl,
+          updatedAt: now,
+        }),
+        { merge: true }
+      ),
+    ]);
   },
 
   // ---------------- MIGRATE LOCAL DATA TO FIRESTORE ----------------

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, FileSpreadsheet, CheckCircle2, AlertCircle, RefreshCw, Copy, Check, ExternalLink, Code2, Send } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
-import { APPS_SCRIPT_TEMPLATE_CODE, getStoredAppsScriptUrl } from '../../lib/appsScriptService';
+import { APPS_SCRIPT_TEMPLATE_CODE, getStoredAppsScriptUrl, isEmailExplicitlyDisconnected } from '../../lib/appsScriptService';
 
 interface GoogleSheetSetupModalProps {
   isOpen: boolean;
@@ -29,15 +29,48 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   useEffect(() => {
+    if (isEmailExplicitlyDisconnected(user?.email)) {
+      setInputUrl('');
+      return;
+    }
+
     if (appsScriptUrl) {
       setInputUrl(appsScriptUrl);
     } else if (user?.email) {
       const prefilled = getStoredAppsScriptUrl(user.email);
       if (prefilled) {
         setInputUrl(prefilled);
+      } else {
+        setInputUrl('');
       }
+    } else {
+      setInputUrl('');
     }
   }, [appsScriptUrl, user?.email]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    window.history.pushState({ modalOpen: true }, '');
+
+    const handlePopState = () => {
+      onClose();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -46,8 +79,8 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
       await navigator.clipboard.writeText(APPS_SCRIPT_TEMPLATE_CODE);
       setIsCopied(true);
       showNotification({
-        title: 'Kode Apps Script Disalin',
-        message: 'Silakan paste di Extensions -> Apps Script pada Google Sheet Anda.',
+        title: 'Apps Script Code Copied',
+        message: 'Paste it into Extensions -> Apps Script in your Google Sheet.',
         type: 'success',
       });
       setTimeout(() => setIsCopied(false), 3000);
@@ -61,7 +94,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
     if (!trimmed || !trimmed.startsWith('https://script.google.com')) {
       setStatusMessage({
         type: 'error',
-        text: 'Masukkan URL Google Apps Script Web App yang valid (diawali https://script.google.com/macros/s/...)',
+        text: 'Please enter a valid Google Apps Script Web App URL (starting with https://script.google.com/macros/s/...)',
       });
       return;
     }
@@ -73,18 +106,18 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
       await setAppsScriptUrl(trimmed);
       setStatusMessage({
         type: 'success',
-        text: `Koneksi Google Apps Script berhasil dan terikat ke akun ${user?.email || 'Anda'}! Data tersinkron otomatis.`,
+        text: `Google Apps Script connected and linked to ${user?.email || 'your account'}! Data is synced automatically.`,
       });
       showNotification({
-        title: 'Google Sheet Terikat ke Akun',
-        message: `URL Web App berhasil disimpan ke akun cloud ${user?.email || ''}.`,
+        title: 'Google Sheet Linked to Account',
+        message: `Web App URL has been saved to cloud account ${user?.email || ''}.`,
         type: 'success',
       });
     } catch (err: any) {
       console.error('Apps Script setup error:', err);
       setStatusMessage({
         type: 'error',
-        text: err?.message || 'Gagal terhubung dengan Apps Script URL. Pastikan pilihan "Who has access" diset ke "Anyone".',
+        text: err?.message || 'Failed to connect to Apps Script URL. Make sure "Who has access" is set to "Anyone".',
       });
     } finally {
       setIsTesting(false);
@@ -97,7 +130,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
       setInputUrl('');
       setStatusMessage({
         type: 'info',
-        text: 'Koneksi Google Apps Script telah diputus dari akun ini.',
+        text: 'Google Apps Script connection has been disconnected from this account.',
       });
     } catch {
       // ignore
@@ -109,12 +142,12 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
       await syncAppsScriptNow();
       setStatusMessage({
         type: 'success',
-        text: 'Data berhasil disinkronkan dari Google Sheet!',
+        text: 'Data successfully synced from Google Sheet!',
       });
     } catch (err: any) {
       setStatusMessage({
         type: 'error',
-        text: err?.message || 'Gagal melakukan sinkronisasi manual.',
+        text: err?.message || 'Failed to perform manual sync.',
       });
     }
   };
@@ -127,21 +160,30 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
       const counts = res.pushedCount;
       setStatusMessage({
         type: 'success',
-        text: `Migrasi Berhasil! ${counts.expenses} Transaksi, ${counts.accounts} Akun, ${counts.investments} Investasi, dan ${counts.budgets} Budget berhasil di-push ke Google Sheet.`,
+        text: `Migration Complete! ${counts.expenses} Transactions, ${counts.accounts} Accounts, ${counts.investments} Investments, and ${counts.budgets} Budgets pushed to Google Sheet.`,
       });
     } catch (err: any) {
       console.error('Push data error:', err);
       setStatusMessage({
         type: 'error',
-        text: err?.message || 'Gagal memindahkan data ke Google Sheet. Pastikan Apps Script Web App sudah dihubungkan.',
+        text: err?.message || 'Failed to push data to Google Sheet. Make sure your Apps Script Web App is connected.',
       });
     } finally {
       setIsPushing(false);
     }
   };
 
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+    <div 
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150"
+    >
       <div className="relative w-full max-w-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-2xl shadow-2xl overflow-hidden text-slate-900 dark:text-zinc-100">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-[#1b212e] bg-slate-50/80 dark:bg-[#080a0f]">
@@ -150,8 +192,8 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Koneksi Google Sheet via Apps Script</h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">Simpan semua input, update & delete langsung ke Google Sheet tanpa OAuth complex</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Google Sheet Connection via Apps Script</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">Save all inputs, updates & deletions directly to Google Sheets without complex OAuth</p>
             </div>
           </div>
           <button
@@ -178,16 +220,16 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
               )}
               <div className="text-xs space-y-1">
                 <p className="font-bold text-sm text-slate-900 dark:text-zinc-100">
-                  {isAppsScriptConnected ? 'Google Apps Script Terhubung & Aktif' : 'Apps Script Belum Dihubungkan'}
+                  {isAppsScriptConnected ? 'Google Apps Script Connected & Active' : 'Apps Script Not Connected'}
                 </p>
                 <p className="text-slate-700 dark:text-zinc-300 font-mono break-all text-[11px] sm:text-xs">
                   {isAppsScriptConnected
                     ? `Web App URL: ${appsScriptUrl.slice(0, 42)}...`
-                    : 'Ikuti 3 langkah mudah di bawah ini untuk menghubungkan Google Sheet Anda dengan Apps Script.'}
+                    : 'Follow the 3 simple steps below to connect your Google Sheet via Apps Script.'}
                 </p>
                 {isAppsScriptConnected && user?.email && (
                   <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold pt-0.5 flex items-center gap-1">
-                    <span>✓ Terikat ke akun: <strong>{user.email}</strong> (otomatis tersinkron antar perangkat)</span>
+                    <span>✓ Linked to account: <strong>{user.email}</strong> (automatically synced across devices)</span>
                   </p>
                 )}
               </div>
@@ -198,7 +240,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
                 onClick={handleDisconnect}
                 className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-800/60 text-xs font-semibold transition-colors cursor-pointer shrink-0"
               >
-                Putus Koneksi
+                Disconnect
               </button>
             )}
           </div>
@@ -221,18 +263,18 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-zinc-100">
                 <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-center font-bold">1</span>
-                <span>Salin Kode Google Apps Script</span>
+                <span>Copy Google Apps Script Code</span>
               </div>
               <button
                 onClick={handleCopyCode}
                 className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-slate-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{isCopied ? 'Tersalin!' : 'Copy Script Code'}</span>
+                <span>{isCopied ? 'Copied!' : 'Copy Script Code'}</span>
               </button>
             </div>
             <p className="text-xs text-slate-600 dark:text-zinc-400">
-              Buka Google Sheet Anda &rarr; Klik menu <b>Extensions</b> &rarr; <b>Apps Script</b> &rarr; Hapus kode lama dan <b>Paste kode ini</b>.
+              Open your Google Sheet &rarr; Click <b>Extensions</b> &rarr; <b>Apps Script</b> &rarr; Delete any existing code and <b>Paste this code</b>.
             </p>
           </div>
 
@@ -240,13 +282,13 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           <div className="space-y-2 p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80 text-xs">
             <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-zinc-100 text-sm mb-1">
               <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
-              <span>Deploy Sebagai Web App</span>
+              <span>Deploy as Web App</span>
             </div>
             <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-zinc-400 pl-1">
-              <li>Klik tombol <b>Deploy &rarr; New deployment</b> di Apps Script.</li>
-              <li>Pilih jenis deployment: <b>Web app</b>.</li>
-              <li>Set <i>Execute as</i>: <b>Me</b>, dan <i>Who has access</i>: <b className="text-emerald-700 dark:text-emerald-400">Anyone</b>.</li>
-              <li>Klik <b>Deploy</b> lalu Salin <b>Web App URL</b>.</li>
+              <li>Click <b>Deploy &rarr; New deployment</b> in Apps Script.</li>
+              <li>Select deployment type: <b>Web app</b>.</li>
+              <li>Set <i>Execute as</i>: <b>Me</b>, and <i>Who has access</i>: <b className="text-emerald-700 dark:text-emerald-400">Anyone</b>.</li>
+              <li>Click <b>Deploy</b> and copy the <b>Web App URL</b>.</li>
             </ol>
           </div>
 
@@ -254,7 +296,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           <div className="space-y-3 p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-zinc-100">
               <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-center font-bold">3</span>
-              <span>Masukkan Web App URL</span>
+              <span>Enter Web App URL</span>
             </div>
 
             <div className="space-y-2">
@@ -269,7 +311,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
               {user?.email?.toLowerCase() === 'davinwijaya16@gmail.com' && (
                 <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium pt-0.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Akun davinwijaya16@gmail.com terhubung ke konfigurasi auto pre-fill Web App URL.</span>
+                  <span>Account davinwijaya16@gmail.com is linked to auto pre-filled Web App URL configuration.</span>
                 </div>
               )}
 
@@ -281,12 +323,12 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
                 {isTesting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Menguji Koneksi Apps Script...</span>
+                    <span>Testing Apps Script Connection...</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Hubungkan & Tes Google Sheet</span>
+                    <span>Connect & Test Google Sheet</span>
                   </>
                 )}
               </button>
@@ -296,11 +338,11 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           {/* Migration / Push Firebase Data to Google Sheet */}
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Push Data Firebase / Lokal ke Google Sheet</span>
-              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-semibold">Ekspor Otomatis</span>
+              <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Push Firebase / Local Data to Google Sheet</span>
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-semibold">Auto Export</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-zinc-400">
-              Pindahkan atau salin semua data transaksi, akun, investasi & budget yang ada di Firebase / penyimpanan lokal ke Google Sheet yang baru dihubungkan.
+              Transfer or copy all existing transactions, accounts, investments & budgets from Firebase / local storage to your newly connected Google Sheet.
             </p>
             <button
               onClick={handlePushFirebaseData}
@@ -310,12 +352,12 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
               {isPushing ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />
-                  <span>Mendorong Data Firebase ke Google Sheet...</span>
+                  <span>Pushing Firebase Data to Google Sheet...</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Push Semua Data Firebase ke Google Sheet</span>
+                  <span>Push All Firebase Data to Google Sheet</span>
                 </>
               )}
             </button>
@@ -324,14 +366,14 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           {/* Manual Sync Trigger */}
           {isAppsScriptConnected && (
             <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
-              <span className="text-xs text-slate-500 dark:text-zinc-400">Koneksi Apps Script Aktif</span>
+              <span className="text-xs text-slate-500 dark:text-zinc-400">Apps Script Connection Active</span>
               <button
                 onClick={handleManualSync}
                 disabled={isAppsScriptSyncing}
                 className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 dark:border-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isAppsScriptSyncing ? 'animate-spin text-emerald-600 dark:text-emerald-400' : ''}`} />
-                <span>Sync Data Sekarang</span>
+                <span>Sync Data Now</span>
               </button>
             </div>
           )}

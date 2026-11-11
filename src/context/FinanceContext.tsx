@@ -42,6 +42,9 @@ import {
   getStoredAppsScriptUrl,
   saveAppsScriptUrl,
   removeAppsScriptUrl,
+  saveServerAppsScriptUrl,
+  fetchServerAppsScriptUrl,
+  isEmailExplicitlyDisconnected,
 } from '../lib/appsScriptService';
 
 interface FinanceContextType {
@@ -222,15 +225,38 @@ interface FinanceContextType {
   budgets: CategoryBudget[];
   saveBudget: (category: string, monthlyLimit: number, month?: string, id?: string) => Promise<void>;
   deleteBudget: (id: string) => Promise<void>;
+  applySmartBudgetsFromLastMonth: (
+    targetMonthStr: string,
+    multiplier?: number
+  ) => Promise<{ updatedCount: number; totalNewLimit: number }>;
   isBudgetModalOpen: boolean;
   setIsBudgetModalOpen: (v: boolean) => void;
   editingBudget: CategoryBudget | null;
   setEditingBudget: (b: CategoryBudget | null) => void;
   getBudgetProgressForMonth: (targetMonthStr?: string) => {
     items: BudgetProgress[];
-    unbudgetedItems: Array<{ category: string; actualSpent: number; transactionCount: number }>;
+    unbudgetedItems: Array<{
+      category: string;
+      actualSpent: number;
+      transactionCount: number;
+      prevMonthSpent: number;
+      suggestedSmartLimit: number;
+    }>;
+    prevMonthCategories: Array<{
+      category: string;
+      prevMonthSpent: number;
+      prevMonthCount: number;
+      currentSpent: number;
+      currentLimit: number;
+      budgetId?: string;
+      suggestedSmartLimit: number;
+    }>;
+    prevMonthStr: string;
     totalBudgeted: number;
     totalSpent: number;
+    totalPrevMonthSpent: number;
+    totalMomDeltaAmount: number;
+    totalMomDeltaPercent: number | null;
     totalRemaining: number;
     overallPercent: number;
     isOverBudget: boolean;
@@ -367,27 +393,37 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [appsScriptUrl, setAppsScriptUrlState] = useState<string>(() => getStoredAppsScriptUrl(user?.email));
   const [isAppsScriptSyncing, setIsAppsScriptSyncing] = useState<boolean>(false);
 
-  const isAppsScriptConnected = Boolean(appsScriptUrl && appsScriptUrl.startsWith('https://script.google.com'));
+  const isAppsScriptConnected = Boolean(
+    appsScriptUrl &&
+    appsScriptUrl.startsWith('https://script.google.com') &&
+    !isEmailExplicitlyDisconnected(user?.email)
+  );
 
-  // Strict Account Isolation: reset appsScriptUrl when user logs out or switches accounts
+  // Strict Account Isolation + Per-Account URL Restoration
   const activeUserIdRef = useRef<string | undefined>(user?.id);
   useEffect(() => {
     if (activeUserIdRef.current !== user?.id) {
       activeUserIdRef.current = user?.id;
-      if (!user) {
+      if (!user || user.email === 'demo@wealthtrack.pro') {
         removeAppsScriptUrl();
         setAppsScriptUrlState('');
+      } else {
+        const storedForEmail = getStoredAppsScriptUrl(user.email);
+        setAppsScriptUrlState(storedForEmail || '');
       }
     }
   }, [user]);
 
   const setAppsScriptUrl = useCallback(async (url: string) => {
-    const saved = saveAppsScriptUrl(url);
+    const saved = saveAppsScriptUrl(url, user?.email);
     setAppsScriptUrlState(saved);
 
-    // Bind URL directly to user's Firebase account in Firestore
-    if (user?.id) {
-      firestoreService.saveUserAppsScriptUrl(user.id, saved).catch((err) => {
+    // Bind URL directly to user's Firebase account in Firestore + server DB
+    if (user?.email && user.email !== 'demo@wealthtrack.pro') {
+      saveServerAppsScriptUrl(user.email, saved).catch(() => {});
+    }
+    if (user?.id && user?.email !== 'demo@wealthtrack.pro') {
+      firestoreService.saveUserAppsScriptUrl(user.id, saved, user.email).catch((err) => {
         console.warn('Failed to bind Apps Script URL to Firestore:', err);
       });
       if (settings) {
@@ -409,24 +445,59 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const nextStats = computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRate);
       setStats(nextStats);
     }
-  }, [user?.id, settings, usdIdrRate]);
+  }, [user?.id, user?.email, settings, usdIdrRate]);
 
-  // Automatically activate pre-filled Apps Script URL when user logs in or mounts with fresh install
+  // Automatically restore or backfill Apps Script URL when user logs in
   useEffect(() => {
-    if (!appsScriptUrl && user?.email) {
-      const prefilled = getStoredAppsScriptUrl(user.email);
-      if (prefilled && prefilled.startsWith('https://script.google.com')) {
-        setAppsScriptUrl(prefilled).catch((err) => {
-          console.warn('Auto-activate pre-filled Apps Script URL failed:', err);
-        });
-      }
+    if (!user?.id || !user?.email || user.email === 'demo@wealthtrack.pro') return;
+
+    if (isEmailExplicitlyDisconnected(user.email)) {
+      return;
     }
-  }, [user?.email, appsScriptUrl, setAppsScriptUrl]);
+
+    const localForUser = getStoredAppsScriptUrl(user.email);
+    if (localForUser && localForUser.startsWith('https://script.google.com')) {
+      if (appsScriptUrl !== localForUser) {
+        setAppsScriptUrlState(localForUser);
+      }
+      // Ensure both Server DB and Firestore always have a backup copy bound to this user
+      saveServerAppsScriptUrl(user.email, localForUser).catch(() => {});
+      if (isFirebase) {
+        firestoreService.saveUserAppsScriptUrl(user.id, localForUser, user.email).catch(() => {});
+      }
+      return;
+    }
+
+    // If not in localStorage, check Firestore (users/{uid}, settings/{uid}, or users by email) and Server DB
+    if (!appsScriptUrl) {
+      let cancelled = false;
+      (async () => {
+        let recoveredUrl = '';
+        if (isFirebase) {
+          recoveredUrl = await firestoreService.getUserAppsScriptUrl(user.id, user.email);
+        }
+        if (!recoveredUrl) {
+          recoveredUrl = await fetchServerAppsScriptUrl(user.email);
+        }
+        if (cancelled || !recoveredUrl) return;
+        const saved = saveAppsScriptUrl(recoveredUrl, user.email);
+        setAppsScriptUrlState(saved);
+        saveServerAppsScriptUrl(user.email, saved).catch(() => {});
+        if (isFirebase) {
+          firestoreService.saveUserAppsScriptUrl(user.id, saved, user.email).catch(() => {});
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [user?.id, user?.email, isFirebase, appsScriptUrl]);
 
   const syncAppsScriptNow = useCallback(async () => {
     if (!appsScriptUrl || isAppsScriptSyncing) return;
     setIsAppsScriptSyncing(true);
     try {
+      await appsScriptService.flushQueue();
       const fresh = await appsScriptService.readAllData(appsScriptUrl);
       setAccounts(fresh.accounts);
       setTransactions(fresh.transactions);
@@ -442,7 +513,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [appsScriptUrl, isAppsScriptSyncing, usdIdrRate]);
 
-  // Helper to sync record operations directly to Google Sheets / Apps Script or queue offline
+  // Helper to sync record operations via 0ms background queue to Google Apps Script / Sheets
   const syncToSheets = useCallback(
     async (
       tabName: string,
@@ -450,20 +521,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       recordId: string,
       rowValues?: any[]
     ) => {
-      // 1. Apps Script Direct Web App Request
+      // 1. Zero-latency persistent background queue for Google Apps Script
       if (appsScriptUrl) {
-        try {
-          if (action === 'CREATE' && rowValues) {
-            await appsScriptService.createRecord(appsScriptUrl, tabName, rowValues);
-          } else if (action === 'UPDATE' && rowValues) {
-            await appsScriptService.updateRecord(appsScriptUrl, tabName, recordId, rowValues);
-          } else if (action === 'DELETE') {
-            await appsScriptService.deleteRecord(appsScriptUrl, tabName, recordId);
-          }
-          return;
-        } catch (err) {
-          console.warn(`Apps Script direct write error for ${action} on ${tabName}:`, err);
-        }
+        appsScriptService.enqueueSync(appsScriptUrl, tabName, action, recordId, rowValues);
+        return;
       }
 
       // 2. Fallback to Google Sheets REST API
@@ -627,14 +688,25 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const disconnectAppsScript = useCallback(async () => {
-    removeAppsScriptUrl();
+    removeAppsScriptUrl(user?.email, true);
     setAppsScriptUrlState('');
-    if (user?.id) {
-      await firestoreService.saveUserAppsScriptUrl(user.id, '');
-      if (settings) {
-        const nextSettings: UserSettings = { ...settings, appsScriptUrl: '' };
-        setSettings(nextSettings);
-        await firestoreService.saveSettings(nextSettings).catch(() => {});
+    if (user?.email && user.email !== 'demo@wealthtrack.pro') {
+      saveServerAppsScriptUrl(user.email, '').catch(() => {});
+    }
+    if (settings) {
+      const nextSettings: UserSettings = { ...settings, appsScriptUrl: '' };
+      setSettings(nextSettings);
+      if (isFirebase) {
+        firestoreService.saveSettings(nextSettings).catch(() => {});
+      }
+    }
+    if (user?.id && user?.email !== 'demo@wealthtrack.pro') {
+      if (isFirebase) {
+        try {
+          await firestoreService.saveUserAppsScriptUrl(user.id, '', user.email);
+        } catch (err) {
+          console.warn('saveUserAppsScriptUrl disconnect error:', err);
+        }
       }
     }
     showNotification({
@@ -642,7 +714,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       message: 'Koneksi Apps Script telah diputus dari akun Anda.',
       type: 'info',
     });
-  }, [user?.id, settings, showNotification]);
+  }, [user?.id, user?.email, settings, isFirebase, showNotification]);
 
   const pushAllDataToGoogleSheet = useCallback(async () => {
     if (!appsScriptUrl && !spreadsheetId) {
@@ -982,9 +1054,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Account-bound Apps Script URL restoration and auto-sync
       const boundUrl = data.settings?.appsScriptUrl?.trim() || '';
-      if (boundUrl && boundUrl.startsWith('https://script.google.com')) {
+      if (
+        boundUrl &&
+        boundUrl.startsWith('https://script.google.com') &&
+        !isEmailExplicitlyDisconnected(user?.email)
+      ) {
         if (boundUrl !== appsScriptUrl) {
-          saveAppsScriptUrl(boundUrl);
+          saveAppsScriptUrl(boundUrl, user?.email);
           setAppsScriptUrlState(boundUrl);
           // Auto-connect and sync data immediately on login
           appsScriptService
@@ -1003,10 +1079,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
               console.warn('Initial auto-sync with bound Apps Script URL error:', err);
             });
         }
-      } else if (!boundUrl && appsScriptUrl && user?.id) {
-        // Current user in Firestore has no bound URL -> reset to guarantee account isolation
-        removeAppsScriptUrl();
-        setAppsScriptUrlState('');
       }
 
       const rate = data.settings?.usdIdrRate || usdIdrRateRef.current || 15850;
@@ -2310,41 +2382,65 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       const month = targetMonthStr || defaultMonth;
 
-      // Group actual expenses for this month by category (excluding credit card usage)
-      const monthlyExpenses = transactions.filter((tx) => {
-        if (tx.type !== 'expense' || !tx.date || !tx.date.startsWith(month)) return false;
-        const acc = accounts.find((a) => a.id === tx.accountId);
-        if (acc && (acc.type === 'credit_card' || acc.type === 'paylater')) return false;
-        return true;
-      });
+      // Compute previous month string YYYY-MM
+      const [yNum, mNum] = month.split('-').map(Number);
+      const prevDate = new Date(yNum || now.getFullYear(), (mNum || 1) - 2, 1);
+      const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
 
+      const roundSmartLimit = (rawAmount: number): number => {
+        if (rawAmount <= 0) return 500000;
+        return Math.max(100000, Math.ceil(rawAmount / 50000) * 50000);
+      };
+
+      // Group actual expenses for target month and previous month by category (excluding credit card / paylater usage)
       const spentByCat: Record<string, { total: number; count: number }> = {};
-      monthlyExpenses.forEach((tx) => {
+      const prevSpentByCat: Record<string, { total: number; count: number }> = {};
+      let totalPrevMonthSpent = 0;
+
+      transactions.forEach((tx) => {
+        if (tx.type !== 'expense' || !tx.date) return;
+        const acc = accounts.find((a) => a.id === tx.accountId);
+        if (acc && (acc.type === 'credit_card' || acc.type === 'paylater')) return;
+
         const cat = tx.category || 'Other Expense';
-        if (!spentByCat[cat]) spentByCat[cat] = { total: 0, count: 0 };
-        spentByCat[cat].total += tx.amount;
-        spentByCat[cat].count += 1;
+        if (tx.date.startsWith(month)) {
+          if (!spentByCat[cat]) spentByCat[cat] = { total: 0, count: 0 };
+          spentByCat[cat].total += tx.amount;
+          spentByCat[cat].count += 1;
+        } else if (tx.date.startsWith(prevMonthStr)) {
+          if (!prevSpentByCat[cat]) prevSpentByCat[cat] = { total: 0, count: 0 };
+          prevSpentByCat[cat].total += tx.amount;
+          prevSpentByCat[cat].count += 1;
+          totalPrevMonthSpent += tx.amount;
+        }
       });
 
       // Filter budgets that apply to this month
       const activeBudgets: CategoryBudget[] = [];
       const categorySeen = new Set<string>();
+      const budgetByCatLower: Record<string, CategoryBudget> = {};
 
       // Month-specific budgets first
       budgets
         .filter((b) => b.month === month)
         .forEach((b) => {
-          activeBudgets.push(b);
-          categorySeen.add(b.category.toLowerCase());
+          const key = b.category.toLowerCase();
+          if (!categorySeen.has(key)) {
+            activeBudgets.push(b);
+            categorySeen.add(key);
+            budgetByCatLower[key] = b;
+          }
         });
 
       // Generic recurring budgets if not overridden for this month
       budgets
         .filter((b) => !b.month)
         .forEach((b) => {
-          if (!categorySeen.has(b.category.toLowerCase())) {
+          const key = b.category.toLowerCase();
+          if (!categorySeen.has(key)) {
             activeBudgets.push(b);
-            categorySeen.add(b.category.toLowerCase());
+            categorySeen.add(key);
+            budgetByCatLower[key] = b;
           }
         });
 
@@ -2354,7 +2450,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const items: BudgetProgress[] = activeBudgets.map((b) => {
         const catData = spentByCat[b.category] || { total: 0, count: 0 };
+        const prevData = prevSpentByCat[b.category] || { total: 0, count: 0 };
         const spent = catData.total;
+        const prevSpent = prevData.total;
         const limit = b.monthlyLimit;
         const remaining = limit - spent;
         const percentUsed = limit > 0 ? (spent / limit) * 100 : 0;
@@ -2368,6 +2466,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         totalBudgeted += limit;
         totalSpent += spent;
 
+        const momDeltaAmount = spent - prevSpent;
+        const momDeltaPercent = prevSpent > 0 ? ((spent - prevSpent) / prevSpent) * 100 : null;
+        const suggestedSmartLimit = roundSmartLimit(prevSpent > 0 ? prevSpent : spent * 1.15);
+
         return {
           category: b.category,
           budgetId: b.id,
@@ -2377,21 +2479,63 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           percentUsed,
           status,
           transactionCount: catData.count,
+          prevMonthSpent: prevSpent,
+          prevMonthTransactionCount: prevData.count,
+          momDeltaAmount,
+          momDeltaPercent,
+          suggestedSmartLimit,
         };
       });
 
-      // Any categories with expenses that do not have a budget limit configured
-      const unbudgetedItems: Array<{ category: string; actualSpent: number; transactionCount: number }> = [];
+      // Any categories with expenses in current month that do not have a budget limit configured
+      const unbudgetedItems: Array<{
+        category: string;
+        actualSpent: number;
+        transactionCount: number;
+        prevMonthSpent: number;
+        suggestedSmartLimit: number;
+      }> = [];
+
       Object.entries(spentByCat).forEach(([cat, data]) => {
         if (!categorySeen.has(cat.toLowerCase())) {
+          const prevData = prevSpentByCat[cat] || { total: 0, count: 0 };
+          const suggestedSmartLimit = roundSmartLimit(
+            prevData.total > 0 ? prevData.total : data.total * 1.15
+          );
           unbudgetedItems.push({
             category: cat,
             actualSpent: data.total,
             transactionCount: data.count,
+            prevMonthSpent: prevData.total,
+            suggestedSmartLimit,
           });
           totalSpent += data.total;
         }
       });
+
+      // Build list of all categories from last month's expenses for Smart Monthly Budget comparison
+      const allComparisonCats = new Set<string>([
+        ...Object.keys(prevSpentByCat),
+        ...Object.keys(spentByCat),
+      ]);
+      const prevMonthCategories = Array.from(allComparisonCats)
+        .map((cat) => {
+          const prev = prevSpentByCat[cat] || { total: 0, count: 0 };
+          const curr = spentByCat[cat] || { total: 0, count: 0 };
+          const existingBudget = budgetByCatLower[cat.toLowerCase()];
+          const baseForSmart = prev.total > 0 ? prev.total : curr.total;
+          return {
+            category: cat,
+            prevMonthSpent: prev.total,
+            prevMonthCount: prev.count,
+            currentSpent: curr.total,
+            currentLimit: existingBudget?.monthlyLimit || 0,
+            budgetId: existingBudget?.id,
+            suggestedSmartLimit: roundSmartLimit(baseForSmart),
+          };
+        })
+        .filter((c) => c.prevMonthSpent > 0 || c.currentSpent > 0)
+        .sort((a, b) => b.prevMonthSpent - a.prevMonthSpent || b.currentSpent - a.currentSpent);
 
       // Sort items: danger first, then warning, then highest percentage
       items.sort((a, b) => {
@@ -2405,19 +2549,62 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const totalRemaining = Math.max(0, totalBudgeted - totalSpent);
       const overallPercent = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
       const isOverBudget = totalBudgeted > 0 && totalSpent > totalBudgeted;
+      const totalMomDeltaAmount = totalSpent - totalPrevMonthSpent;
+      const totalMomDeltaPercent =
+        totalPrevMonthSpent > 0
+          ? ((totalSpent - totalPrevMonthSpent) / totalPrevMonthSpent) * 100
+          : null;
 
       return {
         items,
         unbudgetedItems,
+        prevMonthCategories,
+        prevMonthStr,
         totalBudgeted,
         totalSpent,
+        totalPrevMonthSpent,
+        totalMomDeltaAmount,
+        totalMomDeltaPercent,
         totalRemaining,
         overallPercent,
         isOverBudget,
         overBudgetCount,
       };
     },
-    [budgets, transactions]
+    [budgets, transactions, accounts]
+  );
+
+  const applySmartBudgetsFromLastMonth = useCallback(
+    async (
+      targetMonthStr: string,
+      multiplier: number = 1.0
+    ): Promise<{ updatedCount: number; totalNewLimit: number }> => {
+      const progress = getBudgetProgressForMonth(targetMonthStr);
+      const candidates = progress.prevMonthCategories;
+      if (candidates.length === 0) {
+        return { updatedCount: 0, totalNewLimit: 0 };
+      }
+
+      let updatedCount = 0;
+      let totalNewLimit = 0;
+
+      for (const item of candidates) {
+        const baseAmount = item.prevMonthSpent > 0 ? item.prevMonthSpent : item.currentSpent;
+        if (baseAmount <= 0) continue;
+
+        const smartLimit = Math.max(100000, Math.round((baseAmount * multiplier) / 50000) * 50000);
+        // Find if there is already a month-specific budget for targetMonthStr
+        const existingForMonth = budgets.find(
+          (b) => b.category.toLowerCase() === item.category.toLowerCase() && b.month === targetMonthStr
+        );
+        await saveBudget(item.category, smartLimit, targetMonthStr, existingForMonth?.id);
+        updatedCount += 1;
+        totalNewLimit += smartLimit;
+      }
+
+      return { updatedCount, totalNewLimit };
+    },
+    [getBudgetProgressForMonth, budgets, saveBudget]
   );
 
   // Fetch latest rate from Google Finance / market feeds
@@ -2742,6 +2929,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         budgets,
         saveBudget,
         deleteBudget,
+        applySmartBudgetsFromLastMonth,
         isBudgetModalOpen,
         setIsBudgetModalOpen,
         editingBudget,

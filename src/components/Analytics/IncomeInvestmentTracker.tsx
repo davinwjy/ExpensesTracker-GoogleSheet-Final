@@ -212,15 +212,18 @@ export const IncomeInvestmentTracker: React.FC = () => {
         };
       }
 
-      // Check Income
+      // Check Income (Exclude credit card/paylater debt refunds; only count liquid bank/cash/ewallet income)
       if (tx.type === 'income') {
-        const amt = tx.amount || 0;
-        if (y === selectedYear && m >= 0 && m < 12) {
-          months[m].income += amt;
-          months[m].incomeCount += 1;
+        const acc = accounts.find((a) => a.id === tx.accountId);
+        if (!acc || (acc.type !== 'credit_card' && acc.type !== 'paylater')) {
+          const amt = tx.amount || 0;
+          if (y === selectedYear && m >= 0 && m < 12) {
+            months[m].income += amt;
+            months[m].incomeCount += 1;
+          }
+          yearMap[y].income += amt;
+          yearMap[y].incomeCount += 1;
         }
-        yearMap[y].income += amt;
-        yearMap[y].incomeCount += 1;
       }
 
       // Check Expenses (Exclude credit card usage; only count bank/cash expenses & CC bill payments)
@@ -617,61 +620,61 @@ export const IncomeInvestmentTracker: React.FC = () => {
         </div>
 
         {/* 4-KPI SUMMARY METRICS CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 min-w-0">
           {/* Total Income */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium">Total Income {selectedYear}</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Total Income {selectedYear}</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
             </div>
-            <p className={`text-sm sm:text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400 truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalIncome, 'IDR', isPrivacyMode)}
             </p>
-            <p className={`text-[11px] text-slate-400 dark:text-slate-500 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               Avg: {formatMasked(ytdStats.totalIncome / 12, 'IDR', isPrivacyMode)}/mo
             </p>
           </div>
 
           {/* Total Expenses */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium">Total Expenses {selectedYear}</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Total Expenses {selectedYear}</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
             </div>
-            <p className={`text-sm sm:text-lg font-bold font-mono text-rose-600 dark:text-rose-400 truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalExpense, 'IDR', isPrivacyMode)}
             </p>
-            <p className={`text-[11px] text-slate-400 dark:text-slate-500 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               Avg: {formatMasked(ytdStats.totalExpense / 12, 'IDR', isPrivacyMode)}/mo
             </p>
           </div>
 
           {/* Total Invested */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium">Capital Invested {selectedYear}</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Capital Invested {selectedYear}</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0" />
             </div>
-            <p className={`text-sm sm:text-lg font-bold font-mono text-indigo-600 dark:text-indigo-400 truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-indigo-600 dark:text-indigo-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalInvestment, 'IDR', isPrivacyMode)}
             </p>
-            <p className={`text-[11px] text-slate-400 dark:text-slate-500 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               Avg: {formatMasked(ytdStats.totalInvestment / 12, 'IDR', isPrivacyMode)}/mo
             </p>
           </div>
 
           {/* Total Account Amount / Liquid Cash */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium">Total Account Amount</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Total Account Amount</span>
+              <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0" />
             </div>
-            <p className={`text-sm sm:text-lg font-bold font-mono text-sky-600 dark:text-sky-400 truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-sky-600 dark:text-sky-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(currentTotalAccountBalance, 'IDR', isPrivacyMode)}
             </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-              <Wallet className="w-3 h-3 text-sky-500 inline" />
-              <span>Bank and Cash Accounts</span>
+            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+              <Wallet className="w-3 h-3 text-sky-500 inline shrink-0" />
+              <span className="truncate">Bank and Cash Accounts</span>
             </p>
           </div>
         </div>
@@ -1267,41 +1270,41 @@ export const IncomeInvestmentTracker: React.FC = () => {
             </div>
 
             {/* HOVER INSPECTION POPUP CARD (Placed below chart plot area so it never covers the lines) */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 text-white border border-slate-700/80 shadow-xl space-y-2 text-xs font-mono backdrop-blur-md">
-              <div className="flex items-center justify-between font-bold border-b border-slate-800 pb-1.5 font-sans">
-                <span className="text-xs text-white flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{activeMonthPoint.fullMonthName} {selectedYear} (Inspected Point)</span>
+            <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between font-bold border-b border-slate-200 dark:border-[#1d2332] pb-1.5 font-sans">
+                <span className="text-xs text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>{activeMonthPoint.fullMonthName} {selectedYear} · Inspected Month</span>
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
-                <div className="flex flex-col">
-                  <span className="text-emerald-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                    Income:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    Income
                   </span>
-                  <strong className="text-emerald-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeMonthPoint.income, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.income, 'IDR', isPrivacyMode)}</strong>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-rose-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
-                    Expenses:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    Expenses
                   </span>
-                  <strong className="text-rose-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeMonthPoint.expense, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.expense, 'IDR', isPrivacyMode)}</strong>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-indigo-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                    Invested:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                    Invested
                   </span>
-                  <strong className="text-indigo-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeMonthPoint.investment, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.investment, 'IDR', isPrivacyMode)}</strong>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sky-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
-                    Account:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sky-600 dark:text-sky-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                    Account Balance
                   </span>
-                  <strong className="text-sky-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeMonthPoint.accountBalance, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-sky-700 dark:text-sky-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.accountBalance, 'IDR', isPrivacyMode)}</strong>
                 </div>
               </div>
             </div>
@@ -1741,41 +1744,41 @@ export const IncomeInvestmentTracker: React.FC = () => {
             </div>
 
             {/* HOVER INSPECTION POPUP CARD (Placed below chart plot area so it never covers the lines) */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 text-white border border-slate-700/80 shadow-xl space-y-2 text-xs font-mono backdrop-blur-md">
-              <div className="flex items-center justify-between font-bold border-b border-slate-800 pb-1.5 font-sans">
-                <span className="text-xs text-white flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Full Year {activeYearPoint.year} (Inspected Point)</span>
+            <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
+              <div className="flex items-center justify-between font-bold border-b border-slate-200 dark:border-[#1d2332] pb-1.5 font-sans">
+                <span className="text-xs text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Full Year {activeYearPoint.year} · Inspected Year</span>
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
-                <div className="flex flex-col">
-                  <span className="text-emerald-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                    Income:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    Income
                   </span>
-                  <strong className="text-emerald-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeYearPoint.income, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.income, 'IDR', isPrivacyMode)}</strong>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-rose-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
-                    Expenses:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    Expenses
                   </span>
-                  <strong className="text-rose-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeYearPoint.expense, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.expense, 'IDR', isPrivacyMode)}</strong>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-indigo-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
-                    Invested:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                    Invested
                   </span>
-                  <strong className="text-indigo-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeYearPoint.investment, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.investment, 'IDR', isPrivacyMode)}</strong>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sky-400 flex items-center gap-1 text-[10px] font-sans">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
-                    Account:
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sky-600 dark:text-sky-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                    Account Balance
                   </span>
-                  <strong className="text-sky-300 font-bold text-xs sm:text-sm truncate">{formatMasked(activeYearPoint.accountBalance, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-sky-700 dark:text-sky-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.accountBalance, 'IDR', isPrivacyMode)}</strong>
                 </div>
               </div>
             </div>

@@ -133,6 +133,7 @@ export interface DatabaseSchema {
   holdingTypes?: HoldingType[];
   budgets?: CategoryBudget[];
   systemSettings?: SystemSettings;
+  appsScriptUrlsByEmail?: Record<string, string>;
 }
 
 // In-memory cache synced with JSON file
@@ -144,6 +145,7 @@ let dbData: DatabaseSchema = {
   settings: [],
   holdingTypes: [...DEFAULT_HOLDING_TYPES],
   budgets: [],
+  appsScriptUrlsByEmail: {},
   systemSettings: {
     announcement: {
       id: 'ann_default',
@@ -154,7 +156,7 @@ let dbData: DatabaseSchema = {
     },
     maintenanceMode: false,
     allowNewRegistrations: true,
-    adminEmails: ['davinwijaya16@gmail.com', 'davinwijaya1996@gmail.com', 'davin@wealthtrack.app'],
+    adminEmails: ['davinwijaya16@gmail.com'],
     defaultUsdIdrRate: 15850,
   },
 };
@@ -180,14 +182,27 @@ export function initDB(): void {
           },
           maintenanceMode: false,
           allowNewRegistrations: true,
-          adminEmails: ['davinwijaya16@gmail.com', 'davinwijaya1996@gmail.com', 'davin@wealthtrack.app'],
+          adminEmails: ['davinwijaya16@gmail.com'],
           defaultUsdIdrRate: 15850,
         };
         persistDB();
       } else {
-        // Ensure davinwijaya16@gmail.com is in adminEmails
-        if (!dbData.systemSettings.adminEmails.includes('davinwijaya16@gmail.com')) {
+        // Ensure davinwijaya16@gmail.com is in adminEmails and davinwijaya1996@gmail.com is standard user unless promoted
+        if (!dbData.systemSettings.adminEmails.map(e => e.toLowerCase()).includes('davinwijaya16@gmail.com')) {
           dbData.systemSettings.adminEmails.push('davinwijaya16@gmail.com');
+          persistDB();
+        }
+        // Remove davinwijaya1996@gmail.com from default adminEmails if present
+        dbData.systemSettings.adminEmails = dbData.systemSettings.adminEmails.filter(
+          e => e.toLowerCase() !== 'davinwijaya1996@gmail.com'
+        );
+      }
+
+      // Ensure davinwijaya1996@gmail.com user role is user unless explicitly promoted
+      if (dbData.users) {
+        const u1996 = dbData.users.find(u => u.email.toLowerCase() === 'davinwijaya1996@gmail.com');
+        if (u1996 && !dbData.systemSettings.adminEmails.map(e => e.toLowerCase()).includes('davinwijaya1996@gmail.com')) {
+          u1996.role = 'user';
           persistDB();
         }
       }

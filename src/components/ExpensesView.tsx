@@ -231,7 +231,12 @@ export const ExpensesView: React.FC = () => {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalFilteredIncome = filteredTransactions
-    .filter((t) => t.type === 'income')
+    .filter((t) => {
+      if (t.type !== 'income') return false;
+      const acc = accounts.find((a) => a.id === t.accountId);
+      if (acc && (acc.type === 'credit_card' || acc.type === 'paylater')) return false;
+      return true;
+    })
     .reduce((sum, t) => sum + t.amount, 0);
 
   const netCashFlow = totalFilteredIncome - totalFilteredExpense;

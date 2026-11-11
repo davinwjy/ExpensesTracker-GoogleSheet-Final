@@ -1,63 +1,89 @@
-# Mobile Responsive Layout Refactoring Plan (Dashboard, Expenses, Accounts)
+# Refund Kartu Kredit & PayLater via Menu Add Income
 
-## Objective
-Refactor the primary container layouts and card structures across **Dashboard**, **Expenses (Transactions)**, and **Accounts** using responsive CSS Grid and Flexbox patterns (`min-w-0`, `flex-wrap`, and mobile-first breakpoints) so cards and metrics wrap, shrink, or stack cleanly on mobile viewports without horizontal overflow or text collision.
+Rencana ini mengimplementasikan **Metode 1 (Add Income ke Kartu Kredit / PayLater)** untuk mencatat refund tagihan, dengan aturan ketat bahwa pada mode **INCOME (+)**, pilihan akun **Kartu Kredit** atau **PayLater** yang limitnya **tidak terpakai** (`Used Balance = Rp 0`) otomatis disembunyikan dari daftar akun.
 
----
+## User Review & Critical Decisions
 
-## Identified Mobile Layout Issues
-1. **Viewport & Main Container (`src/App.tsx`)**:
-   - The outer shell and `<main>` container lack `overflow-x-hidden` and strict `min-w-0` constraints, allowing wide child tables or long unbreakable currency strings to trigger horizontal page scrolling on mobile devices.
-2. **Dashboard (`src/components/DashboardView.tsx`)**:
-   - **Net Worth Quick Actions**: The 4 action buttons (`Add Expense`, `Add Income`, `Invest`, `Transfer`) wrap unevenly on narrow viewports instead of forming a balanced 2×2 mobile grid.
-   - **Monthly Summary Cards**: `sm:grid-cols-3` squeezes 3 cards with large IDR currency values on small tablets/large phones; cards also lack `min-w-0` shrinkage guards.
-   - **Budget Category Cards**: The bottom spent/limit row (`flex items-center justify-between`) can collide when IDR numbers are large, and the category title uses a hardcoded dark-mode color (`text-zinc-200`) instead of adaptive light/dark classes.
-   - **Accounts & Wallets / Recent Transactions Workspace**:
-     - Header rows with multiple action buttons (`+ Add Account`, `Manage`) don't wrap on narrow screens.
-     - Credit card & PayLater rows inside the Dashboard Accounts list place `Remaining Limit (Used: Rp ...)` side-by-side with the account name, causing text collision on mobile screens.
-3. **Expenses / Transactions (`src/components/ExpensesView.tsx`)**:
-   - **Transactions Table**: Only renders a 7-column desktop `<table>`, forcing cramped horizontal scrolling on mobile screens instead of stacking into readable mobile transaction cards.
-   - **Filter & Control Bar**: Period preset pills (`ALL TIME`, `TODAY`, `THIS MONTH`, `THIS YEAR`) and filtered summary totals (`EXPENSES`, `INFLOWS`, `NET CASH FLOW`) need responsive wrapping/stacking on small screens.
-4. **Accounts (`src/components/AccountsView.tsx`)**:
-   - **Header Action Bar**: The 3 action buttons (`Fund Investment`, `Transfer`, `Add Account`) need a structured mobile layout (`grid-cols-2 sm:flex`) so they don't clip or overflow.
-   - **Overview Stat Cards**: `sm:grid-cols-3` cramps large IDR balances on intermediate screens; changing to `grid-cols-1 md:grid-cols-3` with `min-w-0` prevents overflow.
-   - **Credit Card & PayLater Cards**: Internal `USED CREDIT` / `TOTAL LIMIT` sub-grids and `LIMIT` vs `% UTILIZED` rows lack `min-w-0` and `flex-wrap`, causing large IDR numbers to overflow their container on narrow mobile viewports.
+> [!IMPORTANT]
+> Seluruh spesifikasi telah disesuaikan dengan permintaan Anda. Silakan klik **Proceed** untuk menerapkan perubahan ini ke dalam aplikasi.
+
+- **Confirmed Decision 1 — Metode 1 (Add Income untuk Refund Kartu Kredit)**: Pencatatan refund kartu kredit dilakukan melalui menu **Add Income (+)** ke akun Kartu Kredit yang bersangkutan, sehingga riwayat transaksi awal (`Rp 35.520`) tetap utuh dan refund tercatat sebagai transaksi pengurang tagihan tersendiri.
+- **Confirmed Decision 2 — Sembunyikan Kartu Kredit / PayLater yang Limitnya Tidak Terpakai**: Saat berada di tab **INCOME (+)**, dropdown pilihan akun hanya menampilkan rekening **Bank / Cash / E-Wallet** serta akun **Credit Card / PayLater yang memiliki tagihan berjalan (`balance > 0`)**. Kartu Kredit atau PayLater yang limitnya utuh / tidak terpakai (`balance <= 0`) tidak akan ditampilkan.
+- **Confirmed Decision 3 — Validasi Batas Refund & Akuntansi Bersih**:
+  - Jika pengguna memilih Kartu Kredit/PayLater yang sedang terpakai pada mode **INCOME (+)**, kategori otomatis diarahkan ke **Cashback & Refunds**.
+  - Nominal refund yang dimasukkan pada Kartu Kredit/PayLater dibatasi agar tidak melebihi jumlah limit yang sedang terpakai (*Used Debt*).
+  - Transaksi *Income* pada Kartu Kredit/PayLater otomatis mengurangi saldo tagihan kartu kredit tanpa menggelembungkan statistik *Monthly Cash Income* (pemasukan kas bulanan) di Dashboard.
 
 ---
 
-## Proposed Changes
+## 1. Overview & Core Concept
 
-### 1. Global Shell Container (`src/App.tsx`)
-- Add `overflow-x-hidden` to the root application wrapper and `min-w-0 overflow-x-hidden` to `<main>` so all child views remain strictly bounded within the mobile viewport width.
+- **What It Does**: Memungkinkan pengguna mencatat *refund* atau *cashback* langsung ke akun Kartu Kredit / PayLater yang sedang memiliki tagihan terpakai melalui menu **Add Income (+)**, sembari menyembunyikan kartu kredit/PayLater yang tidak memiliki tagihan (`Used = 0`) agar daftar akun tetap bersih dan bebas dari salah pilih.
+- **Target Audience / Persona**: Pengguna yang menerima *partial refund* atau *full refund* atas transaksi kartu kredit/PayLater dan ingin memulihkan limit kartu kredit secara akurat.
+- **Key Value**: Mencegah kesalahan input (tidak bisa memasukkan *income*/refund ke kartu kredit yang tidak punya tagihan), mengotomatiskan pemilihan kategori *Cashback & Refunds*, dan menjaga akurasi *Net Worth* serta sisa limit kredit.
 
-### 2. Dashboard Layout Refactor (`src/components/DashboardView.tsx`)
-- **Privacy Shield Banner**: Switch to `flex flex-col sm:flex-row sm:items-center justify-between gap-2` so the reveal button stacks cleanly on mobile.
-- **Net Worth Card**:
-  - Add `min-w-0` to the flex children and format the 4 quick-action buttons as a `grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full lg:w-auto` for equal-width touch targets on mobile.
-- **Monthly Summary Metrics**:
-  - Upgrade the 3-card grid to `grid grid-cols-1 md:grid-cols-3 gap-3` with `min-w-0` and `break-words` on currency values.
-- **Budget Tracker & Category Cards**:
-  - Add `min-w-0` to each category card, fix light-mode text contrast on category names (`text-slate-800 dark:text-zinc-200`), and add `flex-wrap gap-1` to the spent/limit footer row.
-- **Accounts & Recent Transactions Dual Grid**:
-  - Add `min-w-0` to both workspace panels and `flex-wrap gap-2` to card headers.
-  - Refactor Account list rows to `flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3` so credit card "Remaining Limit (Used: ...)" stacks cleanly below the account title on mobile instead of colliding horizontally.
-  - Refactor Recent Transaction rows to stack or wrap metadata gracefully with `min-w-0` and `shrink-0` on the right-hand amount column.
+---
 
-### 3. Expenses / Transactions Layout Refactor (`src/components/ExpensesView.tsx`)
-- **Header & Filter Controls**:
-  - Make the top action buttons (`Add Expense`, `Add Income`) full-width 2-column grid buttons on mobile (`grid grid-cols-2 sm:flex w-full sm:w-auto gap-2`).
-  - Allow the Period preset buttons (`ALL TIME`, `TODAY`, `THIS MONTH`, `THIS YEAR`) to wrap cleanly (`flex flex-wrap items-center gap-1.5`).
-  - Stack the Filtered Summary metrics (`EXPENSES`, `INFLOWS`, `NET CASH FLOW`) in a responsive grid on mobile (`grid grid-cols-1 sm:flex sm:flex-wrap gap-2 sm:gap-4`).
-- **Responsive Mobile Card Stack + Desktop Table**:
-  - Add a dedicated **Mobile Card Stack (`md:hidden divide-y`)** for viewports `< 768px`, rendering each transaction as a clean 2-row card (Top row: Category/Description, Type badge, and formatted Amount; Bottom row: Date, Account name, Notes preview, and Edit/Delete actions).
-  - Keep the high-density 7-column `<table>` for tablet and desktop viewports (`hidden md:table`).
+## 2. User Experience & Visual Design
 
-### 4. Accounts Layout Refactor (`src/components/AccountsView.tsx`)
-- **Header Action Buttons**:
-  - Refactor the 3 header buttons (`Fund Investment`, `Transfer`, `Add Account`) into a responsive `grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto` (with `Add Account` spanning 2 columns on mobile `col-span-2 sm:col-span-1`) so buttons never overflow horizontally.
-- **Overview Metric Cards**:
-  - Change the 3 summary cards (`Total Liquid Cash`, `Credit Card Debt`, `Paylater Debt`) from `sm:grid-cols-3` to `grid-cols-1 md:grid-cols-3 gap-3` with `min-w-0` on every card.
-- **Credit Card, PayLater & Bank Card Grids**:
-  - Add `min-w-0` to all card containers and title wrappers (`min-w-0 flex-1`), with `flex-wrap` on badge rows.
-  - Update the `USED CREDIT` / `TOTAL LIMIT` inner grid inside Credit Card and PayLater cards to `grid grid-cols-1 sm:grid-cols-2 gap-2` with `min-w-0` and `break-words` so large IDR figures never overflow on narrow screens.
-  - Add `flex-wrap gap-1` to the utilization progress bar label rows (`LIMIT` vs `% UTILIZED` and `Billing` vs `Due`).
+- **Key User Flows**:
+  1. Pengguna membuka modal **Record Cash Outflow / Inflow**, lalu beralih ke tab **INCOME (+)**.
+  2. Sistem secara dinamis menyaring dropdown **DESTINATION LEDGER (CREDIT)**:
+     - Seluruh akun **Bank**, **Cash**, dan **E-Wallet** tampil seperti biasa.
+     - Akun **Credit Card** dan **PayLater** **hanya tampil jika limitnya sedang terpakai (`balance > 0`)**. Jika kartu kredit tidak memiliki pemakaian (`balance === 0`), kartu tersebut otomatis disembunyikan.
+     - Jika akun yang sebelumnya terpilih kebetulan adalah kartu kredit dengan pemakaian `0` saat beralih dari tab *Expense* ke *Income*, pilihan akun otomatis berpindah ke akun pertama yang valid.
+  3. Saat pengguna memilih akun Kartu Kredit / PayLater yang limitnya sedang terpakai pada mode **INCOME (+)**:
+     - Kategori otomatis disetel ke **Cashback & Refunds**.
+     - Label informasi di kanan atas dropdown menampilkan **USED LIMIT (DEBT): Rp [Tagihan Terpakai]** agar pengguna tahu batas maksimal refund yang dapat dimasukkan.
+     - Jika pengguna memasukkan angka refund melebihi tagihan terpakai pada kartu tersebut, muncul peringatan validasi bahwa nominal refund melebihi limit yang sedang terpakai.
+  4. Pengguna menekan **SAVE INCOME**, dan tagihan kartu kredit langsung berkurang serta limit tersedia (*Available Limit*) kembali bertambah.
+- **Visual Identity & Theme**:
+  - *Aesthetic Direction*: Utilitarian Financial Ledger dengan tipografi `Plus Jakarta Sans` dan angka tabular `JetBrains Mono` (`tabular-nums`).
+  - *Color Palette & Mood*: Aksen *emerald* untuk mode `INCOME (+)` dan pemulihan limit kredit, serta *rose* untuk peringatan batas nominal refund.
+
+---
+
+## 3. Key Product Decisions & Trade-Offs
+
+- **Decision 1: Penyaringan Dinamis Akun Kartu Kredit / PayLater pada Mode Income**
+  - *Chosen Approach*: Menyaring daftar akun (`selectableAccounts`) ketika `type === 'income'` dengan kondisi `acc.type !== 'credit_card' && acc.type !== 'paylater' || acc.balance > 0` (dengan pengecualian tetap menampilkan akun tersebut jika pengguna sedang mengedit transaksi *income* lama pada kartu itu).
+  - *Why*: Kartu kredit dan PayLater bukan rekening tabungan penyimpan uang tunai; dana masuk ke kartu kredit hanya relevan jika ada limit terpakai (tagihan) yang sedang di-refund atau dikurangi.
+- **Decision 2: Pemisahan Refund Kartu Kredit dari Pemasukan Kas Bulanan**
+  - *Chosen Approach*: Memperbarui `statsHelper.ts` dan `AnalyticsView.tsx` agar transaksi `type === 'income'` pada akun `credit_card` / `paylater` tidak dihitung sebagai pemasukan uang tunai bulanan (*Monthly Cash Inflow*), melainkan khusus memotong saldo utang kartu kredit.
+  - *Why*: Menjaga laporan arus kas (*Cash Flow*) bulanan tetap murni mencerminkan uang masuk ke rekening Bank/Cash/E-Wallet.
+
+---
+
+## 4. Technical Architecture & Data Strategy *(Technical Reference)*
+
+- **Architecture & Component Diagram**:
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                   Add / Edit Transaction Modal                       │
+│                        (Mode: INCOME +)                              │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│               Filter Daftar Akun (selectableAccounts)                │
+│  • Bank / Cash / E-Wallet ──────────────────────► TAMPIL             │
+│  • Credit Card / PayLater (Used Balance > 0) ───► TAMPIL (Refund)    │
+│  • Credit Card / PayLater (Used Balance == 0) ──► DISEMBUNYIKAN      │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │ Saat Akun CC (Used > 0) Dipilih
+                                   ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│            Auto-Kategori & Validasi Refund Kartu Kredit              │
+│  • Kategori otomatis: "Cashback & Refunds"                           │
+│  • Validasi: Nominal Refund <= Used Balance (Tagihan Terpakai)       │
+│  • Simpan: Kurangi Used Balance CC & Pulihkan Available Credit Limit │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+- **Data Model & State**:
+  - `selectableAccounts`: Daftar akun terfilter di `AddExpenseModal` berdasarkan `type` (`expense` menampilkan semua akun; `income` menyembunyikan `credit_card` & `paylater` yang `balance <= 0`).
+  - `maxRefundableDebt`: Untuk `type === 'income'` pada akun `credit_card` / `paylater`, menghitung batas maksimal refund sebesar `selectedAccount.balance` (ditambah `editingTransaction.amount` jika sedang mengedit transaksi refund yang sudah ada).
+- **Interactive Component & State Mapping**:
+  - Saat pengguna menekan tombol toggle `INCOME (+)`, `handleTypeChange('income')` memeriksa apakah akun yang sedang terpilih masih ada di `selectableAccounts`; jika tidak (karena kartu kredit tersebut `balance <= 0`), otomatis memilih akun pertama di `selectableAccounts`.
+  - Saat pengguna memilih akun `credit_card` atau `paylater` pada mode `INCOME (+)`, kategori otomatis berubah ke `Cashback & Refunds`.
+  - Saat form disubmit, `addTransaction` / `updateTransaction` mengurangi `balance` (tagihan terpakai) pada kartu kredit dan menyinkronkan ke Firestore, Local Storage, dan Google Sheet.

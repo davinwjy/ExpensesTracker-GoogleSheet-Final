@@ -26,6 +26,31 @@ export const AddExpenseModal: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getSelectableAccountsForType = React.useCallback(
+    (targetType: 'expense' | 'income') => {
+      if (targetType === 'expense') {
+        return accounts;
+      }
+      // In 'income' mode, hide Credit Card and PayLater accounts whose limit is not currently used (balance <= 0),
+      // unless we are editing an existing income transaction that was recorded on that specific account.
+      return accounts.filter((acc) => {
+        if (acc.type === 'credit_card' || acc.type === 'paylater') {
+          if (editingTransaction && editingTransaction.accountId === acc.id && editingTransaction.type === 'income') {
+            return true;
+          }
+          return (Number(acc.balance) || 0) > 0;
+        }
+        return true;
+      });
+    },
+    [accounts, editingTransaction]
+  );
+
+  const selectableAccounts = React.useMemo(
+    () => getSelectableAccountsForType(type),
+    [getSelectableAccountsForType, type]
+  );
+
   // Clean form every time modal opens or resets
   useEffect(() => {
     if (isAddExpenseOpen) {
@@ -41,24 +66,38 @@ export const AddExpenseModal: React.FC = () => {
         setNotes(editingTransaction.notes || '');
       } else {
         const initType = transactionInitialType || 'expense';
+        const validAccs = getSelectableAccountsForType(initType);
+        const defaultAcc = validAccs.length > 0 ? validAccs[0] : undefined;
         setType(initType);
         setAmount('');
-        setAccountId(accounts.length > 0 ? accounts[0].id : '');
-        setCategory(initType === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
+        setAccountId(defaultAcc ? defaultAcc.id : '');
+        if (initType === 'income') {
+          const isCreditAcc = defaultAcc && (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
+          setCategory(isCreditAcc ? 'Cashback & Refunds' : INCOME_CATEGORIES[0]);
+        } else {
+          setCategory(EXPENSE_CATEGORIES[0]);
+        }
         setDate(getLocalDateString());
         setNotes('');
       }
       setError('');
     }
-  }, [isAddExpenseOpen, editingTransaction, accounts, transactionInitialType]);
+  }, [isAddExpenseOpen, editingTransaction, accounts, transactionInitialType, getSelectableAccountsForType]);
 
   const resetForm = () => {
     setIsSubmitting(false);
     const initType = transactionInitialType || 'expense';
+    const validAccs = getSelectableAccountsForType(initType);
+    const defaultAcc = validAccs.length > 0 ? validAccs[0] : undefined;
     setType(initType);
     setAmount('');
-    setAccountId(accounts.length > 0 ? accounts[0].id : '');
-    setCategory(initType === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]);
+    setAccountId(defaultAcc ? defaultAcc.id : '');
+    if (initType === 'income') {
+      const isCreditAcc = defaultAcc && (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
+      setCategory(isCreditAcc ? 'Cashback & Refunds' : INCOME_CATEGORIES[0]);
+    } else {
+      setCategory(EXPENSE_CATEGORIES[0]);
+    }
     setDate(getLocalDateString());
     setNotes('');
     setError('');
@@ -67,9 +106,18 @@ export const AddExpenseModal: React.FC = () => {
   const handleTypeChange = (newType: 'expense' | 'income') => {
     if (newType === type) return;
     setType(newType);
+    const validAccs = getSelectableAccountsForType(newType);
+    let nextAcc = validAccs.find((a) => a.id === accountId);
+    if (!nextAcc) {
+      nextAcc = validAccs.length > 0 ? validAccs[0] : undefined;
+      setAccountId(nextAcc ? nextAcc.id : '');
+    }
+
     if (newType === 'income') {
-      // Switch category if current category is not in income categories
-      if (!(INCOME_CATEGORIES as readonly string[]).includes(category)) {
+      const isCreditAcc = nextAcc && (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater');
+      if (isCreditAcc) {
+        setCategory('Cashback & Refunds');
+      } else if (!(INCOME_CATEGORIES as readonly string[]).includes(category)) {
         setCategory(INCOME_CATEGORIES[0]);
       }
     } else {
@@ -77,6 +125,14 @@ export const AddExpenseModal: React.FC = () => {
       if (!(EXPENSE_CATEGORIES as readonly string[]).includes(category)) {
         setCategory(EXPENSE_CATEGORIES[0]);
       }
+    }
+  };
+
+  const handleAccountChange = (newAccountId: string) => {
+    setAccountId(newAccountId);
+    const nextAcc = accounts.find((a) => a.id === newAccountId);
+    if (type === 'income' && nextAcc && (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater')) {
+      setCategory('Cashback & Refunds');
     }
   };
 
@@ -101,7 +157,7 @@ export const AddExpenseModal: React.FC = () => {
       if (
         editingTransaction &&
         editingTransaction.accountId === selectedAccount.id &&
-        editingTransaction.type === 'expense'
+        (editingTransaction.type === 'expense' || editingTransaction.type === 'cc_debt')
       ) {
         revertedDebt = Math.max(0, revertedDebt - editingTransaction.amount);
       }
@@ -111,11 +167,27 @@ export const AddExpenseModal: React.FC = () => {
     if (
       editingTransaction &&
       editingTransaction.accountId === selectedAccount.id &&
-      editingTransaction.type === 'expense'
+      (editingTransaction.type === 'expense' || editingTransaction.type === 'cc_debt')
     ) {
       revertedBal += editingTransaction.amount;
     }
     return revertedBal;
+  }, [selectedAccount, editingTransaction]);
+
+  const refundableDebt = React.useMemo(() => {
+    if (!selectedAccount) return 0;
+    if (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') {
+      let currentUsedDebt = Number(selectedAccount.balance) || 0;
+      if (
+        editingTransaction &&
+        editingTransaction.accountId === selectedAccount.id &&
+        editingTransaction.type === 'income'
+      ) {
+        currentUsedDebt += editingTransaction.amount;
+      }
+      return Math.max(0, currentUsedDebt);
+    }
+    return 0;
   }, [selectedAccount, editingTransaction]);
 
   const parsedNumAmount = Number(amount);
@@ -125,6 +197,15 @@ export const AddExpenseModal: React.FC = () => {
     !isNaN(parsedNumAmount) &&
     parsedNumAmount > 0 &&
     parsedNumAmount > availableBalance
+  );
+
+  const isExceedingRefundableDebt = Boolean(
+    type === 'income' &&
+    selectedAccount &&
+    (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') &&
+    !isNaN(parsedNumAmount) &&
+    parsedNumAmount > 0 &&
+    parsedNumAmount > refundableDebt
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,7 +222,7 @@ export const AddExpenseModal: React.FC = () => {
     }
 
     if (!accountId) {
-      setError('Please select a Bank or Cash account');
+      setError('Please select a target account');
       setIsSubmitting(false);
       return;
     }
@@ -161,6 +242,22 @@ export const AddExpenseModal: React.FC = () => {
             )} cannot be submitted.`
           );
         }
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    if (
+      type === 'income' &&
+      selectedAccount &&
+      (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater')
+    ) {
+      if (parsedAmount > refundableDebt) {
+        setError(
+          `Refund amount (${formatIdr(parsedAmount)}) cannot exceed used credit limit / debt (${formatIdr(
+            refundableDebt
+          )}).`
+        );
         setIsSubmitting(false);
         return;
       }
@@ -190,12 +287,22 @@ export const AddExpenseModal: React.FC = () => {
       // Trigger sleek success popup notification
       const targetAcc = accounts.find((a) => a.id === accountId);
       const accName = targetAcc ? targetAcc.name : 'Account';
+      const isCreditRefund =
+        type === 'income' && targetAcc && (targetAcc.type === 'credit_card' || targetAcc.type === 'paylater');
       showNotification({
         type: 'success',
         txType: type,
         title: editingTransaction
-          ? (type === 'expense' ? 'Expense Updated Successfully' : 'Income Updated Successfully')
-          : (type === 'expense' ? 'Expense Recorded Successfully' : 'Income Recorded Successfully'),
+          ? isCreditRefund
+            ? 'Credit Refund Updated Successfully'
+            : type === 'expense'
+            ? 'Expense Updated Successfully'
+            : 'Income Updated Successfully'
+          : isCreditRefund
+          ? 'Credit Card Refund Recorded'
+          : type === 'expense'
+          ? 'Expense Recorded Successfully'
+          : 'Income Recorded Successfully',
         message: notes?.trim() ? notes.trim() : undefined,
         amount: parsedAmount,
         category,
@@ -383,6 +490,20 @@ export const AddExpenseModal: React.FC = () => {
               </div>
             )}
 
+            {/* Exceeding refundable debt warning under amount */}
+            {isExceedingRefundableDebt && (
+              <div className="mt-1.5 flex items-center gap-1.5 p-2 rounded bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-[11px] font-mono">
+                <AlertCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+                <span>
+                  Refund exceeds used credit limit (max refundable:{' '}
+                  <strong className="text-rose-700 dark:text-rose-200 tabular-nums">
+                    {formatIdr(refundableDebt)}
+                  </strong>
+                  )
+                </span>
+              </div>
+            )}
+
             {/* Quick Increment Buttons */}
             <div className="flex flex-wrap gap-1 mt-2">
               {[10000, 50000, 100000, 250000, 500000, 1000000, 5000000].map((inc) => (
@@ -411,14 +532,22 @@ export const AddExpenseModal: React.FC = () => {
               {selectedAccount && (
                 <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">
                   {selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater'
-                    ? 'AVAILABLE LIMIT: '
+                    ? type === 'income'
+                      ? 'USED LIMIT (DEBT): '
+                      : 'AVAILABLE LIMIT: '
                     : 'BALANCE: '}
                   <strong
                     className={`tabular-nums ${
-                      isInsufficientBalance ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                      isInsufficientBalance || isExceedingRefundableDebt
+                        ? 'text-rose-500 dark:text-rose-400'
+                        : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
-                    {formatIdr(availableBalance)}
+                    {formatIdr(
+                      (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') && type === 'income'
+                        ? refundableDebt
+                        : availableBalance
+                    )}
                   </strong>
                 </span>
               )}
@@ -426,21 +555,26 @@ export const AddExpenseModal: React.FC = () => {
             <select
               value={accountId}
               disabled={isSubmitting}
-              onChange={(e) => setAccountId(e.target.value)}
+              onChange={(e) => handleAccountChange(e.target.value)}
               className={`w-full bg-slate-50 dark:bg-[#080a0f] border rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono disabled:opacity-60 disabled:cursor-not-allowed ${
-                isInsufficientBalance
+                isInsufficientBalance || isExceedingRefundableDebt
                   ? 'border-rose-500/60 focus:border-rose-500'
                   : 'border-slate-300 dark:border-[#1d2332] focus:border-emerald-500'
               }`}
               required
             >
-              {accounts.length === 0 && <option value="">No accounts found - add one first</option>}
-              {accounts.map((acc) => {
+              {selectableAccounts.length === 0 && <option value="">No accounts found - add one first</option>}
+              {selectableAccounts.map((acc) => {
                 const isCredit = acc.type === 'credit_card' || acc.type === 'paylater';
                 const avail = isCredit ? Math.max(0, (acc.creditLimit || 0) - acc.balance) : acc.balance;
                 return (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.type.toUpperCase()}) — {isCredit ? `Available Limit: ${formatIdr(avail)} (Used: ${formatIdr(acc.balance)})` : `Balance: ${formatIdr(acc.balance)}`}
+                    {acc.name} ({acc.type.toUpperCase()}) —{' '}
+                    {isCredit
+                      ? type === 'income'
+                        ? `Used Limit: ${formatIdr(acc.balance)} (Available: ${formatIdr(avail)})`
+                        : `Available Limit: ${formatIdr(avail)} (Used: ${formatIdr(acc.balance)})`
+                      : `Balance: ${formatIdr(acc.balance)}`}
                   </option>
                 );
               })}
@@ -525,11 +659,11 @@ export const AddExpenseModal: React.FC = () => {
           <button
             type="submit"
             form="expense-modal-form"
-            disabled={isSubmitting || isInsufficientBalance}
+            disabled={isSubmitting || isInsufficientBalance || isExceedingRefundableDebt}
             className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded text-xs font-bold transition-all shadow-md select-none ${
               isSubmitting
                 ? 'bg-slate-300 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-400 dark:border-zinc-700 cursor-not-allowed opacity-60 pointer-events-none'
-                : isInsufficientBalance
+                : isInsufficientBalance || isExceedingRefundableDebt
                 ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40 cursor-not-allowed opacity-75'
                 : type === 'expense'
                 ? 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white cursor-pointer hover:shadow-rose-600/20'
@@ -549,6 +683,8 @@ export const AddExpenseModal: React.FC = () => {
                 <span>
                   {isInsufficientBalance
                     ? 'INSUFFICIENT BALANCE'
+                    : isExceedingRefundableDebt
+                    ? 'EXCEEDS USED LIMIT'
                     : editingTransaction
                     ? 'SAVE CHANGES'
                     : type === 'expense'

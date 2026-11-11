@@ -393,9 +393,11 @@ html.dark input:-webkit-autofill:focus {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Mobile bottom dock in light mode */
+/* Mobile & tablet bottom dock in light mode */
 html.light .md\:hidden.fixed.bottom-0,
-html[data-theme="light"] .md\:hidden.fixed.bottom-0 {
+html.light .lg\:hidden.fixed.bottom-0,
+html[data-theme="light"] .md\:hidden.fixed.bottom-0,
+html[data-theme="light"] .lg\:hidden.fixed.bottom-0 {
   background-color: rgba(255, 255, 255, 0.95) !important;
   border-color: #e2e8f0 !important;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);

@@ -14,6 +14,8 @@ import {
   CategoryBudget,
 } from '../types';
 import { localDb } from './localDb';
+import { firebaseAuth } from './firebase';
+import { saveAdminEmails } from './admin';
 
 const TOKEN_KEY = 'wealthtrack_auth_token';
 
@@ -62,8 +64,10 @@ async function checkServer(): Promise<boolean> {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
+  const fbEmail = firebaseAuth?.currentUser?.email || '';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(fbEmail ? { 'X-Admin-Email': fbEmail } : {}),
     ...(options.headers as Record<string, string>),
   };
 
@@ -142,6 +146,24 @@ export const api = {
     return localRes;
   },
 
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const hasServer = await checkServer();
+    if (hasServer) {
+      try {
+        return await request<{ success: boolean; message: string }>('/api/auth/forgot-password', {
+          method: 'POST',
+          body: JSON.stringify({ email }),
+        });
+      } catch (err: any) {
+        if (err.message === 'Non-JSON response from server') {
+          isServerAvailable = false;
+        } else {
+          throw err;
+        }
+      }
+    }
+    return { success: true, message: 'Password reset instructions sent.' };
+  },
   async getCurrentUser(): Promise<{ user: User }> {
     const hasServer = await checkServer();
     if (hasServer) {
@@ -580,69 +602,120 @@ export const api = {
     const hasServer = await checkServer();
     if (hasServer) {
       try {
-        return await request<AdminOverviewStats>('/api/admin/overview');
+        const res = await request<AdminOverviewStats>('/api/admin/overview');
+        const localOverview = await localDb.getAdminOverview();
+        // If local storage has customized admin emails, keep the most up-to-date list
+        const hasLocalCustom = localStorage.getItem('wealthtrack_admin_emails') !== null;
+        const effectiveAdmins = hasLocalCustom
+          ? localOverview.registeredAdmins
+          : res.registeredAdmins || localOverview.registeredAdmins;
+        return {
+          ...res,
+          registeredAdmins: effectiveAdmins,
+          adminCount: effectiveAdmins.length,
+          totalUsers: Math.max(res.totalUsers || 0, localOverview.totalUsers || 0),
+        };
       } catch (err) {
-        // fallback
+        // fallback to localDb
       }
     }
     return localDb.getAdminOverview();
   },
 
   async getAdminUsers(): Promise<{ users: AdminUserListItem[] }> {
+    const localRes = await localDb.getAdminUsers();
     const hasServer = await checkServer();
     if (hasServer) {
       try {
-        return await request<{ users: AdminUserListItem[] }>('/api/admin/users');
+        const serverRes = await request<{ users: AdminUserListItem[] }>('/api/admin/users');
+        const localRoleByEmail = new Map<string, 'admin' | 'user'>();
+        for (const lu of localRes.users || []) {
+          localRoleByEmail.set(lu.email.toLowerCase(), lu.role);
+        }
+        // Merge server users and local/Firebase users so all accounts are visible and reflect current role
+        const byEmail = new Map<string, AdminUserListItem>();
+        for (const u of serverRes.users || []) {
+          const emailKey = u.email.toLowerCase();
+          byEmail.set(emailKey, {
+            ...u,
+            role: localRoleByEmail.get(emailKey) ?? u.role,
+          });
+        }
+        for (const u of localRes.users || []) {
+          if (!byEmail.has(u.email.toLowerCase())) {
+            byEmail.set(u.email.toLowerCase(), u);
+          }
+        }
+        return { users: Array.from(byEmail.values()) };
       } catch (err) {
         // fallback
       }
     }
-    return localDb.getAdminUsers();
+    return localRes;
   },
 
-  async setAdminUserRole(id: string, role: 'admin' | 'user'): Promise<{ success: boolean; user: any }> {
+  async setAdminUserRole(id: string, role: 'admin' | 'user', email?: string): Promise<{ success: boolean; user: any }> {
+    // Always update localDb so client-side state & storage are in sync
+    const localResult = await localDb.setAdminUserRole(id, role, email);
     const hasServer = await checkServer();
     if (hasServer) {
       try {
-        return await request<{ success: boolean; user: any }>(`/api/admin/users/${id}/role`, {
+        const res = await request<{ success: boolean; user: any; adminEmails?: string[] }>(`/api/admin/users/${id}/role`, {
           method: 'POST',
-          body: JSON.stringify({ role }),
+          body: JSON.stringify({ role, email }),
         });
+        if (res.adminEmails) {
+          saveAdminEmails(res.adminEmails);
+        }
+        return res;
       } catch (err) {
-        // fallback
+        // return localResult if server fails
       }
     }
-    return localDb.setAdminUserRole(id, role);
+    return localResult;
   },
 
   async addAdminEmail(email: string): Promise<{ success: boolean; adminEmails: string[] }> {
+    const localResult = await localDb.addAdminEmail(email);
     const hasServer = await checkServer();
     if (hasServer) {
       try {
-        return await request<{ success: boolean; adminEmails: string[] }>('/api/admin/add-admin-email', {
+        const res = await request<{ success: boolean; adminEmails: string[] }>('/api/admin/add-admin-email', {
           method: 'POST',
           body: JSON.stringify({ email }),
         });
+        if (res.adminEmails) {
+          saveAdminEmails(res.adminEmails);
+        }
+        return res;
       } catch (err) {
-        // fallback
+        // return localResult
       }
     }
-    return localDb.addAdminEmail(email);
+    return localResult;
   },
 
   async removeAdminEmail(email: string): Promise<{ success: boolean; adminEmails: string[] }> {
+    const localResult = await localDb.removeAdminEmail(email);
     const hasServer = await checkServer();
     if (hasServer) {
       try {
-        return await request<{ success: boolean; adminEmails: string[] }>('/api/admin/remove-admin-email', {
-          method: 'DELETE',
-          body: JSON.stringify({ email }),
-        });
+        const res = await request<{ success: boolean; adminEmails: string[] }>(
+          `/api/admin/remove-admin-email?email=${encodeURIComponent(email)}`,
+          {
+            method: 'DELETE',
+            body: JSON.stringify({ email }),
+          }
+        );
+        if (res.adminEmails) {
+          saveAdminEmails(res.adminEmails);
+        }
+        return res;
       } catch (err) {
-        // fallback
+        // return localResult
       }
     }
-    return localDb.removeAdminEmail(email);
+    return localResult;
   },
 
   async deleteAdminUser(id: string): Promise<{ success: boolean; message: string }> {

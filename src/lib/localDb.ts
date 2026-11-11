@@ -15,6 +15,14 @@ import {
 } from '../types';
 import { computeStats } from './statsHelper';
 import { isTransactionLocked } from './formatters';
+import {
+  PRIMARY_ADMIN_EMAIL,
+  getCustomAdminEmails,
+  saveAdminEmails,
+  addCustomAdminEmail,
+  removeCustomAdminEmail,
+} from './admin';
+import { firebaseAuth } from './firebase';
 
 export const DEFAULT_BUDGETS: Array<{ category: string; monthlyLimit: number }> = [
   { category: 'Food & Dining', monthlyLimit: 3000000 },
@@ -1131,93 +1139,177 @@ export const localDb = {
     return { announcement, maintenanceMode };
   },
 
-  // Admin Overview
+  // Admin Overview (Zero-Knowledge Financial Privacy)
   async getAdminOverview(): Promise<AdminOverviewStats> {
     const store = getStore();
-    const totalUsers = store.users.length;
-    const totalAccounts = store.accounts.length;
-    const totalTransactions = store.transactions.length;
-    const totalInvestments = store.investments.length;
-    const totalVolumeIdr = store.transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const registeredAdmins = getCustomAdminEmails();
+    const holdingTypesCount = (store.holdingTypes || []).length || 5;
+    const maintenanceMode = localStorage.getItem('wealthtrack_maintenance_mode') === 'true';
+    const allowNewRegistrations = localStorage.getItem('wealthtrack_allow_registrations') !== 'false';
 
-    const totalCashIdr = store.accounts.reduce((sum, a) => sum + (a.balance || 0), 0);
-    const totalInvestmentsIdr = store.investments.reduce((sum, inv) => {
-      const val = inv.currentValue || 0;
-      return sum + (inv.currency === 'USD' ? val * 15850 : val);
-    }, 0);
+    // Ensure all registered admins + local users are counted
+    const knownEmails = new Set<string>(store.users.map(u => u.email.toLowerCase()));
+    registeredAdmins.forEach(e => knownEmails.add(e.toLowerCase()));
+    if (firebaseAuth?.currentUser?.email) {
+      knownEmails.add(firebaseAuth.currentUser.email.toLowerCase());
+    }
 
     return {
-      totalUsers,
-      totalAccounts,
-      totalTransactions,
-      totalInvestments,
-      totalVolumeIdr,
-      totalTrackedAssetsIdr: totalCashIdr + totalInvestmentsIdr,
+      totalUsers: Math.max(store.users.length, knownEmails.size),
+      holdingTypesCount,
+      allowNewRegistrations,
+      maintenanceMode,
       serverStatus: 'online',
-      dbType: 'Local Indexed Database (Synced)',
+      dbType: 'Local Indexed Store (Zero-Knowledge Privacy)',
       uptimeSeconds: 3600,
       currentUsdRate: 15850,
-      adminCount: 1,
-      registeredAdmins: ['davinwijaya16@gmail.com', 'davinwijaya1996@gmail.com'],
+      adminCount: registeredAdmins.length,
+      registeredAdmins,
     };
   },
 
   async getAdminUsers(): Promise<{ users: AdminUserListItem[] }> {
     const store = getStore();
-    const list: AdminUserListItem[] = store.users.map(u => {
-      const userAccounts = store.accounts.filter(a => a.userId === u.id);
-      const userTxs = store.transactions.filter(t => t.userId === u.id);
-      const userInvs = store.investments.filter(i => i.userId === u.id);
+    const adminEmails = getCustomAdminEmails().map(e => e.toLowerCase());
+    let modified = false;
 
-      const cashIdr = userAccounts.reduce((sum, a) => sum + (a.balance || 0), 0);
-      const invIdr = userInvs.reduce((sum, inv) => {
-        const val = inv.currentValue || 0;
-        return sum + (inv.currency === 'USD' ? val * 15850 : val);
-      }, 0);
+    // Ensure currently authenticated Firebase user exists in local user directory
+    const fbUser = firebaseAuth?.currentUser;
+    if (fbUser && fbUser.email) {
+      const fbEmail = fbUser.email.toLowerCase().trim();
+      const exists = store.users.some(u => u.email.toLowerCase() === fbEmail);
+      if (!exists) {
+        store.users.push({
+          id: fbUser.uid || `usr_${Date.now()}`,
+          email: fbEmail,
+          name: fbUser.displayName || fbEmail.split('@')[0],
+          role: adminEmails.includes(fbEmail) ? 'admin' : 'user',
+          createdAt: fbUser.metadata?.creationTime || new Date().toISOString(),
+        });
+        modified = true;
+      }
+    }
 
-      const isAdm = u.email === 'davinwijaya16@gmail.com' || u.email === 'davinwijaya1996@gmail.com' || u.role === 'admin';
+    // Ensure whitelisted admin emails also have user entries so their roles can be toggled
+    for (const admEmail of adminEmails) {
+      const exists = store.users.some(u => u.email.toLowerCase() === admEmail);
+      if (!exists) {
+        store.users.push({
+          id: `usr_adm_${admEmail.replace(/[^a-z0-9]/gi, '_')}`,
+          email: admEmail,
+          name: admEmail.split('@')[0],
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+        });
+        modified = true;
+      }
+    }
 
-      return {
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: isAdm ? 'admin' : 'user',
-        createdAt: u.createdAt || new Date().toISOString(),
-        accountsCount: userAccounts.length,
-        transactionsCount: userTxs.length,
-        investmentsCount: userInvs.length,
-        totalNetWorthIdr: cashIdr + invIdr,
-      };
-    });
+    if (modified) {
+      saveStore(store);
+    }
+
+    const mockEmailsToExclude = ['test@example.com', 'davin@wealthtrack.app'];
+    const list: AdminUserListItem[] = store.users
+      .filter((u) => !mockEmailsToExclude.includes(u.email.toLowerCase().trim()))
+      .map((u) => {
+        const cleanEmail = u.email.toLowerCase().trim();
+        const isAdm = cleanEmail === PRIMARY_ADMIN_EMAIL || adminEmails.includes(cleanEmail);
+
+        return {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: isAdm ? 'admin' : 'user',
+          createdAt: u.createdAt || new Date().toISOString(),
+          hasSheetSync: Boolean((u as any).appsScriptUrl || localStorage.getItem(`wealthtrack_apps_script_url_${cleanEmail}`)),
+        };
+      });
 
     return { users: list };
   },
 
-  async setAdminUserRole(id: string, role: 'admin' | 'user'): Promise<{ success: boolean; user: any }> {
+  async setAdminUserRole(id: string, role: 'admin' | 'user', emailHint?: string): Promise<{ success: boolean; user: any }> {
     const store = getStore();
-    const user = store.users.find(u => u.id === id);
+    const user = store.users.find(
+      u => u.id === id || (emailHint && u.email.toLowerCase() === emailHint.toLowerCase())
+    );
+    const targetEmail = (user?.email || emailHint || '').toLowerCase().trim();
+
+    if (targetEmail === PRIMARY_ADMIN_EMAIL && role !== 'admin') {
+      throw new Error('Cannot demote primary master administrator davinwijaya16@gmail.com');
+    }
+
     if (user) {
       user.role = role;
       saveStore(store);
     }
-    return { success: true, user };
+
+    if (targetEmail) {
+      if (role === 'admin') {
+        addCustomAdminEmail(targetEmail);
+      } else {
+        removeCustomAdminEmail(targetEmail);
+      }
+    }
+
+    return {
+      success: true,
+      user: user || { id, email: targetEmail, role },
+    };
   },
 
   async addAdminEmail(email: string): Promise<{ success: boolean; adminEmails: string[] }> {
     const clean = email.toLowerCase().trim();
-    const list = ['davinwijaya16@gmail.com', 'davinwijaya1996@gmail.com'];
-    if (!list.includes(clean)) list.push(clean);
-    return { success: true, adminEmails: list };
+    if (!clean) {
+      throw new Error('Email is required');
+    }
+    const updated = addCustomAdminEmail(clean);
+
+    const store = getStore();
+    const existing = store.users.find(u => u.email.toLowerCase() === clean);
+    if (existing) {
+      existing.role = 'admin';
+    } else {
+      store.users.push({
+        id: `usr_adm_${clean.replace(/[^a-z0-9]/gi, '_')}`,
+        email: clean,
+        name: clean.split('@')[0],
+        role: 'admin',
+        createdAt: new Date().toISOString(),
+      });
+    }
+    saveStore(store);
+
+    return { success: true, adminEmails: updated };
   },
 
   async removeAdminEmail(email: string): Promise<{ success: boolean; adminEmails: string[] }> {
     const clean = email.toLowerCase().trim();
-    const list = ['davinwijaya16@gmail.com', 'davinwijaya1996@gmail.com'].filter(e => e !== clean);
-    return { success: true, adminEmails: list };
+    if (clean === PRIMARY_ADMIN_EMAIL) {
+      throw new Error('Cannot remove primary super admin davinwijaya16@gmail.com');
+    }
+    const updated = removeCustomAdminEmail(clean);
+
+    const store = getStore();
+    const existing = store.users.find(u => u.email.toLowerCase() === clean);
+    if (existing) {
+      existing.role = 'user';
+      saveStore(store);
+    }
+
+    return { success: true, adminEmails: updated };
   },
 
   async deleteAdminUser(id: string): Promise<{ success: boolean; message: string }> {
     const store = getStore();
+    const target = store.users.find(u => u.id === id);
+    if (target && target.email.toLowerCase() === PRIMARY_ADMIN_EMAIL) {
+      throw new Error('Cannot delete master super admin account');
+    }
+    if (target) {
+      removeCustomAdminEmail(target.email);
+    }
     store.users = store.users.filter(u => u.id !== id);
     store.accounts = store.accounts.filter(a => a.userId !== id);
     store.transactions = store.transactions.filter(t => t.userId !== id);
@@ -1226,30 +1318,20 @@ export const localDb = {
     return { success: true, message: 'User deleted' };
   },
 
-  async getAdminTransactions(limit: number = 100): Promise<{ transactions: any[] }> {
-    const store = getStore();
-    const list = store.transactions.map(t => {
-      const user = store.users.find(u => u.id === t.userId);
-      const acc = store.accounts.find(a => a.id === t.accountId);
-      return {
-        ...t,
-        userName: user?.name || 'Local User',
-        userEmail: user?.email || 'user@example.com',
-        accountName: acc?.name || 'Account',
-      };
-    });
-    list.sort((a, b) => new Date(b.date + ' ' + b.createdAt).getTime() - new Date(a.date + ' ' + a.createdAt).getTime());
-    return { transactions: list.slice(0, limit) };
+  async getAdminTransactions(_limit: number = 100): Promise<{ transactions: any[] }> {
+    // Zero-knowledge financial privacy: never return user transactions or expenses to admin
+    return { transactions: [] };
   },
 
   async getAdminSystemSettings(): Promise<{ settings: SystemSettings }> {
     const { announcement, maintenanceMode } = await this.getPublicAnnouncement();
+    const allowNewRegistrations = localStorage.getItem('wealthtrack_allow_registrations') !== 'false';
     return {
       settings: {
         announcement,
         maintenanceMode,
-        allowNewRegistrations: true,
-        adminEmails: ['davinwijaya16@gmail.com', 'davinwijaya1996@gmail.com', 'davin@wealthtrack.app'],
+        allowNewRegistrations,
+        adminEmails: getCustomAdminEmails(),
         defaultUsdIdrRate: 15850,
       },
     };
@@ -1262,6 +1344,12 @@ export const localDb = {
     if (data.maintenanceMode !== undefined) {
       localStorage.setItem('wealthtrack_maintenance_mode', String(data.maintenanceMode));
     }
+    if (data.allowNewRegistrations !== undefined) {
+      localStorage.setItem('wealthtrack_allow_registrations', String(data.allowNewRegistrations));
+    }
+    if (data.adminEmails && Array.isArray(data.adminEmails)) {
+      saveAdminEmails(data.adminEmails);
+    }
     const current = await this.getAdminSystemSettings();
     return { success: true, settings: { ...current.settings, ...data } };
   },
@@ -1271,13 +1359,19 @@ export const localDb = {
     return {
       exportTimestamp: new Date().toISOString(),
       platform: 'WealthTrack Pro',
+      privacyPolicy: 'Zero-Knowledge Financial Privacy — User wealth, accounts, investments, and expenses are excluded from admin exports.',
       stats: {
         users: store.users.length,
-        accounts: store.accounts.length,
-        transactions: store.transactions.length,
-        investments: store.investments.length,
+        holdingTypes: (store.holdingTypes || []).length,
       },
-      ...store,
+      users: store.users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role || 'user',
+        createdAt: u.createdAt,
+      })),
+      holdingTypes: store.holdingTypes || [],
     };
   },
 };

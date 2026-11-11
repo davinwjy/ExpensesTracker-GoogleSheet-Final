@@ -204,43 +204,123 @@ export function parseSheetDate(rawDate: any): string {
  *
  * 👉 PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
  */
+export const APPS_SCRIPT_URLS_BY_EMAIL_KEY = 'wealthtrack_apps_script_urls_by_email';
+
 export const PREFILLED_APPS_SCRIPT_URLS: Record<string, string> = {
   // Example: 'davinwijaya16@gmail.com': 'https://script.google.com/macros/s/AKfycb.../exec',
-  'davinwijaya16@gmail.com': '', // <-- PASTE YOUR WEB APP URL HERE
+  'davinwijaya16@gmail.com': '',
 };
 
+function getEmailUrlMap(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(APPS_SCRIPT_URLS_BY_EMAIL_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return {};
+}
+
+function saveEmailUrlMap(map: Record<string, string>) {
+  try {
+    localStorage.setItem(APPS_SCRIPT_URLS_BY_EMAIL_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
+export function isEmailExplicitlyDisconnected(email?: string): boolean {
+  if (!email) return false;
+  try {
+    const clean = email.toLowerCase().trim();
+    return localStorage.getItem(`wealthtrack_disconnected_${clean}`) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function markEmailDisconnected(email: string) {
+  try {
+    const clean = email.toLowerCase().trim();
+    localStorage.setItem(`wealthtrack_disconnected_${clean}`, 'true');
+  } catch {}
+}
+
+function clearEmailDisconnected(email: string) {
+  try {
+    const clean = email.toLowerCase().trim();
+    localStorage.removeItem(`wealthtrack_disconnected_${clean}`);
+  } catch {}
+}
+
 export function getStoredAppsScriptUrl(userEmail?: string): string {
+  const normalizedEmail = userEmail ? userEmail.toLowerCase().trim() : '';
+
+  // Demo account or explicitly disconnected accounts should never inherit or keep a personal Google Sheet URL
+  if (normalizedEmail === 'demo@wealthtrack.pro' || isEmailExplicitlyDisconnected(normalizedEmail)) {
+    return '';
+  }
+
+  // 1. Check per-email persistent storage first if userEmail is known
+  if (normalizedEmail) {
+    const map = getEmailUrlMap();
+    const byEmail = map[normalizedEmail];
+    if (byEmail && byEmail.trim().startsWith('https://script.google.com')) {
+      try {
+        localStorage.setItem(APPS_SCRIPT_URL_STORAGE_KEY, byEmail.trim());
+      } catch {}
+      return byEmail.trim();
+    }
+
+    // 2. Check static pre-filled configuration for the user
+    const prefilled = PREFILLED_APPS_SCRIPT_URLS[normalizedEmail];
+    if (prefilled && prefilled.trim()) {
+      const clean = prefilled.trim();
+      try {
+        localStorage.setItem(APPS_SCRIPT_URL_STORAGE_KEY, clean);
+        const map = getEmailUrlMap();
+        map[normalizedEmail] = clean;
+        saveEmailUrlMap(map);
+      } catch {
+        // ignore
+      }
+      return clean;
+    }
+
+    // For any other authenticated/registered user without an explicit URL saved, return blank.
+    return '';
+  }
+
+  // 3. Check active storage key only when userEmail is not provided (guest/anonymous mode)
   try {
     const saved = localStorage.getItem(APPS_SCRIPT_URL_STORAGE_KEY);
-    if (saved && saved.trim()) {
+    if (saved && saved.trim().startsWith('https://script.google.com')) {
       return saved.trim();
     }
   } catch {
     // ignore
   }
 
-  // If localStorage is empty, check pre-filled configuration for the user
-  if (userEmail) {
-    const normalizedEmail = userEmail.toLowerCase().trim();
-    const prefilled = PREFILLED_APPS_SCRIPT_URLS[normalizedEmail];
-    if (prefilled && prefilled.trim()) {
-      try {
-        localStorage.setItem(APPS_SCRIPT_URL_STORAGE_KEY, prefilled.trim());
-      } catch {
-        // ignore
-      }
-      return prefilled.trim();
-    }
-  }
-
   return '';
 }
 
-export function saveAppsScriptUrl(url: string): string {
+export function saveAppsScriptUrl(url: string, userEmail?: string): string {
   const trimmed = url.trim();
+  const normalizedEmail = userEmail ? userEmail.toLowerCase().trim() : '';
   try {
     if (trimmed) {
+      if (normalizedEmail) {
+        clearEmailDisconnected(normalizedEmail);
+      }
       localStorage.setItem(APPS_SCRIPT_URL_STORAGE_KEY, trimmed);
+      if (normalizedEmail && normalizedEmail !== 'demo@wealthtrack.pro') {
+        const map = getEmailUrlMap();
+        map[normalizedEmail] = trimmed;
+        saveEmailUrlMap(map);
+      }
     } else {
       localStorage.removeItem(APPS_SCRIPT_URL_STORAGE_KEY);
     }
@@ -250,13 +330,232 @@ export function saveAppsScriptUrl(url: string): string {
   return trimmed;
 }
 
-export function removeAppsScriptUrl() {
+export function removeAppsScriptUrl(userEmail?: string, explicitDisconnect = false) {
   try {
     localStorage.removeItem(APPS_SCRIPT_URL_STORAGE_KEY);
+    if (userEmail) {
+      const normalizedEmail = userEmail.toLowerCase().trim();
+      if (explicitDisconnect) {
+        markEmailDisconnected(normalizedEmail);
+      }
+      const map = getEmailUrlMap();
+      delete map[normalizedEmail];
+      saveEmailUrlMap(map);
+    }
+    // Also clean local snapshot cache if it holds an old appsScriptUrl
+    try {
+      const rawSnap = localStorage.getItem('wealthtrack_financial_snapshot_v1');
+      if (rawSnap) {
+        const snap = JSON.parse(rawSnap);
+        if (snap?.settings?.appsScriptUrl) {
+          snap.settings.appsScriptUrl = '';
+          localStorage.setItem('wealthtrack_financial_snapshot_v1', JSON.stringify(snap));
+        }
+      }
+    } catch {}
   } catch {}
 }
 
+export async function saveServerAppsScriptUrl(userEmail?: string, url?: string): Promise<void> {
+  if (!userEmail) return;
+  const normalizedEmail = userEmail.toLowerCase().trim();
+  if (!normalizedEmail || normalizedEmail === 'demo@wealthtrack.pro') return;
+  try {
+    await fetch('/api/user/apps-script-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: normalizedEmail, url: (url || '').trim() }),
+    });
+  } catch {
+    // ignore offline/network errors
+  }
+}
+
+export async function fetchServerAppsScriptUrl(userEmail?: string): Promise<string> {
+  if (!userEmail) return '';
+  const normalizedEmail = userEmail.toLowerCase().trim();
+  if (!normalizedEmail || normalizedEmail === 'demo@wealthtrack.pro') return '';
+  try {
+    const res = await fetch(`/api/user/apps-script-url?email=${encodeURIComponent(normalizedEmail)}`);
+    if (!res.ok) return '';
+    const data = await res.json();
+    const url = (data?.url || '').trim();
+    if (url && url.startsWith('https://script.google.com')) {
+      return url;
+    }
+  } catch {
+    // ignore
+  }
+  return '';
+}
+
+export interface AppsScriptQueueItem {
+  id: string;
+  scriptUrl: string;
+  tabName: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  recordId: string;
+  values?: any[];
+  attempts: number;
+  createdAt: number;
+}
+
+const APPS_SCRIPT_QUEUE_KEY = 'wealthtrack_apps_script_queue_v1';
+
 export class AppsScriptService {
+  private isFlushing = false;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        void this.flushQueue();
+      });
+      // Flush any leftover queued items from a previous session after startup
+      setTimeout(() => {
+        void this.flushQueue();
+      }, 1500);
+    }
+  }
+
+  private getQueue(): AppsScriptQueueItem[] {
+    try {
+      const raw = localStorage.getItem(APPS_SCRIPT_QUEUE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveQueue(queue: AppsScriptQueueItem[]): void {
+    try {
+      localStorage.setItem(APPS_SCRIPT_QUEUE_KEY, JSON.stringify(queue));
+    } catch {
+      // ignore storage quota errors
+    }
+  }
+
+  public getPendingCount(): number {
+    return this.getQueue().length;
+  }
+
+  /**
+   * Zero-latency background queue for Google Apps Script CRUD mutations.
+   * Coalesces consecutive updates to the same record ID so rapid UI edits
+   * or smart-budget batch operations complete in 0ms on the main thread.
+   */
+  public enqueueSync(
+    scriptUrl: string,
+    tabName: string,
+    action: 'CREATE' | 'UPDATE' | 'DELETE',
+    recordId: string,
+    values?: any[]
+  ): void {
+    if (!scriptUrl || !scriptUrl.startsWith('https://script.google.com')) return;
+
+    const queue = this.getQueue();
+    const existingIdx = queue.findIndex(
+      (item) => item.scriptUrl === scriptUrl && item.tabName === tabName && item.recordId === recordId
+    );
+
+    if (existingIdx >= 0) {
+      const existing = queue[existingIdx];
+      if (action === 'DELETE') {
+        if (existing.action === 'CREATE') {
+          // Created then deleted before flushing -> cancel out both
+          queue.splice(existingIdx, 1);
+          this.saveQueue(queue);
+          return;
+        } else {
+          queue[existingIdx] = {
+            ...existing,
+            action: 'DELETE',
+            values: undefined,
+            attempts: 0,
+          };
+        }
+      } else if (action === 'UPDATE' && values) {
+        // Preserve 'CREATE' if not yet flushed, just update payload values
+        queue[existingIdx] = {
+          ...existing,
+          values,
+          attempts: 0,
+        };
+      } else if (action === 'CREATE' && values) {
+        queue[existingIdx] = {
+          ...existing,
+          action: 'CREATE',
+          values,
+          attempts: 0,
+        };
+      }
+    } else {
+      queue.push({
+        id: `asq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        scriptUrl,
+        tabName,
+        action,
+        recordId,
+        values,
+        attempts: 0,
+        createdAt: Date.now(),
+      });
+    }
+
+    this.saveQueue(queue);
+    void this.flushQueue();
+  }
+
+  public async flushQueue(): Promise<void> {
+    if (this.isFlushing) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+
+    const queue = this.getQueue();
+    if (queue.length === 0) return;
+
+    this.isFlushing = true;
+    try {
+      while (true) {
+        const currentQueue = this.getQueue();
+        if (currentQueue.length === 0) break;
+        if (typeof navigator !== 'undefined' && !navigator.onLine) break;
+
+        const item = currentQueue[0];
+        try {
+          if (item.action === 'CREATE' && item.values) {
+            await this.createRecord(item.scriptUrl, item.tabName, item.values);
+          } else if (item.action === 'UPDATE' && item.values) {
+            await this.updateRecord(item.scriptUrl, item.tabName, item.recordId, item.values);
+          } else if (item.action === 'DELETE') {
+            await this.deleteRecord(item.scriptUrl, item.tabName, item.recordId);
+          }
+          // Remove processed head item
+          const updated = this.getQueue().filter((q) => q.id !== item.id);
+          this.saveQueue(updated);
+        } catch (err) {
+          const nextAttempts = (item.attempts || 0) + 1;
+          const updated = this.getQueue();
+          const idx = updated.findIndex((q) => q.id === item.id);
+          if (idx >= 0) {
+            if (nextAttempts >= 3) {
+              // Drop after 3 failed attempts to avoid blocking queue forever
+              updated.splice(idx, 1);
+            } else {
+              updated[idx].attempts = nextAttempts;
+            }
+            this.saveQueue(updated);
+          }
+          // Exponential backoff pause before next retry
+          await new Promise((r) => setTimeout(r, Math.min(4000, 600 * Math.pow(2, nextAttempts))));
+          break;
+        }
+      }
+    } finally {
+      this.isFlushing = false;
+    }
+  }
+
   private async sendRequest(scriptUrl: string, payload: any): Promise<any> {
     if (!scriptUrl) {
       throw new Error('Google Apps Script URL belum diatur.');
