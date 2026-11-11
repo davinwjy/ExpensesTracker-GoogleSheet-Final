@@ -1,41 +1,34 @@
-# Implementation Plan: Google Sheets Sync Performance Optimization & Row Safety Clarification
+# Automatic Google Apps Script URL Binding to Firebase Account - Completed
 
-## 1. Reassurance: Menghapus Baris Kosong 100% Aman
-> [!NOTE]
-> **Jawaban untuk pertanyaan Anda**: Menghapus baris kosong di Google Sheet **SAMA SEKALI TIDAK MENGANGGU** penambahan atau pengambilan data transaksi baru!
+Persist and bind the Google Apps Script Web App URL directly to each user's authenticated cloud profile in Firestore. When any user signs in on any new device or browser, their bound Web App URL is instantly restored from their cloud account and automatically initiates a data sync. For accounts without a connected URL, provide an interactive step-by-step connection guide directly in the dashboard banner.
 
-- **Mengapa Aman?**: Saat Anda menambah transaksi baru dari aplikasi, Google Apps Script menggunakan perintah `sheet.appendRow(...)`. Perintah ini bekerja secara dinamis: ia akan langsung menambahkan baris baru tepat di bawah transaksi terakhir.
-- **Manfaat**: Dengan menghapus ribuan baris kosong yang tidak terpakai, Google Apps Script tidak perlu lagi membaca atau memindai ribuan sel kosong, sehingga proses baca/tulis data transaksi menjadi **jauh lebih cepat dan hemat memori peladen**.
+## Completed Features
 
----
+1. **Cloud Profile Binding in Firestore**:
+   - Extended `User` and `UserSettings` interfaces in `src/types/index.ts` with `appsScriptUrl?: string;`.
+   - Added `saveUserAppsScriptUrl(userId: string, url: string)` in `src/lib/firestoreService.ts` to save and bind the URL directly to `settings/{userId}` and `users/{userId}`.
+   - Updated `setAppsScriptUrl` in `src/context/FinanceContext.tsx` to automatically bind the URL to the authenticated user's Firestore cloud profile whenever submitted.
 
-## 2. Technical Code Optimization: Google Apps Script (`Code.gs`)
+2. **Automatic Multi-Device Restoration & Sync on Login**:
+   - In `FinanceContext.tsx`, when Firebase user data arrives via `subscribeToUserData`:
+     - If the user has a bound `appsScriptUrl` in Firestore, the app auto-populates state and caches it to local storage.
+     - Automatically triggers `appsScriptService.readAllData(boundUrl)` to immediately load fresh Google Sheets data without requiring any manual clicks.
 
-Untuk memaksimalkan kecepatan sinkronisasi hingga **5x lebih cepat**, kami akan mengoptimalkan kode template Google Apps Script di dalam aplikasi:
+3. **Strict Account Isolation**:
+   - Monitored `user?.id` transitions with `activeUserIdRef`. When logging out or switching to an unlinked account, `appsScriptUrl` is cleared from memory and storage so accounts never cross-contaminate.
 
-### A. Mengganti `getDisplayValues()` dengan `getValues()`
-- `getDisplayValues()` memaksa peladen Google memformat teks (misal: mata uang/format tanggal) satu per satu, yang memakan waktu cukup lama.
-- `getValues()` membaca data mentah (*raw data*) langsung dari memori peladen secara *instant*.
+4. **Step-by-Step Onboarding Dashboard Banner (`src/components/GoogleSheetConnectBanner.tsx`)**:
+   - Automatically shown on the Dashboard when logged in without a Web App URL.
+   - Includes an expandable 3-step guide:
+     - **Langkah 1**: Buka Google Sheet &rarr; Extensions &rarr; Apps Script, with a 1-click **"Salin Kode Apps Script"** button (plays completion chime & pill).
+     - **Langkah 2**: Petunjuk deploy Web App (Execute as: Me, Who has access: Anyone).
+     - **Langkah 3**: Tombol langsung **"Masukkan URL &rarr;"** untuk membuka modal dan bind URL ke akun Firebase selamanya.
+   - Dismissible with per-user preference storage.
 
-### B. Single-Batch Scanning
-- Membaca data seluruh tab dalam satu panggilan API tunggal `sheet.getDataRange().getValues()` dan menyaring baris kosong secara otomatis di dalam memori.
+5. **Enhanced Modal Feedback & Disconnect Action**:
+   - `GoogleSheetSetupModal.tsx` now explicitly confirms: *"✓ Terikat ke akun: [email] (otomatis tersinkron antar perangkat)"*.
+   - Added a **"Putus Koneksi"** button to unbind the URL from the cloud profile whenever desired.
 
----
-
-## Proposed Changes to Codebase
-
-### `src/lib/appsScriptService.ts`
-- Perbarui `APPS_SCRIPT_TEMPLATE_CODE` menggunakan teknik `getDataRange().getValues()` yang dioptimasi.
-- Perbarui pembacaan tanggal dan angka agar mendukung format data mentah (*raw values*) dari Google Sheets secara presisi.
-
----
-
-## Verification Plan
-
-### Automated Verification
-- Run `compile_applet` to verify zero TypeScript build errors.
-- Run `lint_applet` to verify zero ESLint errors.
-
-### Manual Verification
-1. Terapkan kode Apps Script terbaru ke `Code.gs` di Google Sheet Anda.
-2. Jalankan *pull-to-refresh* di aplikasi untuk menguji kecepatan sinkronisasi data transaksi yang baru.
+6. **Quality & Verification**:
+   - Both `compile_applet` and `lint_applet` passed cleanly.
+   - Dev server running on port 3000 verified with HTTP 200 OK.

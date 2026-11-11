@@ -26,6 +26,7 @@ export const AccountModal: React.FC = () => {
     addAccount,
     updateAccount,
     deleteAccount,
+    showNotification,
   } = useFinance();
 
   const [name, setName] = useState('');
@@ -132,8 +133,19 @@ export const AccountModal: React.FC = () => {
 
       if (editingAccount) {
         await updateAccount(editingAccount.id, payload);
+        showNotification({
+          type: 'success',
+          title: 'Akun Diperbarui',
+          accountName: payload.name,
+        });
       } else {
         await addAccount(payload);
+        showNotification({
+          type: 'success',
+          title: 'Akun Ditambahkan',
+          accountName: payload.name,
+          amount: payload.balance,
+        });
       }
 
       handleClose();
@@ -146,9 +158,15 @@ export const AccountModal: React.FC = () => {
 
   const handleDelete = async () => {
     if (!editingAccount) return;
+    const accountToDeleteName = editingAccount.name;
     setIsSubmitting(true);
     try {
       await deleteAccount(editingAccount.id);
+      showNotification({
+        type: 'info',
+        title: 'Akun Dihapus',
+        accountName: accountToDeleteName,
+      });
       handleClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to delete account');

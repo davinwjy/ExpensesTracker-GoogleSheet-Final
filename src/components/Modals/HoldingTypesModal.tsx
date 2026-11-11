@@ -33,6 +33,7 @@ export const HoldingTypesModal: React.FC = () => {
     updateHoldingType,
     deleteHoldingType,
     investments,
+    showNotification,
   } = useFinance();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,6 +99,11 @@ export const HoldingTypesModal: React.FC = () => {
           example: example.trim() || undefined,
           badgeColor,
         });
+        showNotification({
+          type: 'success',
+          title: 'Kategori Portofolio Diperbarui',
+          accountName: trimmedLabel,
+        });
         setSuccess(`Holding type "${trimmedLabel}" updated successfully.`);
         resetForm();
       } else {
@@ -106,6 +112,11 @@ export const HoldingTypesModal: React.FC = () => {
           defaultCurrency,
           example: example.trim() || undefined,
           badgeColor,
+        });
+        showNotification({
+          type: 'success',
+          title: 'Kategori Portofolio Ditambahkan',
+          accountName: trimmedLabel,
         });
         setSuccess(`Holding type "${trimmedLabel}" created successfully.`);
         resetForm();
@@ -121,7 +132,13 @@ export const HoldingTypesModal: React.FC = () => {
     setError('');
     setSuccess('');
     try {
+      const target = holdingTypes.find((h) => h.id === id);
       await deleteHoldingType(id);
+      showNotification({
+        type: 'info',
+        title: 'Kategori Portofolio Dihapus',
+        accountName: target?.label,
+      });
       setSuccess('Holding type deleted successfully.');
       setDeletingId(null);
       if (editingId === id) {

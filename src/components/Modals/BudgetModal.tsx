@@ -137,9 +137,15 @@ export const BudgetModal: React.FC = () => {
 
   const handleDelete = async () => {
     if (!editingBudget?.id) return;
+    const cat = editingBudget.category;
     setIsSubmitting(true);
     try {
       await deleteBudget(editingBudget.id);
+      showNotification({
+        type: 'info',
+        title: 'Budget Limit Dihapus',
+        category: cat,
+      });
       handleClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to remove budget');

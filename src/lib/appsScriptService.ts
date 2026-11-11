@@ -197,12 +197,43 @@ export function parseSheetDate(rawDate: any): string {
   return str;
 }
 
-export function getStoredAppsScriptUrl(): string {
+/**
+ * Pre-filled Google Apps Script Web App URLs by account email.
+ * Whenever an account (e.g. davinwijaya16@gmail.com) logs in on a new device or browser,
+ * the Web App URL will automatically be pre-filled so they don't have to re-enter it.
+ *
+ * 👉 PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+ */
+export const PREFILLED_APPS_SCRIPT_URLS: Record<string, string> = {
+  // Example: 'davinwijaya16@gmail.com': 'https://script.google.com/macros/s/AKfycb.../exec',
+  'davinwijaya16@gmail.com': '', // <-- PASTE YOUR WEB APP URL HERE
+};
+
+export function getStoredAppsScriptUrl(userEmail?: string): string {
   try {
-    return localStorage.getItem(APPS_SCRIPT_URL_STORAGE_KEY) || '';
+    const saved = localStorage.getItem(APPS_SCRIPT_URL_STORAGE_KEY);
+    if (saved && saved.trim()) {
+      return saved.trim();
+    }
   } catch {
-    return '';
+    // ignore
   }
+
+  // If localStorage is empty, check pre-filled configuration for the user
+  if (userEmail) {
+    const normalizedEmail = userEmail.toLowerCase().trim();
+    const prefilled = PREFILLED_APPS_SCRIPT_URLS[normalizedEmail];
+    if (prefilled && prefilled.trim()) {
+      try {
+        localStorage.setItem(APPS_SCRIPT_URL_STORAGE_KEY, prefilled.trim());
+      } catch {
+        // ignore
+      }
+      return prefilled.trim();
+    }
+  }
+
+  return '';
 }
 
 export function saveAppsScriptUrl(url: string): string {

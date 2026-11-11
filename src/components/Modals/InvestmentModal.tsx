@@ -24,6 +24,7 @@ export const InvestmentModal: React.FC = () => {
     updateInvestment,
     deleteInvestment,
     usdIdrRate,
+    showNotification,
   } = useFinance();
 
   const [category, setCategory] = useState<InvestmentCategory>('Saham');
@@ -151,6 +152,11 @@ export const InvestmentModal: React.FC = () => {
           platform: platform.trim() || undefined,
           notes: notes.trim() || undefined,
         });
+        showNotification({
+          type: 'success',
+          title: 'Portofolio Diperbarui',
+          accountName: name.trim(),
+        });
       } else {
         await addInvestment({
           name: name.trim(),
@@ -162,6 +168,12 @@ export const InvestmentModal: React.FC = () => {
           units: units ? Number(units) : undefined,
           platform: platform.trim() || undefined,
           notes: notes.trim() || undefined,
+        });
+        showNotification({
+          type: 'success',
+          title: 'Portofolio Ditambahkan',
+          accountName: name.trim(),
+          amount: resolvedCurrency === 'IDR' ? parsedInvested : Math.round(parsedInvested * (parsedCustomRate || usdIdrRate)),
         });
       }
 
@@ -175,9 +187,15 @@ export const InvestmentModal: React.FC = () => {
 
   const handleDelete = async () => {
     if (!editingInvestment) return;
+    const targetName = editingInvestment.name;
     setIsSubmitting(true);
     try {
       await deleteInvestment(editingInvestment.id);
+      showNotification({
+        type: 'info',
+        title: 'Portofolio Dihapus',
+        accountName: targetName,
+      });
       handleClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to delete investment');

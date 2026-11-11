@@ -38,6 +38,7 @@ export const ExpensesView: React.FC = () => {
     setTransactionInitialType,
     setEditingTransaction,
     deleteTransaction,
+    showNotification,
   } = useFinance();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,7 +238,15 @@ export const ExpensesView: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      const target = transactions.find((t) => t.id === id);
       await deleteTransaction(id);
+      showNotification({
+        type: 'info',
+        title: 'Transaksi Dihapus',
+        amount: target?.amount,
+        category: target?.category,
+        accountName: accounts.find((a) => a.id === target?.accountId)?.name,
+      });
       setDeletingId(null);
     } catch (err) {
       console.error('Delete failed:', err);

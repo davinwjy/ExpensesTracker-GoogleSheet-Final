@@ -37,6 +37,7 @@ export const InvestmentsView: React.FC = () => {
     setTransferInitialMode,
     setIsHoldingTypesModalOpen,
     deleteInvestment,
+    showNotification,
   } = useFinance();
 
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
@@ -82,7 +83,13 @@ export const InvestmentsView: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
+      const target = investments.find((i) => i.id === id);
       await deleteInvestment(id);
+      showNotification({
+        type: 'info',
+        title: 'Portofolio Dihapus',
+        accountName: target?.name,
+      });
       if (selectedAsset?.id === id) {
         setSelectedAsset(null);
       }

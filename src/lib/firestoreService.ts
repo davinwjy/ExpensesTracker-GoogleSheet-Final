@@ -165,6 +165,7 @@ export const firestoreService = {
       usdIdrRate: 15850,
       privacyModeDefault: false,
       theme: 'dark',
+      appsScriptUrl: '',
     };
     await setDoc(doc(firestoreDb, 'settings', userId), sanitizeForFirestore(initialSettings));
   },
@@ -367,6 +368,27 @@ export const firestoreService = {
   async saveSettings(settings: UserSettings): Promise<void> {
     if (!firestoreDb) throw new Error('Firestore not ready');
     await setDoc(doc(firestoreDb, 'settings', settings.userId), sanitizeForFirestore(settings));
+  },
+
+  async saveUserAppsScriptUrl(userId: string, url: string): Promise<void> {
+    if (!firestoreDb || !userId) return;
+    const cleanUrl = (url || '').trim();
+    try {
+      // 1. Update settings doc
+      await setDoc(
+        doc(firestoreDb, 'settings', userId),
+        sanitizeForFirestore({ appsScriptUrl: cleanUrl, updatedAt: new Date().toISOString() }),
+        { merge: true }
+      );
+      // 2. Also update users doc for fast auth-time retrieval
+      await setDoc(
+        doc(firestoreDb, 'users', userId),
+        sanitizeForFirestore({ appsScriptUrl: cleanUrl, updatedAt: new Date().toISOString() }),
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('Failed to bind Apps Script URL to Firestore:', err);
+    }
   },
 
   // ---------------- MIGRATE LOCAL DATA TO FIRESTORE ----------------

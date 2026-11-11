@@ -54,6 +54,7 @@ interface FinanceContextType {
   // Google Apps Script Storage & Sync
   appsScriptUrl: string;
   setAppsScriptUrl: (url: string) => Promise<void>;
+  disconnectAppsScript: () => Promise<void>;
   isAppsScriptConnected: boolean;
   isAppsScriptSyncing: boolean;
   syncAppsScriptNow: () => Promise<void>;
@@ -363,14 +364,39 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [spreadsheetId, isSheetsSyncing, usdIdrRate]);
 
   // Google Apps Script Storage State & Methods
-  const [appsScriptUrl, setAppsScriptUrlState] = useState<string>(() => getStoredAppsScriptUrl());
+  const [appsScriptUrl, setAppsScriptUrlState] = useState<string>(() => getStoredAppsScriptUrl(user?.email));
   const [isAppsScriptSyncing, setIsAppsScriptSyncing] = useState<boolean>(false);
 
   const isAppsScriptConnected = Boolean(appsScriptUrl && appsScriptUrl.startsWith('https://script.google.com'));
 
+  // Strict Account Isolation: reset appsScriptUrl when user logs out or switches accounts
+  const activeUserIdRef = useRef<string | undefined>(user?.id);
+  useEffect(() => {
+    if (activeUserIdRef.current !== user?.id) {
+      activeUserIdRef.current = user?.id;
+      if (!user) {
+        removeAppsScriptUrl();
+        setAppsScriptUrlState('');
+      }
+    }
+  }, [user]);
+
   const setAppsScriptUrl = useCallback(async (url: string) => {
     const saved = saveAppsScriptUrl(url);
     setAppsScriptUrlState(saved);
+
+    // Bind URL directly to user's Firebase account in Firestore
+    if (user?.id) {
+      firestoreService.saveUserAppsScriptUrl(user.id, saved).catch((err) => {
+        console.warn('Failed to bind Apps Script URL to Firestore:', err);
+      });
+      if (settings) {
+        const nextSettings: UserSettings = { ...settings, appsScriptUrl: saved };
+        setSettings(nextSettings);
+        firestoreService.saveSettings(nextSettings).catch(() => {});
+      }
+    }
+
     if (!saved) return;
 
     await appsScriptService.initStructure(saved);
@@ -383,7 +409,19 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const nextStats = computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRate);
       setStats(nextStats);
     }
-  }, [usdIdrRate]);
+  }, [user?.id, settings, usdIdrRate]);
+
+  // Automatically activate pre-filled Apps Script URL when user logs in or mounts with fresh install
+  useEffect(() => {
+    if (!appsScriptUrl && user?.email) {
+      const prefilled = getStoredAppsScriptUrl(user.email);
+      if (prefilled && prefilled.startsWith('https://script.google.com')) {
+        setAppsScriptUrl(prefilled).catch((err) => {
+          console.warn('Auto-activate pre-filled Apps Script URL failed:', err);
+        });
+      }
+    }
+  }, [user?.email, appsScriptUrl, setAppsScriptUrl]);
 
   const syncAppsScriptNow = useCallback(async () => {
     if (!appsScriptUrl || isAppsScriptSyncing) return;
@@ -587,6 +625,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const closeNotification = useCallback(() => {
     setNotification(null);
   }, []);
+
+  const disconnectAppsScript = useCallback(async () => {
+    removeAppsScriptUrl();
+    setAppsScriptUrlState('');
+    if (user?.id) {
+      await firestoreService.saveUserAppsScriptUrl(user.id, '');
+      if (settings) {
+        const nextSettings: UserSettings = { ...settings, appsScriptUrl: '' };
+        setSettings(nextSettings);
+        await firestoreService.saveSettings(nextSettings).catch(() => {});
+      }
+    }
+    showNotification({
+      title: 'Google Sheet Terputus',
+      message: 'Koneksi Apps Script telah diputus dari akun Anda.',
+      type: 'info',
+    });
+  }, [user?.id, settings, showNotification]);
 
   const pushAllDataToGoogleSheet = useCallback(async () => {
     if (!appsScriptUrl && !spreadsheetId) {
@@ -922,8 +978,37 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setAccounts(data.accounts);
       setTransactions(data.transactions);
-      setInvestments(normalizedInvestments);
       setSettings(data.settings);
+
+      // Account-bound Apps Script URL restoration and auto-sync
+      const boundUrl = data.settings?.appsScriptUrl?.trim() || '';
+      if (boundUrl && boundUrl.startsWith('https://script.google.com')) {
+        if (boundUrl !== appsScriptUrl) {
+          saveAppsScriptUrl(boundUrl);
+          setAppsScriptUrlState(boundUrl);
+          // Auto-connect and sync data immediately on login
+          appsScriptService
+            .readAllData(boundUrl)
+            .then((fresh) => {
+              if (fresh.accounts.length > 0 || fresh.transactions.length > 0 || fresh.investments.length > 0) {
+                setAccounts(fresh.accounts);
+                setTransactions(fresh.transactions);
+                setInvestments(fresh.investments);
+                if (fresh.budgets.length > 0) setBudgets(fresh.budgets);
+                const nextStats = computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRateRef.current || 15850);
+                setStats(nextStats);
+              }
+            })
+            .catch((err) => {
+              console.warn('Initial auto-sync with bound Apps Script URL error:', err);
+            });
+        }
+      } else if (!boundUrl && appsScriptUrl && user?.id) {
+        // Current user in Firestore has no bound URL -> reset to guarantee account isolation
+        removeAppsScriptUrl();
+        setAppsScriptUrlState('');
+      }
+
       const rate = data.settings?.usdIdrRate || usdIdrRateRef.current || 15850;
       setUsdIdrRate(rate);
       if (data.settings?.rateSource) setRateSource(data.settings.rateSource);
@@ -2576,6 +2661,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Google Apps Script Storage & Sync
         appsScriptUrl,
         setAppsScriptUrl,
+        disconnectAppsScript,
         isAppsScriptConnected,
         isAppsScriptSyncing,
         syncAppsScriptNow,

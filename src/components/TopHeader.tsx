@@ -3,7 +3,6 @@ import {
   Menu,
   Eye,
   EyeOff,
-  Flame,
   Plus,
   ChevronDown,
   Receipt,
@@ -13,7 +12,6 @@ import {
   RefreshCw,
   LogOut,
   Sparkles,
-  Shield,
   Smartphone,
   Layers,
   WifiOff,
@@ -53,10 +51,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     setIsAddAccountOpen,
     setEditingTransaction,
     setEditingAccount,
-    setIsFirebaseSetupOpen,
     setIsGoogleSheetSetupOpen,
     isAppsScriptConnected,
+    syncAppsScriptNow,
+    isAppsScriptSyncing,
     isSheetsConnected,
+    syncGoogleSheetsNow,
+    isSheetsSyncing,
     spreadsheetId,
     setIsMobileAppModalOpen,
     setIsHoldingTypesModalOpen,
@@ -67,6 +68,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   const newMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const isSyncingActive = isLoading || isAppsScriptSyncing || isSheetsSyncing;
+
+  const handleMenuSync = async () => {
+    try {
+      if (isAppsScriptConnected) {
+        await syncAppsScriptNow();
+      } else if (isSheetsConnected) {
+        await syncGoogleSheetsNow();
+      } else {
+        await refreshData();
+      }
+      setIsUserMenuOpen(false);
+    } catch (err: any) {
+      console.warn('Sync failed:', err);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -221,110 +239,119 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-1.5 p-0.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#121622] border border-transparent hover:border-slate-200 dark:hover:border-[#1e2535] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-[#121622] border border-slate-200/70 dark:border-[#1e2535] transition-all cursor-pointer"
+              title="Menu Profil Pengguna"
             >
-              <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-[#161b27] border border-slate-200 dark:border-[#232b3d] flex items-center justify-center text-[10px] font-mono font-bold text-slate-800 dark:text-zinc-300">
-                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center text-[10px] font-mono shadow-sm">
+                {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
               </div>
+              <ChevronDown
+                className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${
+                  isUserMenuOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
 
             {isUserMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-56 p-1.5 bg-white dark:bg-[#0f131c] border border-slate-200 dark:border-[#1f2637] rounded-xl shadow-2xl z-50 animate-in fade-in space-y-0.5">
-                <div className="px-2.5 py-2 border-b border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.name || 'Account'}</p>
-                    {isUserAdmin(user) && (
-                      <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                        Admin
-                      </span>
-                    )}
+              <div className="absolute right-0 mt-2 w-64 sm:w-72 p-2 bg-white dark:bg-[#0c1017] border border-slate-200/90 dark:border-[#1e2638] rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 space-y-1">
+                {/* User Header Profile Card */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#111622] border border-slate-200/60 dark:border-[#1c2436] mb-1">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm shadow-emerald-500/20">
+                      {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate">
+                          {user?.name || 'User Account'}
+                        </p>
+                        {isUserAdmin(user) && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-0.5 font-mono">
+                        {user?.email || 'user@wealthtrack.app'}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
                 </div>
 
-                {isUserAdmin(user) && (
+                {/* Primary Menu Options */}
+                <div className="space-y-0.5">
+                  {/* Google Sheet Sync Settings */}
                   <button
                     onClick={() => {
                       setIsUserMenuOpen(false);
-                      setActiveTab('admin');
+                      setIsGoogleSheetSetupOpen(true);
                     }}
-                    className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 rounded-xl cursor-pointer transition-colors font-semibold"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b29] rounded-xl cursor-pointer transition-colors"
                   >
-                    <span className="flex items-center gap-2">
-                      <Shield className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-                      <span>Admin Console</span>
+                    <span className="flex items-center gap-2.5">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                      <span className="font-medium">Google Sheet</span>
                     </span>
-                    <span className="text-[10px] bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 rounded text-emerald-700 dark:text-emerald-300 font-mono">
-                      Manage
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        isAppsScriptConnected || isSheetsConnected
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                      }`}
+                    >
+                      {isAppsScriptConnected || isSheetsConnected ? 'Terkoneksi' : 'Hubungkan'}
                     </span>
                   </button>
-                )}
 
-                <button
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    setIsFirebaseSetupOpen(true);
-                  }}
-                  className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-amber-800 dark:text-amber-300 hover:bg-amber-500/10 rounded-xl cursor-pointer transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <Flame className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                    <span className="font-semibold">Cloud Sync</span>
-                  </span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                      isFirebase
-                        ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                        : 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
-                    }`}
+                  {/* Manual Data Sync */}
+                  <button
+                    onClick={handleMenuSync}
+                    disabled={isSyncingActive}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b29] rounded-xl cursor-pointer transition-colors disabled:opacity-60"
                   >
-                    {isFirebase ? 'Active' : 'Setup'}
-                  </span>
-                </button>
+                    <span className="flex items-center gap-2.5">
+                      <RefreshCw
+                        className={`w-4 h-4 text-slate-500 dark:text-zinc-400 shrink-0 ${
+                          isSyncingActive ? 'animate-spin text-emerald-500' : ''
+                        }`}
+                      />
+                      <span className="font-medium">Sinkronkan Data</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
+                      {isSyncingActive ? 'Menyinkronkan...' : 'Google Sheet'}
+                    </span>
+                  </button>
 
-                <button
-                  onClick={() => refreshData()}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ${
-                        isLoading ? 'animate-spin text-emerald-500' : ''
-                      }`}
-                    />
-                    <span>Sync Data</span>
-                  </span>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Cloud</span>
-                </button>
+                  {/* Mobile App Modal */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setIsMobileAppModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b29] rounded-xl cursor-pointer transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <Smartphone className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                      <span className="font-medium">Aplikasi Mobile</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 font-mono">
+                      APK Android
+                    </span>
+                  </button>
+                </div>
 
-                <button
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    setIsMobileAppModalOpen(true);
-                  }}
-                  className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-emerald-300 hover:bg-emerald-500/10 rounded-xl cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Mobile App / APK</span>
-                  </span>
-                  <span className="text-[10px] text-emerald-300 px-1.5 py-0.5 rounded bg-emerald-500/20 font-mono">
-                    Android
-                  </span>
-                </button>
+                <div className="border-t border-slate-100 dark:border-[#1a2233] my-1" />
 
-                <div className="border-t border-slate-200 dark:border-slate-800 my-1" />
-
+                {/* Logout Button */}
                 <button
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     logout();
                   }}
-                  className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer font-semibold"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-colors font-semibold"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Log Out</span>
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  <span>Keluar (Log Out)</span>
                 </button>
               </div>
             )}

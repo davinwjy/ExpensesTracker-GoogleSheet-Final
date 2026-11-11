@@ -25,6 +25,7 @@ import {
   sortTransactionsNewestFirst,
   isTransactionLocked,
 } from '../lib/formatters';
+import { GoogleSheetConnectBanner } from './GoogleSheetConnectBanner';
 
 export const DashboardView: React.FC = () => {
   const {
@@ -96,6 +97,9 @@ export const DashboardView: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* GOOGLE APPS SCRIPT CONNECT BANNER (WITH 3-STEP GUIDE) */}
+      <GoogleSheetConnectBanner />
 
       {/* NET WORTH OVERVIEW */}
       <div className="relative bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5 sm:p-6 shadow-sm">

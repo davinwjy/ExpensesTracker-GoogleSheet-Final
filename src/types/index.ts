@@ -18,6 +18,7 @@ export interface User {
   email: string;
   name: string;
   role?: 'admin' | 'user';
+  appsScriptUrl?: string;
   createdAt?: string;
 }
 
@@ -121,6 +122,7 @@ export interface UserSettings {
   rateSource?: string;
   privacyModeDefault: boolean;
   theme: 'dark' | 'light';
+  appsScriptUrl?: string;
 }
 
 export interface DashboardStats {
