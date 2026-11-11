@@ -13,6 +13,7 @@ import {
   CategoryBudget,
   BudgetProgress,
   NotificationPopupItem,
+  CustomTransactionCategory,
 } from '../types';
 import { api } from '../lib/api';
 import { localDb, DEFAULT_HOLDING_TYPES } from '../lib/localDb';
@@ -22,7 +23,7 @@ import { firestoreService } from '../lib/firestoreService';
 import { computeStats } from '../lib/statsHelper';
 import { exchangeRateService } from '../lib/exchangeRateService';
 import { offlineSyncManager } from '../lib/offlineSync';
-import { isTransactionLocked } from '../lib/formatters';
+import { isTransactionLocked, EXPENSE_CATEGORIES, INCOME_CATEGORIES, CATEGORY_COLORS } from '../lib/formatters';
 import {
   googleSheetsService,
   SHEET_TAB_NAMES,
@@ -187,6 +188,15 @@ interface FinanceContextType {
   }) => Promise<void>;
   updateHoldingType: (id: string, data: Partial<HoldingType>) => Promise<void>;
   deleteHoldingType: (id: string) => Promise<void>;
+
+  // Transaction Categories (Default + Custom)
+  customCategories: CustomTransactionCategory[];
+  expenseCategories: string[];
+  incomeCategories: string[];
+  addCustomCategory: (name: string, type: 'expense' | 'income', color?: string) => Promise<void>;
+  deleteCustomCategory: (id: string) => Promise<void>;
+  isCategoryModalOpen: boolean;
+  setIsCategoryModalOpen: (v: boolean) => void;
 
   // Settings
   updateRate: (newRate: number, source?: string) => Promise<void>;
@@ -657,6 +667,66 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [holdingTypes, setHoldingTypes] = useState<HoldingType[]>(DEFAULT_HOLDING_TYPES);
   const [isHoldingTypesModalOpen, setIsHoldingTypesModalOpen] = useState(false);
 
+  // Custom Transaction Categories state
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [customCategories, setCustomCategories] = useState<CustomTransactionCategory[]>(() => {
+    try {
+      const saved = localStorage.getItem(`wealthtrack_custom_categories_${user?.id || 'default'}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((cat: CustomTransactionCategory) => {
+            if (cat.name && cat.color) {
+              CATEGORY_COLORS[cat.name] = cat.color;
+            }
+          });
+          return parsed;
+        }
+      }
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`wealthtrack_custom_categories_${user?.id || 'default'}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((cat: CustomTransactionCategory) => {
+            if (cat.name && cat.color) {
+              CATEGORY_COLORS[cat.name] = cat.color;
+            }
+          });
+          setCustomCategories(parsed);
+          return;
+        }
+      }
+    } catch {}
+    if (settings?.customCategories && Array.isArray(settings.customCategories)) {
+      settings.customCategories.forEach((cat) => {
+        if (cat.name && cat.color) {
+          CATEGORY_COLORS[cat.name] = cat.color;
+        }
+      });
+      setCustomCategories(settings.customCategories);
+    }
+  }, [user?.id, settings?.customCategories]);
+
+  const expenseCategories = React.useMemo(() => {
+    const customExp = customCategories
+      .filter((c) => c.type === 'expense')
+      .map((c) => c.name);
+    return Array.from(new Set([...EXPENSE_CATEGORIES, ...customExp]));
+  }, [customCategories]);
+
+  const incomeCategories = React.useMemo(() => {
+    const customInc = customCategories
+      .filter((c) => c.type === 'income')
+      .map((c) => c.name);
+    return Array.from(new Set([...INCOME_CATEGORIES, ...customInc]));
+  }, [customCategories]);
+
   // Modal states
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [transactionInitialType, setTransactionInitialType] = useState<'expense' | 'income'>('expense');
@@ -850,7 +920,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const isBudgetModalOpenRef = useRef(false);
   const isPayBillOpenRef = useRef(false);
   const isHoldingTypesModalOpenRef = useRef(false);
+  const isCategoryModalOpenRef = useRef(false);
   const isFirebaseSetupOpenRef = useRef(false);
+  const isGoogleSheetSetupOpenRef = useRef(false);
   const isMobileAppModalOpenRef = useRef(false);
   const activeTabRef = useRef<'dashboard' | 'expenses' | 'accounts' | 'investments' | 'budgeting' | 'stats' | 'admin'>('dashboard');
   const tabHistoryRef = useRef<Array<'dashboard' | 'expenses' | 'accounts' | 'investments' | 'budgeting' | 'stats' | 'admin'>>(['dashboard']);
@@ -865,10 +937,35 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => { isBudgetModalOpenRef.current = isBudgetModalOpen; }, [isBudgetModalOpen]);
   useEffect(() => { isPayBillOpenRef.current = isPayBillOpen; }, [isPayBillOpen]);
   useEffect(() => { isHoldingTypesModalOpenRef.current = isHoldingTypesModalOpen; }, [isHoldingTypesModalOpen]);
+  useEffect(() => { isCategoryModalOpenRef.current = isCategoryModalOpen; }, [isCategoryModalOpen]);
   useEffect(() => { isFirebaseSetupOpenRef.current = isFirebaseSetupOpen; }, [isFirebaseSetupOpen]);
+  useEffect(() => { isGoogleSheetSetupOpenRef.current = isGoogleSheetSetupOpen; }, [isGoogleSheetSetupOpen]);
   useEffect(() => { isMobileAppModalOpenRef.current = isMobileAppModalOpen; }, [isMobileAppModalOpen]);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
   useEffect(() => { tabHistoryRef.current = tabHistory; }, [tabHistory]);
+
+  const isAnyModalOpen =
+    isMobileQuickMenuOpen ||
+    isMobileMenuOpen ||
+    isAddExpenseOpen ||
+    isTransferOpen ||
+    isAddAccountOpen ||
+    isAddInvestmentOpen ||
+    isBudgetModalOpen ||
+    isPayBillOpen ||
+    isHoldingTypesModalOpen ||
+    isCategoryModalOpen ||
+    isFirebaseSetupOpen ||
+    isGoogleSheetSetupOpen ||
+    isMobileAppModalOpen;
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      try {
+        window.history.pushState({ modal: true }, '');
+      } catch {}
+    }
+  }, [isAnyModalOpen]);
 
   const goBack = useCallback((): boolean => {
     // 1. If any modal / quick action / drawer is open, close it first
@@ -878,6 +975,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     if (isMobileMenuOpenRef.current) {
       setIsMobileMenuOpen(false);
+      return true;
+    }
+    if (isGoogleSheetSetupOpenRef.current) {
+      setIsGoogleSheetSetupOpen(false);
+      return true;
+    }
+    if (isCategoryModalOpenRef.current) {
+      setIsCategoryModalOpen(false);
       return true;
     }
     if (isAddExpenseOpenRef.current) {
@@ -2276,6 +2381,77 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await refreshData();
   };
 
+  // ---------------- CUSTOM TRANSACTION CATEGORIES OPERATIONS ----------------
+  const addCustomCategory = async (name: string, type: 'expense' | 'income', color: string = '#10b981') => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      throw new Error('Please enter a category name');
+    }
+
+    const existingList = type === 'expense' ? expenseCategories : incomeCategories;
+    if (existingList.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+      throw new Error(`Category "${trimmed}" already exists in ${type === 'expense' ? 'Expense' : 'Income'} categories`);
+    }
+
+    const newCat: CustomTransactionCategory = {
+      id: 'cat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: trimmed,
+      type,
+      color,
+      createdAt: new Date().toISOString(),
+    };
+
+    CATEGORY_COLORS[trimmed] = color;
+
+    const nextCustom = [...customCategories, newCat];
+    setCustomCategories(nextCustom);
+
+    try {
+      localStorage.setItem(
+        `wealthtrack_custom_categories_${user?.id || 'default'}`,
+        JSON.stringify(nextCustom)
+      );
+    } catch {}
+
+    if (settings) {
+      const nextSettings: UserSettings = {
+        ...settings,
+        customCategories: nextCustom,
+      };
+      setSettings(nextSettings);
+      if (isFirebase && user) {
+        await firestoreService.saveSettings(nextSettings).catch(() => {});
+      } else {
+        await api.updateSettings({ customCategories: nextCustom } as any).catch(() => {});
+      }
+    }
+  };
+
+  const deleteCustomCategory = async (id: string) => {
+    const nextCustom = customCategories.filter((c) => c.id !== id);
+    setCustomCategories(nextCustom);
+
+    try {
+      localStorage.setItem(
+        `wealthtrack_custom_categories_${user?.id || 'default'}`,
+        JSON.stringify(nextCustom)
+      );
+    } catch {}
+
+    if (settings) {
+      const nextSettings: UserSettings = {
+        ...settings,
+        customCategories: nextCustom,
+      };
+      setSettings(nextSettings);
+      if (isFirebase && user) {
+        await firestoreService.saveSettings(nextSettings).catch(() => {});
+      } else {
+        await api.updateSettings({ customCategories: nextCustom } as any).catch(() => {});
+      }
+    }
+  };
+
   // ---------------- BUDGETING OPERATIONS ----------------
   const saveBudget = async (category: string, monthlyLimit: number, month?: string, id?: string) => {
     const budgetId = id || 'bgt_' + Date.now();
@@ -2894,6 +3070,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addHoldingType,
         updateHoldingType,
         deleteHoldingType,
+
+        // Transaction Categories (Default + Custom)
+        customCategories,
+        expenseCategories,
+        incomeCategories,
+        addCustomCategory,
+        deleteCustomCategory,
+        isCategoryModalOpen,
+        setIsCategoryModalOpen,
 
         // Modal states
         isHoldingTypesModalOpen,

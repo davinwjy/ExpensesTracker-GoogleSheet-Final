@@ -61,6 +61,17 @@ export const AccountsView: React.FC = () => {
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
           <button
             onClick={() => {
+              setEditingAccount(null);
+              setIsAddAccountOpen(true);
+            }}
+            className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Add Account</span>
+          </button>
+
+          <button
+            onClick={() => {
               setTransferInitialMode('bank_to_investment');
               setIsTransferOpen(true);
             }}
@@ -79,17 +90,6 @@ export const AccountsView: React.FC = () => {
           >
             <ArrowRightLeft className="w-3.5 h-3.5 text-blue-500 shrink-0" />
             <span className="truncate">Transfer</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setEditingAccount(null);
-              setIsAddAccountOpen(true);
-            }}
-            className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Add Account</span>
           </button>
         </div>
       </div>

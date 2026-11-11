@@ -13,6 +13,7 @@ import {
   X,
   CreditCard,
   Lock,
+  Tag,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import {
@@ -39,6 +40,9 @@ export const ExpensesView: React.FC = () => {
     setEditingTransaction,
     deleteTransaction,
     showNotification,
+    expenseCategories,
+    incomeCategories,
+    setIsCategoryModalOpen,
   } = useFinance();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,19 +98,19 @@ export const ExpensesView: React.FC = () => {
   // Available categories based on selected type filter
   const availableCategories = React.useMemo(() => {
     if (selectedTypeFilter === 'expense') {
-      return [...EXPENSE_CATEGORIES];
+      return [...expenseCategories];
     }
     if (selectedTypeFilter === 'income') {
-      return [...INCOME_CATEGORIES];
+      return [...incomeCategories];
     }
     const set = new Set<string>();
-    EXPENSE_CATEGORIES.forEach((c) => set.add(c));
-    INCOME_CATEGORIES.forEach((c) => set.add(c));
+    expenseCategories.forEach((c) => set.add(c));
+    incomeCategories.forEach((c) => set.add(c));
     transactions.forEach((t) => {
       if (t.category) set.add(t.category);
     });
     return Array.from(set);
-  }, [selectedTypeFilter, transactions]);
+  }, [selectedTypeFilter, transactions, expenseCategories, incomeCategories]);
 
   const applyPreset = (preset: 'all' | 'today' | 'this_month' | 'this_year') => {
     const today = getTodayStr();
@@ -277,6 +281,16 @@ export const ExpensesView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+          <button
+            onClick={() => {
+              setIsCategoryModalOpen(true);
+            }}
+            className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-[#131722] hover:bg-slate-50 dark:hover:bg-[#1a2030] text-slate-700 dark:text-zinc-200 text-xs font-medium border border-slate-200 dark:border-[#252c40] transition-colors cursor-pointer"
+          >
+            <Tag className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span className="truncate">Add Category</span>
+          </button>
+
           <button
             onClick={() => {
               setEditingTransaction(null);

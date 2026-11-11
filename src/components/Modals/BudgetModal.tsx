@@ -22,6 +22,7 @@ export const BudgetModal: React.FC = () => {
     deleteBudget,
     transactions,
     showNotification,
+    expenseCategories,
   } = useFinance();
 
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
@@ -37,16 +38,16 @@ export const BudgetModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Collect all unique categories from transactions to offer as choices
+  // Collect all unique categories from transactions + custom categories to offer as choices
   const availableCategories = React.useMemo(() => {
-    const set = new Set<string>(EXPENSE_CATEGORIES);
+    const set = new Set<string>(expenseCategories);
     transactions.forEach((tx) => {
       if (tx.type === 'expense' && tx.category && tx.category.trim()) {
         set.add(tx.category.trim());
       }
     });
     return Array.from(set);
-  }, [transactions]);
+  }, [transactions, expenseCategories]);
 
   useEffect(() => {
     if (isBudgetModalOpen) {

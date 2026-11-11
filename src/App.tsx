@@ -22,6 +22,7 @@ import { TransferModal } from './components/Modals/TransferModal';
 import { AccountModal } from './components/Modals/AccountModal';
 import { InvestmentModal } from './components/Modals/InvestmentModal';
 import { HoldingTypesModal } from './components/Modals/HoldingTypesModal';
+import { CategoryModal } from './components/Modals/CategoryModal';
 import { PayBillModal } from './components/Modals/PayBillModal';
 import { BudgetModal } from './components/Modals/BudgetModal';
 import { FirebaseSetupModal } from './components/Modals/FirebaseSetupModal';
@@ -215,6 +216,7 @@ const MainAppContent: React.FC = () => {
       <AccountModal />
       <InvestmentModal />
       <HoldingTypesModal />
+      <CategoryModal />
       <PayBillModal />
       <BudgetModal />
       <FirebaseSetupModal

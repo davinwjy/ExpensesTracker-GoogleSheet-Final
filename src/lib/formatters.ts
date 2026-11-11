@@ -103,6 +103,7 @@ export const INCOME_CATEGORIES = [
   'Freelance & Side Gig',
   'Selling Items',
   'Reimbursement',
+  'Debt Repayment',
   'Investment Return / Dividends',
   'Business Profit',
   'Rental & Passive Income',
@@ -136,6 +137,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Selling Items': '#f59e0b', // amber
   'Selling Items / Jual Barang': '#f59e0b',
   'Reimbursement': '#06b6d4', // cyan
+  'Debt Repayment': '#6366f1', // indigo
   'Investment Return / Dividends': '#0ea5e9', // sky
   'Investment Return / Dividen': '#0ea5e9',
   'Business Profit': '#3b82f6', // blue

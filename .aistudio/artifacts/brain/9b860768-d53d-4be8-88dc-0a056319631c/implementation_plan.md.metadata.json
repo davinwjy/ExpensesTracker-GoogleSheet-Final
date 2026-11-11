@@ -1,6 +1,6 @@
 {
-  "summary":  "Revised implementation plan focusing on Method 1 (Add Income for Credit Card / PayLater Refunds) while filtering out any Credit Card or PayLater accounts whose limit is not currently used (balance <= 0) when in Add Income mode.",
-  "updatedAt":  "2026-11-11T09:51:25.985068447Z",
+  "summary":  "Implementation plan for adding the default 'Debt Repayment' income category for recording debt repayments from friends, counted as standard income and increasing the destination account balance.",
+  "updatedAt":  "2026-11-11T11:23:12.225680594Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

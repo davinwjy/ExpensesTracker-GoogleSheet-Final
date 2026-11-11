@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, RotateCcw, AlertCircle, ArrowDownRight, Receipt, Loader2 } from 'lucide-react';
+import { X, Check, RotateCcw, AlertCircle, ArrowDownRight, Receipt, Loader2, Plus } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatIdr, EXPENSE_CATEGORIES, INCOME_CATEGORIES, getLocalDateString } from '../../lib/formatters';
 
@@ -15,6 +15,9 @@ export const AddExpenseModal: React.FC = () => {
     setEditingTransaction,
     updateTransaction,
     showNotification,
+    expenseCategories,
+    incomeCategories,
+    setIsCategoryModalOpen,
   } = useFinance();
 
   const [type, setType] = useState<'expense' | 'income'>('expense');
@@ -117,13 +120,13 @@ export const AddExpenseModal: React.FC = () => {
       const isCreditAcc = nextAcc && (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater');
       if (isCreditAcc) {
         setCategory('Cashback & Refunds');
-      } else if (!(INCOME_CATEGORIES as readonly string[]).includes(category)) {
-        setCategory(INCOME_CATEGORIES[0]);
+      } else if (!incomeCategories.includes(category)) {
+        setCategory(incomeCategories[0] || INCOME_CATEGORIES[0]);
       }
     } else {
       // Switch category if current category is not in expense categories
-      if (!(EXPENSE_CATEGORIES as readonly string[]).includes(category)) {
-        setCategory(EXPENSE_CATEGORIES[0]);
+      if (!expenseCategories.includes(category)) {
+        setCategory(expenseCategories[0] || EXPENSE_CATEGORIES[0]);
       }
     }
   };
@@ -320,7 +323,7 @@ export const AddExpenseModal: React.FC = () => {
   if (!isAddExpenseOpen) return null;
 
   // Active categories for select dropdown
-  const activeCategories: readonly string[] = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const activeCategories: readonly string[] = type === 'income' ? incomeCategories : expenseCategories;
   const categoryOptions = activeCategories.includes(category)
     ? [...activeCategories]
     : [category, ...activeCategories];
@@ -587,15 +590,25 @@ export const AddExpenseModal: React.FC = () => {
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
                 CLASSIFICATION / CATEGORY <span className="text-rose-500 dark:text-rose-400">*</span>
               </label>
-              <span
-                className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                  type === 'income'
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                }`}
-              >
-                {type === 'income' ? 'INCOME TAXONOMY' : 'EXPENSE TAXONOMY'}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="flex items-center gap-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Category</span>
+                </button>
+                <span
+                  className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
+                    type === 'income'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                  }`}
+                >
+                  {type === 'income' ? 'INCOME TAXONOMY' : 'EXPENSE TAXONOMY'}
+                </span>
+              </div>
             </div>
             <select
               value={category}

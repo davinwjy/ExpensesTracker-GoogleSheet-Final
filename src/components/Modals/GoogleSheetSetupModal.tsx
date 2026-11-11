@@ -51,23 +51,15 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
   useEffect(() => {
     if (!isOpen) return;
 
-    window.history.pushState({ modalOpen: true }, '');
-
-    const handlePopState = () => {
-      onClose();
-    };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

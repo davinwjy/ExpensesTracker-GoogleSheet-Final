@@ -1,56 +1,48 @@
-# Refund Kartu Kredit & PayLater via Menu Add Income
+# Kategori Default "Debt Repayment" pada Income
 
-Rencana ini mengimplementasikan **Metode 1 (Add Income ke Kartu Kredit / PayLater)** untuk mencatat refund tagihan, dengan aturan ketat bahwa pada mode **INCOME (+)**, pilihan akun **Kartu Kredit** atau **PayLater** yang limitnya **tidak terpakai** (`Used Balance = Rp 0`) otomatis disembunyikan dari daftar akun.
+Menambahkan kategori bawaan (**Default Category**) bernama **`Debt Repayment`** pada daftar kategori **Income** untuk mencatat uang masuk dari teman yang membayar utang/piutang, serta menghitungnya sebagai pemasukan biasa yang langsung menambah saldo akun tujuan.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> Seluruh spesifikasi telah disesuaikan dengan permintaan Anda. Silakan klik **Proceed** untuk menerapkan perubahan ini ke dalam aplikasi.
+> Berikut adalah keputusan yang telah dikonfirmasi dari jawaban Anda sebelum implementasi dijalankan:
 
-- **Confirmed Decision 1 — Metode 1 (Add Income untuk Refund Kartu Kredit)**: Pencatatan refund kartu kredit dilakukan melalui menu **Add Income (+)** ke akun Kartu Kredit yang bersangkutan, sehingga riwayat transaksi awal (`Rp 35.520`) tetap utuh dan refund tercatat sebagai transaksi pengurang tagihan tersendiri.
-- **Confirmed Decision 2 — Sembunyikan Kartu Kredit / PayLater yang Limitnya Tidak Terpakai**: Saat berada di tab **INCOME (+)**, dropdown pilihan akun hanya menampilkan rekening **Bank / Cash / E-Wallet** serta akun **Credit Card / PayLater yang memiliki tagihan berjalan (`balance > 0`)**. Kartu Kredit atau PayLater yang limitnya utuh / tidak terpakai (`balance <= 0`) tidak akan ditampilkan.
-- **Confirmed Decision 3 — Validasi Batas Refund & Akuntansi Bersih**:
-  - Jika pengguna memilih Kartu Kredit/PayLater yang sedang terpakai pada mode **INCOME (+)**, kategori otomatis diarahkan ke **Cashback & Refunds**.
-  - Nominal refund yang dimasukkan pada Kartu Kredit/PayLater dibatasi agar tidak melebihi jumlah limit yang sedang terpakai (*Used Debt*).
-  - Transaksi *Income* pada Kartu Kredit/PayLater otomatis mengurangi saldo tagihan kartu kredit tanpa menggelembungkan statistik *Monthly Cash Income* (pemasukan kas bulanan) di Dashboard.
+- **Confirmed Decision 1 (Kategori Pencatatan)**: Menambahkan kategori default **`Debt Repayment`** ke dalam daftar kategori **Income** bawaan (bersanding dengan *Reimbursement*, *Salary / Wage*, dll.).
+- **Confirmed Decision 2 (Perhitungan Laporan & Saldo)**: Transaksi **`Debt Repayment`** pada akun kas/bank dihitung sebagai **Income biasa** pada laporan bulanan/tahunan dan langsung menambah saldo akun yang dipilih.
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Memungkinkan pengguna mencatat *refund* atau *cashback* langsung ke akun Kartu Kredit / PayLater yang sedang memiliki tagihan terpakai melalui menu **Add Income (+)**, sembari menyembunyikan kartu kredit/PayLater yang tidak memiliki tagihan (`Used = 0`) agar daftar akun tetap bersih dan bebas dari salah pilih.
-- **Target Audience / Persona**: Pengguna yang menerima *partial refund* atau *full refund* atas transaksi kartu kredit/PayLater dan ingin memulihkan limit kartu kredit secara akurat.
-- **Key Value**: Mencegah kesalahan input (tidak bisa memasukkan *income*/refund ke kartu kredit yang tidak punya tagihan), mengotomatiskan pemilihan kategori *Cashback & Refunds*, dan menjaga akurasi *Net Worth* serta sisa limit kredit.
+- **What It Does**: Menyediakan kategori resmi **`Debt Repayment`** di dalam pilihan **Income** ketika pengguna mencatat transaksi uang masuk dari teman yang melunasi pinjaman atau mengganti utang.
+- **Target Audience / Persona**: Pengguna yang sering menalangi atau meminjamkan dana kepada teman (yang sebelumnya dicatat pada kategori *Debt & Loans* di Expense) dan ingin mencatat pelunasannya secara terstruktur tanpa bercampur dengan *Reimbursement* kantor.
+- **Key Value**: Memisahkan pengembalian piutang personal (*Debt Repayment*) dari klaim *Reimbursement* biasa, dengan warna penanda khusus agar mudah difilter di halaman **Transactions** dan dianalisis pada grafik arus kas.
 
 ---
 
 ## 2. User Experience & Visual Design
 
 - **Key User Flows**:
-  1. Pengguna membuka modal **Record Cash Outflow / Inflow**, lalu beralih ke tab **INCOME (+)**.
-  2. Sistem secara dinamis menyaring dropdown **DESTINATION LEDGER (CREDIT)**:
-     - Seluruh akun **Bank**, **Cash**, dan **E-Wallet** tampil seperti biasa.
-     - Akun **Credit Card** dan **PayLater** **hanya tampil jika limitnya sedang terpakai (`balance > 0`)**. Jika kartu kredit tidak memiliki pemakaian (`balance === 0`), kartu tersebut otomatis disembunyikan.
-     - Jika akun yang sebelumnya terpilih kebetulan adalah kartu kredit dengan pemakaian `0` saat beralih dari tab *Expense* ke *Income*, pilihan akun otomatis berpindah ke akun pertama yang valid.
-  3. Saat pengguna memilih akun Kartu Kredit / PayLater yang limitnya sedang terpakai pada mode **INCOME (+)**:
-     - Kategori otomatis disetel ke **Cashback & Refunds**.
-     - Label informasi di kanan atas dropdown menampilkan **USED LIMIT (DEBT): Rp [Tagihan Terpakai]** agar pengguna tahu batas maksimal refund yang dapat dimasukkan.
-     - Jika pengguna memasukkan angka refund melebihi tagihan terpakai pada kartu tersebut, muncul peringatan validasi bahwa nominal refund melebihi limit yang sedang terpakai.
-  4. Pengguna menekan **SAVE INCOME**, dan tagihan kartu kredit langsung berkurang serta limit tersedia (*Available Limit*) kembali bertambah.
+  1. Pengguna membuka modal **Record Transaction** (`INCOME +`) atau menekan tombol **Add Income** di halaman **Transactions**.
+  2. Pengguna memilih akun penerima (Bank / Cash), memasukkan nominal pelunasan utang dari teman, lalu memilih kategori **`Debt Repayment`** pada dropdown **Classification / Category**.
+  3. Setelah disimpan, saldo akun Bank/Cash bertambah sesuai nominal, transaksi tampil di daftar **Transactions** dengan warna penanda khusus, dan nilainya masuk ke perhitungan **Total Income**.
+  4. Di menu **Transaction Categories**, kategori **`Debt Repayment`** juga tampil sebagai kategori `INCOME` berstatus `DEFAULT`.
 - **Visual Identity & Theme**:
-  - *Aesthetic Direction*: Utilitarian Financial Ledger dengan tipografi `Plus Jakarta Sans` dan angka tabular `JetBrains Mono` (`tabular-nums`).
-  - *Color Palette & Mood*: Aksen *emerald* untuk mode `INCOME (+)` dan pemulihan limit kredit, serta *rose* untuk peringatan batas nominal refund.
+  - *Aesthetic Direction*: Utilitarian financial ledger dengan tipografi tabular (`font-mono tabular-nums`) yang konsisten dengan tema aplikasi saat ini.
+  - *Color Palette & Mood*: Menggunakan aksen warna **Indigo (`#6366f1`)** untuk kategori **`Debt Repayment`** agar kontras dan mudah dibedakan dari *Reimbursement* (`#06b6d4` cyan) maupun *Salary / Wage* (`#10b981` emerald).
+  - *Typography & Hierarchy*: Label kategori satu baris yang ringkas dan jelas pada dropdown maupun tabel transaksi.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Penyaringan Dinamis Akun Kartu Kredit / PayLater pada Mode Income**
-  - *Chosen Approach*: Menyaring daftar akun (`selectableAccounts`) ketika `type === 'income'` dengan kondisi `acc.type !== 'credit_card' && acc.type !== 'paylater' || acc.balance > 0` (dengan pengecualian tetap menampilkan akun tersebut jika pengguna sedang mengedit transaksi *income* lama pada kartu itu).
-  - *Why*: Kartu kredit dan PayLater bukan rekening tabungan penyimpan uang tunai; dana masuk ke kartu kredit hanya relevan jika ada limit terpakai (tagihan) yang sedang di-refund atau dikurangi.
-- **Decision 2: Pemisahan Refund Kartu Kredit dari Pemasukan Kas Bulanan**
-  - *Chosen Approach*: Memperbarui `statsHelper.ts` dan `AnalyticsView.tsx` agar transaksi `type === 'income'` pada akun `credit_card` / `paylater` tidak dihitung sebagai pemasukan uang tunai bulanan (*Monthly Cash Inflow*), melainkan khusus memotong saldo utang kartu kredit.
-  - *Why*: Menjaga laporan arus kas (*Cash Flow*) bulanan tetap murni mencerminkan uang masuk ke rekening Bank/Cash/E-Wallet.
+- **Decision 1: Menjadikan `Debt Repayment` sebagai Kategori Default di `INCOME_CATEGORIES`**
+  - *Chosen Approach*: Menambahkan `'Debt Repayment'` langsung ke konstanta `INCOME_CATEGORIES` dan memetakan warnanya pada `CATEGORY_COLORS`.
+  - *Why*: Tersedia secara otomatis untuk seluruh sesi dan perangkat tanpa perlu dibuat manual melalui *Custom Category*, serta langsung terintegrasi dengan filter transaksi dan sinkronisasi Google Sheets.
+  - *Alternatives Considered*: Meminta pengguna membuat kategori manual — kurang praktis karena pelunasan utang adalah pasangan alami dari kategori bawaan *Debt & Loans* pada Expense.
+- **Decision 2: Perlakuan Arus Kas sebagai Income Standar**
+  - *Chosen Approach*: Transaksi `income` dengan kategori `Debt Repayment` ke rekening Bank/Cash diperlakukan sama seperti kategori Income standar lainnya (menambah saldo akun dan dihitung dalam *Total Income*).
+  - *Why*: Sesuai dengan preferensi Anda agar uang kas yang kembali tercatat penuh sebagai pemasukan dan menambah saldo akun.
 
 ---
 
@@ -58,32 +50,29 @@ Rencana ini mengimplementasikan **Metode 1 (Add Income ke Kartu Kredit / PayLate
 
 - **Architecture & Component Diagram**:
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                   Add / Edit Transaction Modal                       │
-│                        (Mode: INCOME +)                              │
-└──────────────────────────────────┬───────────────────────────────────┘
-                                   │
-                                   ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│               Filter Daftar Akun (selectableAccounts)                │
-│  • Bank / Cash / E-Wallet ──────────────────────► TAMPIL             │
-│  • Credit Card / PayLater (Used Balance > 0) ───► TAMPIL (Refund)    │
-│  • Credit Card / PayLater (Used Balance == 0) ──► DISEMBUNYIKAN      │
-└──────────────────────────────────┬───────────────────────────────────┘
-                                   │ Saat Akun CC (Used > 0) Dipilih
-                                   ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│            Auto-Kategori & Validasi Refund Kartu Kredit              │
-│  • Kategori otomatis: "Cashback & Refunds"                           │
-│  • Validasi: Nominal Refund <= Used Balance (Tagihan Terpakai)       │
-│  • Simpan: Kurangi Used Balance CC & Pulihkan Available Credit Limit │
-└──────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                 Default Category Registry                    │
+│  INCOME_CATEGORIES + CATEGORY_COLORS ('Debt Repayment')      │
+└───────────────┬──────────────────────────────┬───────────────┘
+                │                              │
+                ▼                              ▼
+┌───────────────────────────────┐  ┌───────────────────────────┐
+│      FinanceContext State     │  │   Transaction Analytics   │
+│  incomeCategories (Default +  │  │  Counts as standard       │
+│  Custom merged automatically) │  │  Income & adds to balance │
+└───────┬───────────────┬───────┘  └───────────────────────────┘
+        │               │
+        ▼               ▼
+┌───────────────┐ ┌────────────────────────────────────────────┐
+│ AddExpense    │ │ ExpensesView Filter & CategoryModal List   │
+│ Modal (Income │ │ Shows 'Debt Repayment' with Indigo accent  │
+│ Dropdown)     │ │ and DEFAULT badge                          │
+└───────────────┘ └────────────────────────────────────────────┘
 ```
 
 - **Data Model & State**:
-  - `selectableAccounts`: Daftar akun terfilter di `AddExpenseModal` berdasarkan `type` (`expense` menampilkan semua akun; `income` menyembunyikan `credit_card` & `paylater` yang `balance <= 0`).
-  - `maxRefundableDebt`: Untuk `type === 'income'` pada akun `credit_card` / `paylater`, menghitung batas maksimal refund sebesar `selectedAccount.balance` (ditambah `editingTransaction.amount` jika sedang mengedit transaksi refund yang sudah ada).
+  - Menambahkan `'Debt Repayment'` ke daftar `INCOME_CATEGORIES` (tepat setelah `'Reimbursement'`) beserta warna `#6366f1` pada `CATEGORY_COLORS`.
+  - `FinanceContext` secara otomatis menggabungkan `INCOME_CATEGORIES` dengan kategori kustom ke dalam `incomeCategories`, sehingga `AddExpenseModal`, `ExpensesView`, dan `CategoryModal` langsung menampilkan opsi **`Debt Repayment`**.
 - **Interactive Component & State Mapping**:
-  - Saat pengguna menekan tombol toggle `INCOME (+)`, `handleTypeChange('income')` memeriksa apakah akun yang sedang terpilih masih ada di `selectableAccounts`; jika tidak (karena kartu kredit tersebut `balance <= 0`), otomatis memilih akun pertama di `selectableAccounts`.
-  - Saat pengguna memilih akun `credit_card` atau `paylater` pada mode `INCOME (+)`, kategori otomatis berubah ke `Cashback & Refunds`.
-  - Saat form disubmit, `addTransaction` / `updateTransaction` mengurangi `balance` (tagihan terpakai) pada kartu kredit dan menyinkronkan ke Firestore, Local Storage, dan Google Sheet.
+  - Saat pengguna memilih tab `INCOME +` di form transaksi, dropdown kategori menampilkan **`Debt Repayment`**.
+  - Saat pengguna memfilter kategori di halaman **Transactions** dengan mode *All Types* atau *Income Only*, **`Debt Repayment`** muncul sebagai opsi filter yang valid.

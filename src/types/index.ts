@@ -118,6 +118,14 @@ export interface Investment {
   createdAt: string;
 }
 
+export interface CustomTransactionCategory {
+  id: string;
+  name: string;
+  type: 'expense' | 'income';
+  color?: string;
+  createdAt?: string;
+}
+
 export interface UserSettings {
   userId: string;
   usdIdrRate: number;
@@ -127,6 +135,7 @@ export interface UserSettings {
   privacyModeDefault: boolean;
   theme: 'dark' | 'light';
   appsScriptUrl?: string;
+  customCategories?: CustomTransactionCategory[];
 }
 
 export interface DashboardStats {
