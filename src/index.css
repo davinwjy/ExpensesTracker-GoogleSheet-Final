@@ -233,12 +233,16 @@ html.light .bg-blue-700,
 html.light .bg-rose-600,
 html.light .bg-rose-700,
 html.light .bg-purple-600,
+html.light .bg-emerald-600,
+html.light .bg-emerald-700,
 html.light button.bg-indigo-600,
 html.light button.bg-blue-600,
 html.light button.bg-rose-600,
+html.light button.bg-emerald-600,
 html[data-theme="light"] .bg-indigo-600,
 html[data-theme="light"] .bg-blue-600,
-html[data-theme="light"] .bg-rose-600 {
+html[data-theme="light"] .bg-rose-600,
+html[data-theme="light"] .bg-emerald-600 {
   color: #ffffff !important;
 }
 
@@ -249,12 +253,16 @@ html.light .bg-blue-700 *,
 html.light .bg-rose-600 *,
 html.light .bg-rose-700 *,
 html.light .bg-purple-600 *,
+html.light .bg-emerald-600 *,
+html.light .bg-emerald-700 *,
 html.light button.bg-indigo-600 *,
 html.light button.bg-blue-600 *,
 html.light button.bg-rose-600 *,
+html.light button.bg-emerald-600 *,
 html[data-theme="light"] button.bg-indigo-600 *,
 html[data-theme="light"] button.bg-blue-600 *,
-html[data-theme="light"] button.bg-rose-600 * {
+html[data-theme="light"] button.bg-rose-600 *,
+html[data-theme="light"] button.bg-emerald-600 * {
   color: #ffffff !important;
 }
 
@@ -319,12 +327,12 @@ html.light button.text-slate-300:hover {
 }
 
 /* Text colors (Carefully excluding colored buttons) */
-html.light :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600).text-white,
-html.light :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600).text-slate-100,
-html.light :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600).text-slate-200,
-html[data-theme="light"] :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600).text-white,
-html[data-theme="light"] :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600).text-slate-100,
-html[data-theme="light"] :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600).text-slate-200 {
+html.light :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(button.bg-emerald-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600):not(.bg-emerald-600).text-white,
+html.light :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(button.bg-emerald-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600):not(.bg-emerald-600).text-slate-100,
+html.light :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(button.bg-emerald-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600):not(.bg-emerald-600).text-slate-200,
+html[data-theme="light"] :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(button.bg-emerald-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600):not(.bg-emerald-600).text-white,
+html[data-theme="light"] :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(button.bg-emerald-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600):not(.bg-emerald-600).text-slate-100,
+html[data-theme="light"] :not(button.bg-indigo-600):not(button.bg-blue-600):not(button.bg-rose-600):not(button.bg-purple-600):not(button.bg-emerald-600):not(.bg-indigo-600):not(.bg-blue-600):not(.bg-rose-600):not(.bg-purple-600):not(.bg-emerald-600).text-slate-200 {
   color: #0f172a !important;
 }
 
@@ -376,6 +384,15 @@ html[data-theme="light"] textarea::placeholder {
   color: #94a3b8 !important;
 }
 
+/* Dark mode browser autofill consistency */
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f4f4f5 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #121620 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Mobile bottom dock in light mode */
 html.light .md\:hidden.fixed.bottom-0,
 html[data-theme="light"] .md\:hidden.fixed.bottom-0 {
@@ -391,3 +408,4 @@ html[data-theme="light"] .fixed.inset-0.bg-black\/75 {
   background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(4px);
 }
+

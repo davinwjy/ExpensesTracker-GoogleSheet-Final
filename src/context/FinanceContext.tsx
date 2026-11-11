@@ -2404,7 +2404,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const totalRemaining = Math.max(0, totalBudgeted - totalSpent);
       const overallPercent = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
-      const isOverBudget = totalSpent > totalBudgeted;
+      const isOverBudget = totalBudgeted > 0 && totalSpent > totalBudgeted;
 
       return {
         items,

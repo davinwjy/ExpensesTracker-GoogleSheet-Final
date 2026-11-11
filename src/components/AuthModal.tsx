@@ -5,251 +5,273 @@ import {
   Mail,
   User as UserIcon,
   ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  Check,
+  CheckCircle2,
   AlertCircle,
-  Flame,
+  Eye,
+  EyeOff,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { FirebaseSetupModal } from './Modals/FirebaseSetupModal';
 
 export const AuthModal: React.FC = () => {
-  const { login, register, quickDemoLogin, isFirebase } = useAuth();
+  const { login, register, quickDemoLogin } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
 
     if (!email || !password) {
-      setError('Please fill in all required fields');
+      setError('Please enter both your email address and password.');
+      return;
+    }
+
+    if (mode === 'register' && !name.trim()) {
+      setError('Please enter your full name.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       if (mode === 'login') {
-        await login(email, password);
+        await login(email.trim(), password);
       } else {
-        await register(email, password, name);
+        await register(email.trim(), password, name.trim());
       }
     } catch (err: any) {
       const msg = err?.message || '';
-      if (msg.includes('Invalid email or password') || msg.includes('not found') || msg.includes('Authentication failed')) {
+      if (
+        msg.includes('Invalid email or password') ||
+        msg.includes('not found') ||
+        msg.includes('Authentication failed') ||
+        msg.includes('invalid-credential') ||
+        msg.includes('wrong-password') ||
+        msg.includes('user-not-found')
+      ) {
         setError(
-          'Email atau password salah. Jika belum memiliki akun, klik tab "Register" untuk mendaftar.'
+          'Invalid email or password. Please check your credentials or register a new account.'
         );
+      } else if (msg.includes('email-already-in-use')) {
+        setError('This email is already registered. Please sign in instead.');
+      } else if (msg.includes('weak-password')) {
+        setError('Password is too short. Please use at least 6 characters.');
       } else {
-        setError(msg || 'Authentication failed. Please check your credentials.');
+        setError(msg || 'Authentication failed. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
   const handleQuickDemo = async () => {
     setError('');
+    setSuccessMsg('');
     setIsSubmitting(true);
     try {
       await quickDemoLogin();
     } catch (err: any) {
-      setError(err?.message || 'Failed to start demo session');
+      setError(err?.message || 'Failed to start demo session.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const switchMode = (targetMode: 'login' | 'register') => {
+    setMode(targetMode);
+    setError('');
+    setSuccessMsg('');
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[#08090c] relative overflow-hidden font-mono">
-      {/* Subtle grid pattern background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#14182415_1px,transparent_1px),linear-gradient(to_bottom,#14182415_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-[#08090c] text-slate-900 dark:text-zinc-100 relative overflow-hidden transition-colors duration-200">
+      {/* Subtle Ambient Glow & Architectural Grid */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#64748b0d_1px,transparent_1px),linear-gradient(to_bottom,#64748b0d_1px,transparent_1px)] bg-[size:32px_32px]" />
+      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[320px] bg-emerald-500/10 dark:bg-emerald-500/8 rounded-full blur-3xl" />
 
-      <div className="w-full max-w-md bg-[#0d1017] border border-[#1b212e] rounded shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95">
-        {/* Command Strip Brand Header */}
-        <div className="p-5 text-center border-b border-[#1b212e] bg-[#080a0f]">
-          <div className="inline-flex w-10 h-10 rounded bg-emerald-500/10 border border-emerald-500/30 items-center justify-center mb-2.5">
-            <Wallet className="w-5 h-5 text-emerald-400 stroke-[2.5]" />
+      <div className="w-full max-w-[420px] bg-white dark:bg-[#0d1017] border border-slate-200/90 dark:border-[#1b212e] rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-2xl dark:shadow-black/60 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+        {/* Top Brand Header */}
+        <div className="px-6 pt-8 pb-6 text-center">
+          <div className="inline-flex w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 items-center justify-center mb-4 shadow-xs">
+            <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400 stroke-[2.2]" />
           </div>
-          <h1 className="text-sm sm:text-base font-bold text-zinc-100 tracking-wider uppercase">
-            WEALTHTRACK TERMINAL
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+            {mode === 'login' ? 'Welcome back' : 'Create your account'}
           </h1>
-          <p className="text-[11px] text-zinc-500 mt-0.5">
-            Multi-Asset Portfolio & Liquidity Ledger System
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+            {mode === 'login'
+              ? 'Sign in to manage your portfolio, cash flow, and budgets.'
+              : 'Get started with unified personal finance and investment tracking.'}
           </p>
-
-          <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[10px] text-emerald-400">
-            <ShieldCheck className="w-3 h-3" />
-            <span>CLOUD AUTH & REAL-TIME REPLICATION</span>
-          </div>
         </div>
 
-        {/* Tab switch (2 Tabs: Sign In | Register) */}
-        <div className="p-5">
-          <div className="grid grid-cols-2 p-0.5 bg-[#080a0f] rounded border border-[#1d2332] text-xs font-semibold mb-4">
+        {/* Main Form Body */}
+        <div className="px-6 pb-7">
+          {/* Segmented Mode Switcher */}
+          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#121620] rounded-xl border border-slate-200/80 dark:border-[#1d2332] text-xs font-semibold mb-6">
             <button
               type="button"
-              onClick={() => {
-                setMode('login');
-                setError('');
-              }}
-              className={`py-1.5 rounded transition-all cursor-pointer ${
-                mode === 'login' ? 'bg-[#1b212e] text-emerald-400 border border-[#2a3449] font-bold' : 'text-zinc-400 hover:text-zinc-200'
+              onClick={() => switchMode('login')}
+              className={`py-2 rounded-lg transition-all cursor-pointer ${
+                mode === 'login'
+                  ? 'bg-white dark:bg-[#1d2434] text-slate-900 dark:text-emerald-400 shadow-xs font-bold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
-              SIGN IN
+              Sign In
             </button>
             <button
               type="button"
-              onClick={() => {
-                setMode('register');
-                setError('');
-              }}
-              className={`py-1.5 rounded transition-all cursor-pointer ${
-                mode === 'register' ? 'bg-[#1b212e] text-emerald-400 border border-[#2a3449] font-bold' : 'text-zinc-400 hover:text-zinc-200'
+              onClick={() => switchMode('register')}
+              className={`py-2 rounded-lg transition-all cursor-pointer ${
+                mode === 'register'
+                  ? 'bg-white dark:bg-[#1d2434] text-slate-900 dark:text-emerald-400 shadow-xs font-bold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
-              REGISTER
+              Register
             </button>
           </div>
 
-          {/* Cloud sync benefit badge */}
-          <div className="mb-3.5 p-2 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2 text-emerald-300 text-[11px]">
-            <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-            <span className="text-[10px] text-emerald-300 leading-tight">
-              Tersinkronisasi otomatis via Cloud di PC, Laptop, dan HP secara instan.
-            </span>
-          </div>
-
+          {/* Error Banner */}
           {error && (
-            <div className="flex items-center gap-2 p-2.5 mb-3.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="flex items-start gap-2.5 p-3.5 mb-5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/25 text-rose-700 dark:text-rose-300 text-xs leading-relaxed animate-in fade-in duration-150">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
+          {/* Success Banner */}
           {successMsg && (
-            <div className="flex items-center gap-2 p-2.5 mb-3.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
-              <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+            <div className="flex items-start gap-2.5 p-3.5 mb-5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs leading-relaxed animate-in fade-in duration-150">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
               <span>{successMsg}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                  FULL NAME
+                <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                  Full Name
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Davin Wijaya"
-                    className="w-full bg-[#080a0f] border border-[#1d2332] focus:border-emerald-500 rounded pl-8 pr-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                    placeholder="e.g. Alex Morgan"
+                    autoComplete="name"
+                    className="w-full bg-slate-50/80 dark:bg-[#121620] border border-slate-200 dark:border-[#1f2637] focus:bg-white dark:focus:bg-[#151a26] focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-all"
                   />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                EMAIL IDENTIFIER
+              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                Email Address
               </label>
               <div className="relative">
-                <Mail className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full bg-[#080a0f] border border-[#1d2332] focus:border-emerald-500 rounded pl-8 pr-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className="w-full bg-slate-50/80 dark:bg-[#121620] border border-slate-200 dark:border-[#1f2637] focus:bg-white dark:focus:bg-[#151a26] focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-all"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                ACCESS KEY / PASSWORD
+              <label className="block text-xs font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">
+                Password
               </label>
               <div className="relative">
-                <Lock className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Lock className="w-4 h-4 text-slate-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-[#080a0f] border border-[#1d2332] focus:border-emerald-500 rounded pl-8 pr-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none"
+                  placeholder="Enter your password"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  className="w-full bg-slate-50/80 dark:bg-[#121620] border border-slate-200 dark:border-[#1f2637] focus:bg-white dark:focus:bg-[#151a26] focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-all"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer disabled:opacity-50 mt-1 uppercase"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-60 mt-2"
             >
-              <span>{isSubmitting ? 'AUTHENTICATING...' : mode === 'login' ? 'AUTHORIZE TERMINAL SESSION' : 'REGISTER ACCOUNT'}</span>
-              <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <span>{mode === 'login' ? 'Sign In' : 'Create Account'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
-          {/* Quick Demo Login Option */}
-          <div className="mt-4 pt-3.5 border-t border-[#1b212e] space-y-1.5">
-            <button
-              type="button"
-              onClick={handleQuickDemo}
-              disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded bg-[#080a0f] hover:bg-[#161a25] border border-[#1d2332] text-xs font-semibold text-emerald-400 transition-all cursor-pointer"
-            >
-              <Sparkles className="w-3 h-3 text-emerald-400" />
-              <span>EXPLORE INSTANT DEMO ACCOUNT</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('davinwijaya16@gmail.com');
-                setPassword('password123');
-                if (mode === 'register') {
-                  setName('Davin Wijaya');
-                }
-              }}
-              className="w-full flex items-center justify-center gap-1.5 py-1 px-2.5 rounded bg-[#080a0f] hover:bg-[#161a25] border border-[#1d2332] text-[10px] text-zinc-400 hover:text-emerald-400 transition-all cursor-pointer"
-            >
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              <span>PRE-FILL: davinwijaya16@gmail.com</span>
-            </button>
-
-            {/* Direct Firebase setup link */}
-            <div className="pt-2 text-center">
+          {/* Bottom Footer Links */}
+          <div className="mt-6 pt-5 border-t border-slate-100 dark:border-[#191f2d] text-center space-y-2.5">
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
               <button
                 type="button"
-                onClick={() => setIsFirebaseModalOpen(true)}
-                className="inline-flex items-center gap-1.5 text-[11px] text-amber-400 hover:text-amber-300 underline font-medium cursor-pointer"
+                onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
+                className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer ml-1"
               >
-                <Flame className="w-3 h-3" />
-                <span>{isFirebase ? '🔥 Firebase Cloud Sync Active' : '🔥 Hubungkan ke Firebase (Sinkron Real-Time)'}</span>
+                {mode === 'login' ? 'Create one' : 'Sign in'}
+              </button>
+            </p>
+
+            <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 dark:text-zinc-500">
+              <span>Just exploring?</span>
+              <button
+                type="button"
+                onClick={handleQuickDemo}
+                disabled={isSubmitting}
+                className="font-medium text-slate-600 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 underline underline-offset-2 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Try Demo Account
               </button>
             </div>
           </div>
         </div>
       </div>
-
-      <FirebaseSetupModal isOpen={isFirebaseModalOpen} onClose={() => setIsFirebaseModalOpen(false)} />
     </div>
   );
 };

@@ -217,32 +217,37 @@ export const BudgetingView: React.FC = () => {
       </div>
 
       {/* OVERVIEW CARD */}
-      <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
-        {/* 2. OVERALL MACRO CONSUMPTION BAR */}
-        <div className="mt-5 pt-4 border-t border-slate-100 dark:border-[#1b212e] space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-slate-500 dark:text-zinc-400 font-medium">Spent This Month:</span>
-              <strong className="text-slate-900 dark:text-zinc-100 font-semibold tabular-nums">
-                {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
-              </strong>
-              <span className="text-slate-300 dark:text-zinc-600">/</span>
-              <span className="text-slate-500 dark:text-zinc-400 tabular-nums">
-                {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)} limit
+      <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-4 sm:p-6 shadow-sm space-y-4">
+        {/* OVERALL MACRO CONSUMPTION BAR */}
+        <div className="space-y-2.5">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <span className="block text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium mb-0.5">
+                Spent This Month
               </span>
+              <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                <strong className="text-base sm:text-lg text-slate-900 dark:text-zinc-100 font-bold tabular-nums whitespace-nowrap">
+                  {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
+                </strong>
+                <span className="text-xs text-slate-400 dark:text-zinc-500 tabular-nums whitespace-nowrap">
+                  / {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)} limit
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="shrink-0">
               <span
-                className={`text-xs font-semibold tabular-nums ${
-                  isOverBudget
+                className={`inline-block text-xs font-semibold tabular-nums whitespace-nowrap ${
+                  totalBudgeted === 0
+                    ? 'text-slate-500 dark:text-zinc-400'
+                    : isOverBudget
                     ? 'text-rose-600 dark:text-rose-400'
                     : overallPercent >= 75
                     ? 'text-amber-600 dark:text-amber-400'
                     : 'text-emerald-600 dark:text-emerald-400'
                 }`}
               >
-                {overallPercent.toFixed(1)}% Used
+                {totalBudgeted > 0 ? `${overallPercent.toFixed(1)}% Used` : '0.0% Used'}
               </span>
             </div>
           </div>
@@ -261,43 +266,55 @@ export const BudgetingView: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-            <span>Rp 0</span>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-zinc-400 pt-0.5">
             <span
               className={`font-medium tabular-nums ${
-                isOverBudget ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                totalBudgeted === 0
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : isOverBudget
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-emerald-600 dark:text-emerald-400'
               } ${isPrivacyMode ? 'privacy-blur' : ''}`}
             >
-              {isOverBudget
+              {totalBudgeted === 0
+                ? totalSpent > 0
+                  ? `${formatIdr(totalSpent)} spent without budget limit`
+                  : 'No monthly budget limit set yet'
+                : isOverBudget
                 ? `Over budget by ${formatIdr(totalSpent - totalBudgeted)}`
                 : `${formatIdr(totalRemaining)} remaining buffer`}
             </span>
-            <span>Total Limit: <span className={isPrivacyMode ? 'privacy-blur' : ''}>{formatMasked(totalBudgeted, 'IDR', isPrivacyMode)}</span></span>
+            <span className="whitespace-nowrap tabular-nums">
+              Total Limit:{' '}
+              <strong className={`font-semibold text-slate-700 dark:text-zinc-300 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+                {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)}
+              </strong>
+            </span>
           </div>
         </div>
 
         {/* Macro Telemetry Cards */}
-        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 dark:border-[#161d2b]">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 dark:border-[#161d2b]">
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230]">
-            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">Active Categories</span>
-            <p className="text-sm font-semibold text-slate-900 dark:text-zinc-200 mt-0.5">{items.length} Budgeted</p>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">Active Categories</span>
+            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-200 mt-0.5">{items.length} Budgeted</p>
           </div>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230]">
-            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">Monthly Ceiling</span>
-            <p className={`text-sm font-semibold text-slate-900 dark:text-zinc-200 tabular-nums mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">Monthly Ceiling</span>
+            <p className={`text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-200 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230]">
-            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">Total Spent</span>
-            <p className={`text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">Total Spent</span>
+            <p className={`text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230]">
-            <span className="text-xs text-slate-500 dark:text-zinc-400 font-medium block">Remaining Buffer</span>
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">Remaining Buffer</span>
             <p
-              className={`text-sm font-semibold tabular-nums mt-0.5 ${
+              className={`text-xs sm:text-sm font-semibold tabular-nums truncate mt-0.5 ${
                 isOverBudget ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
               } ${isPrivacyMode ? 'privacy-blur' : ''}`}
             >

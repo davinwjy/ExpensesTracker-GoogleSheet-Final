@@ -110,9 +110,9 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#08090c] text-slate-900 dark:text-zinc-100 flex flex-col transition-colors duration-150">
+    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-[#08090c] text-slate-900 dark:text-zinc-100 flex flex-col transition-colors duration-150">
       {/* Modern Desktop Left Sidebar & Contextual Header */}
-      <div className="flex flex-row min-h-screen">
+      <div className="flex flex-row min-h-screen w-full min-w-0">
         <Sidebar
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -120,7 +120,7 @@ const MainAppContent: React.FC = () => {
           onToggleCollapse={toggleSidebarCollapse}
         />
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
           <GlobalAnnouncementBanner />
           <TopHeader
             onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
@@ -128,7 +128,7 @@ const MainAppContent: React.FC = () => {
           <OfflineSyncBanner />
 
           <PullToRefresh>
-            <main ref={mainRef} className="flex-1 max-w-[1520px] w-full mx-auto px-3 sm:px-5 lg:px-6 py-5 pb-24 lg:pb-10">
+            <main ref={mainRef} className="flex-1 max-w-[1520px] w-full min-w-0 overflow-x-hidden mx-auto px-3 sm:px-5 lg:px-6 py-4 sm:py-5 pb-24 lg:pb-10">
               {activeTab === 'dashboard' && <DashboardView />}
               {activeTab === 'expenses' && <ExpensesView />}
               {activeTab === 'budgeting' && <BudgetingView />}
