@@ -72,13 +72,38 @@ export const TransferModal: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const wasOpenRef = React.useRef(false);
+  const lastInitialModeRef = React.useRef<string | null | undefined>(undefined);
+
   useEffect(() => {
     if (isTransferOpen) {
-      setIsSubmitting(false);
-      setMode(transferInitialMode || 'bank_to_investment');
-      resetFields();
+      const isFreshOpen = !wasOpenRef.current;
+      const isModeChanged = transferInitialMode !== lastInitialModeRef.current;
+
+      if (isFreshOpen || isModeChanged) {
+        setIsSubmitting(false);
+        wasOpenRef.current = true;
+        lastInitialModeRef.current = transferInitialMode;
+        setMode(transferInitialMode || 'bank_to_investment');
+        resetFields();
+      } else {
+        // Modal is already open: protect typed amount, notes, date, conversion!
+        // Only bind account/investment defaults if they were previously empty:
+        if (!fromAccountId && accounts.length > 0) {
+          setFromAccountId(accounts[0].id);
+        }
+        if (!toAccountId && accounts.length > 1) {
+          setToAccountId(accounts[1].id);
+        }
+        if (!toInvestmentId && investments.length > 0) {
+          setToInvestmentId(investments[0].id);
+        }
+      }
+    } else {
+      wasOpenRef.current = false;
+      lastInitialModeRef.current = undefined;
     }
-  }, [isTransferOpen, transferInitialMode, accounts, investments, usdIdrRate]);
+  }, [isTransferOpen, transferInitialMode, accounts, investments, fromAccountId, toAccountId, toInvestmentId]);
 
   const resetFields = () => {
     setIsSubmitting(false);

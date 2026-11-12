@@ -54,38 +54,61 @@ export const AddExpenseModal: React.FC = () => {
     [getSelectableAccountsForType, type]
   );
 
-  // Clean form every time modal opens or resets
+  const wasOpenRef = React.useRef(false);
+  const lastEditingTxIdRef = React.useRef<string | null | undefined>(undefined);
+
+  // Clean form ONLY on modal open or when editingTransaction changes, preserving typed inputs during background sync
   useEffect(() => {
     if (isAddExpenseOpen) {
-      setIsSubmitting(false);
-      if (editingTransaction) {
-        const txType = editingTransaction.type === 'income' ? 'income' : 'expense';
-        setType(txType);
-        setAmount(editingTransaction.amount.toString());
-        setAccountId(editingTransaction.accountId);
-        const fallbackCat = txType === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0];
-        setCategory(editingTransaction.category || fallbackCat);
-        setDate(editingTransaction.date);
-        setNotes(editingTransaction.notes || '');
-      } else {
-        const initType = transactionInitialType || 'expense';
-        const validAccs = getSelectableAccountsForType(initType);
-        const defaultAcc = validAccs.length > 0 ? validAccs[0] : undefined;
-        setType(initType);
-        setAmount('');
-        setAccountId(defaultAcc ? defaultAcc.id : '');
-        if (initType === 'income') {
-          const isCreditAcc = defaultAcc && (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
-          setCategory(isCreditAcc ? 'Cashback & Refunds' : INCOME_CATEGORIES[0]);
+      const isFreshOpen = !wasOpenRef.current;
+      const isEditingTxChanged = editingTransaction?.id !== lastEditingTxIdRef.current;
+
+      if (isFreshOpen || isEditingTxChanged) {
+        setIsSubmitting(false);
+        wasOpenRef.current = true;
+        lastEditingTxIdRef.current = editingTransaction?.id || null;
+
+        if (editingTransaction) {
+          const txType = editingTransaction.type === 'income' ? 'income' : 'expense';
+          setType(txType);
+          setAmount(editingTransaction.amount.toString());
+          setAccountId(editingTransaction.accountId);
+          const fallbackCat = txType === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0];
+          setCategory(editingTransaction.category || fallbackCat);
+          setDate(editingTransaction.date);
+          setNotes(editingTransaction.notes || '');
         } else {
-          setCategory(EXPENSE_CATEGORIES[0]);
+          const initType = transactionInitialType || 'expense';
+          const validAccs = getSelectableAccountsForType(initType);
+          const defaultAcc = validAccs.length > 0 ? validAccs[0] : undefined;
+          setType(initType);
+          setAmount('');
+          setAccountId(defaultAcc ? defaultAcc.id : '');
+          if (initType === 'income') {
+            const isCreditAcc = defaultAcc && (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
+            setCategory(isCreditAcc ? 'Cashback & Refunds' : INCOME_CATEGORIES[0]);
+          } else {
+            setCategory(EXPENSE_CATEGORIES[0]);
+          }
+          setDate(getLocalDateString());
+          setNotes('');
         }
-        setDate(getLocalDateString());
-        setNotes('');
+        setError('');
+      } else {
+        // Modal is already open and user may be typing: preserve amount, notes, date, category!
+        // Only if accountId was previously blank because accounts were still syncing, bind first valid account:
+        if (!accountId) {
+          const validAccs = getSelectableAccountsForType(type);
+          if (validAccs.length > 0) {
+            setAccountId(validAccs[0].id);
+          }
+        }
       }
-      setError('');
+    } else {
+      wasOpenRef.current = false;
+      lastEditingTxIdRef.current = undefined;
     }
-  }, [isAddExpenseOpen, editingTransaction, accounts, transactionInitialType, getSelectableAccountsForType]);
+  }, [isAddExpenseOpen, editingTransaction, accounts, transactionInitialType, getSelectableAccountsForType, accountId, type]);
 
   const resetForm = () => {
     setIsSubmitting(false);

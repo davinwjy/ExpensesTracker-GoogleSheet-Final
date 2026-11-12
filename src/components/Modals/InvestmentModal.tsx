@@ -60,28 +60,42 @@ export const InvestmentModal: React.FC = () => {
     ? (Number(customExchangeRate) > 0 ? Number(customExchangeRate) : usdIdrRate)
     : usdIdrRate;
 
+  const wasOpenRef = React.useRef(false);
+  const lastEditingInvestmentIdRef = React.useRef<string | null | undefined>(undefined);
+
   useEffect(() => {
     if (isAddInvestmentOpen) {
-      setIsSubmitting(false);
-      if (editingInvestment) {
-        setCategory(editingInvestment.category);
-        const matched = categoriesList.find((c) => c.id === editingInvestment.category);
-        const resolvedCurrency = matched ? matched.defaultCurrency : ((editingInvestment.category === 'ETF USA' || editingInvestment.category === 'USD') ? 'USD' : 'IDR');
-        setCurrency(resolvedCurrency);
-        setCustomExchangeRate(editingInvestment.customExchangeRate ? editingInvestment.customExchangeRate.toString() : '');
-        setName(editingInvestment.name);
-        setAmountInvested(editingInvestment.amountInvested.toString());
-        setCurrentValue(editingInvestment.currentValue.toString());
-        setUnits(editingInvestment.units !== undefined ? editingInvestment.units.toString() : '');
-        setPlatform(editingInvestment.platform || '');
-        setNotes(editingInvestment.notes || '');
-      } else {
-        resetFields();
+      const isFreshOpen = !wasOpenRef.current;
+      const isEditingInvestmentChanged = editingInvestment?.id !== lastEditingInvestmentIdRef.current;
+
+      if (isFreshOpen || isEditingInvestmentChanged) {
+        setIsSubmitting(false);
+        wasOpenRef.current = true;
+        lastEditingInvestmentIdRef.current = editingInvestment?.id || null;
+
+        if (editingInvestment) {
+          setCategory(editingInvestment.category);
+          const matched = categoriesList.find((c) => c.id === editingInvestment.category);
+          const resolvedCurrency = matched ? matched.defaultCurrency : ((editingInvestment.category === 'ETF USA' || editingInvestment.category === 'USD') ? 'USD' : 'IDR');
+          setCurrency(resolvedCurrency);
+          setCustomExchangeRate(editingInvestment.customExchangeRate ? editingInvestment.customExchangeRate.toString() : '');
+          setName(editingInvestment.name);
+          setAmountInvested(editingInvestment.amountInvested.toString());
+          setCurrentValue(editingInvestment.currentValue.toString());
+          setUnits(editingInvestment.units !== undefined ? editingInvestment.units.toString() : '');
+          setPlatform(editingInvestment.platform || '');
+          setNotes(editingInvestment.notes || '');
+        } else {
+          resetFields();
+        }
+        setError('');
+        setConfirmDelete(false);
       }
-      setError('');
-      setConfirmDelete(false);
+    } else {
+      wasOpenRef.current = false;
+      lastEditingInvestmentIdRef.current = undefined;
     }
-  }, [isAddInvestmentOpen, editingInvestment]);
+  }, [isAddInvestmentOpen, editingInvestment, categoriesList]);
 
   const resetFields = () => {
     setIsSubmitting(false);

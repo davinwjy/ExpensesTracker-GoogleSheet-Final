@@ -26,31 +26,62 @@ export const PayBillModal: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const wasOpenRef = React.useRef(false);
+  const lastPayBillCardIdRef = React.useRef<string | null | undefined>(undefined);
+  const lastSelectedCardIdRef = React.useRef<string | null>(null);
+
   useEffect(() => {
     if (isPayBillOpen) {
-      setIsSubmitting(false);
-      if (payBillCard) {
-        setCreditCardAccountId(payBillCard.id);
-        setAmountIdr(payBillCard.balance > 0 ? payBillCard.balance.toString() : '');
-      } else if (creditCards.length > 0) {
-        setCreditCardAccountId(creditCards[0].id);
-        setAmountIdr(creditCards[0].balance > 0 ? creditCards[0].balance.toString() : '');
-      }
+      const isFreshOpen = !wasOpenRef.current;
+      const isCardChanged = payBillCard?.id !== lastPayBillCardIdRef.current;
 
-      if (fundingAccounts.length > 0) {
-        setSourceAccountId(fundingAccounts[0].id);
-      }
+      if (isFreshOpen || isCardChanged) {
+        setIsSubmitting(false);
+        wasOpenRef.current = true;
+        lastPayBillCardIdRef.current = payBillCard?.id || null;
 
-      setAdminFee('');
-      setDate(new Date().toISOString().split('T')[0]);
-      setNotes('');
-      setError('');
+        let activeCardId = '';
+        if (payBillCard) {
+          activeCardId = payBillCard.id;
+          setCreditCardAccountId(payBillCard.id);
+          setAmountIdr(payBillCard.balance > 0 ? payBillCard.balance.toString() : '');
+        } else if (creditCards.length > 0) {
+          activeCardId = creditCards[0].id;
+          setCreditCardAccountId(creditCards[0].id);
+          setAmountIdr(creditCards[0].balance > 0 ? creditCards[0].balance.toString() : '');
+        }
+        lastSelectedCardIdRef.current = activeCardId;
+
+        if (fundingAccounts.length > 0) {
+          setSourceAccountId(fundingAccounts[0].id);
+        }
+
+        setAdminFee('');
+        setDate(new Date().toISOString().split('T')[0]);
+        setNotes('');
+        setError('');
+      } else {
+        // Modal is already open: protect user's custom typed amount, admin fee, date, notes!
+        // Only bind card or funding account if they were previously unselected:
+        if (!creditCardAccountId && creditCards.length > 0) {
+          setCreditCardAccountId(creditCards[0].id);
+          lastSelectedCardIdRef.current = creditCards[0].id;
+        }
+        if (!sourceAccountId && fundingAccounts.length > 0) {
+          setSourceAccountId(fundingAccounts[0].id);
+        }
+      }
+    } else {
+      wasOpenRef.current = false;
+      lastPayBillCardIdRef.current = undefined;
+      lastSelectedCardIdRef.current = null;
     }
-  }, [isPayBillOpen, payBillCard, accounts]);
+  }, [isPayBillOpen, payBillCard, creditCards, fundingAccounts, creditCardAccountId, sourceAccountId]);
 
-  // When selected credit card changes, update default amount to its current balance
+  // When user actively switches to a different card, pre-fill its full balance (do NOT run on background sync)
   useEffect(() => {
-    if (creditCardAccountId) {
+    if (creditCardAccountId && creditCardAccountId !== lastSelectedCardIdRef.current) {
+      lastSelectedCardIdRef.current = creditCardAccountId;
       const card = accounts.find((a) => a.id === creditCardAccountId);
       if (card && card.balance > 0) {
         setAmountIdr(card.balance.toString());

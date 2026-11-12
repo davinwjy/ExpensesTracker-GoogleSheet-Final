@@ -49,35 +49,48 @@ export const BudgetModal: React.FC = () => {
     return Array.from(set);
   }, [transactions, expenseCategories]);
 
+  const wasOpenRef = React.useRef(false);
+  const lastEditingBudgetIdRef = React.useRef<string | null | undefined>(undefined);
+
   useEffect(() => {
     if (isBudgetModalOpen) {
-      setError('');
-      setIsSubmitting(false);
-      setConfirmDelete(false);
+      const isFreshOpen = !wasOpenRef.current;
+      const isEditingBudgetChanged = editingBudget?.id !== lastEditingBudgetIdRef.current;
 
-      if (editingBudget) {
-        if (availableCategories.includes(editingBudget.category)) {
-          setCategory(editingBudget.category);
+      if (isFreshOpen || isEditingBudgetChanged) {
+        setError('');
+        setIsSubmitting(false);
+        setConfirmDelete(false);
+        wasOpenRef.current = true;
+        lastEditingBudgetIdRef.current = editingBudget?.id || null;
+
+        if (editingBudget) {
+          if (availableCategories.includes(editingBudget.category)) {
+            setCategory(editingBudget.category);
+            setIsCustomCategory(false);
+            setCustomCategory('');
+          } else {
+            setIsCustomCategory(true);
+            setCustomCategory(editingBudget.category);
+          }
+          setLimit(editingBudget.monthlyLimit ? String(editingBudget.monthlyLimit) : '');
+          if (editingBudget.month) {
+            setScope('specific');
+            setSpecificMonth(editingBudget.month);
+          } else {
+            setScope('recurring');
+          }
+        } else {
+          setCategory(availableCategories[0] || EXPENSE_CATEGORIES[0]);
           setIsCustomCategory(false);
           setCustomCategory('');
-        } else {
-          setIsCustomCategory(true);
-          setCustomCategory(editingBudget.category);
-        }
-        setLimit(editingBudget.monthlyLimit ? String(editingBudget.monthlyLimit) : '');
-        if (editingBudget.month) {
-          setScope('specific');
-          setSpecificMonth(editingBudget.month);
-        } else {
+          setLimit('2000000');
           setScope('recurring');
         }
-      } else {
-        setCategory(availableCategories[0] || EXPENSE_CATEGORIES[0]);
-        setIsCustomCategory(false);
-        setCustomCategory('');
-        setLimit('2000000');
-        setScope('recurring');
       }
+    } else {
+      wasOpenRef.current = false;
+      lastEditingBudgetIdRef.current = undefined;
     }
   }, [isBudgetModalOpen, editingBudget, availableCategories]);
 

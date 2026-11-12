@@ -28,25 +28,30 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
   const [isPushing, setIsPushing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  useEffect(() => {
-    if (isEmailExplicitlyDisconnected(user?.email)) {
-      setInputUrl('');
-      return;
-    }
+  const wasOpenRef = React.useRef(false);
 
-    if (appsScriptUrl) {
-      setInputUrl(appsScriptUrl);
-    } else if (user?.email) {
-      const prefilled = getStoredAppsScriptUrl(user.email);
-      if (prefilled) {
-        setInputUrl(prefilled);
-      } else {
-        setInputUrl('');
+  useEffect(() => {
+    if (isOpen) {
+      if (!wasOpenRef.current) {
+        wasOpenRef.current = true;
+        if (isEmailExplicitlyDisconnected(user?.email)) {
+          setInputUrl('');
+          return;
+        }
+
+        if (appsScriptUrl) {
+          setInputUrl(appsScriptUrl);
+        } else if (user?.email) {
+          const prefilled = getStoredAppsScriptUrl(user.email);
+          setInputUrl(prefilled || '');
+        } else {
+          setInputUrl('');
+        }
       }
     } else {
-      setInputUrl('');
+      wasOpenRef.current = false;
     }
-  }, [appsScriptUrl, user?.email]);
+  }, [isOpen, appsScriptUrl, user?.email]);
 
   useEffect(() => {
     if (!isOpen) return;

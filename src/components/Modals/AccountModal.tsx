@@ -46,25 +46,39 @@ export const AccountModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const wasOpenRef = React.useRef(false);
+  const lastEditingAccountIdRef = React.useRef<string | null | undefined>(undefined);
+
   useEffect(() => {
     if (isAddAccountOpen) {
-      setIsSubmitting(false);
-      if (editingAccount) {
-        setName(editingAccount.name);
-        setType(editingAccount.type);
-        setBalance(editingAccount.balance.toString());
-        setAccountNumber(editingAccount.accountNumber || '');
-        setColor(editingAccount.color || '#3b82f6');
-        setCreditLimit(editingAccount.creditLimit ? editingAccount.creditLimit.toString() : '');
-        setBillingDate(editingAccount.billingDate ? editingAccount.billingDate.toString() : '25');
-        setDueDate(editingAccount.dueDate ? editingAccount.dueDate.toString() : '10');
-        setCardNetwork(editingAccount.cardNetwork || 'Visa');
-        setLast4Digits(editingAccount.last4Digits || '');
-      } else {
-        resetFields();
+      const isFreshOpen = !wasOpenRef.current;
+      const isEditingAccountChanged = editingAccount?.id !== lastEditingAccountIdRef.current;
+
+      if (isFreshOpen || isEditingAccountChanged) {
+        setIsSubmitting(false);
+        wasOpenRef.current = true;
+        lastEditingAccountIdRef.current = editingAccount?.id || null;
+
+        if (editingAccount) {
+          setName(editingAccount.name);
+          setType(editingAccount.type);
+          setBalance(editingAccount.balance.toString());
+          setAccountNumber(editingAccount.accountNumber || '');
+          setColor(editingAccount.color || '#3b82f6');
+          setCreditLimit(editingAccount.creditLimit ? editingAccount.creditLimit.toString() : '');
+          setBillingDate(editingAccount.billingDate ? editingAccount.billingDate.toString() : '25');
+          setDueDate(editingAccount.dueDate ? editingAccount.dueDate.toString() : '10');
+          setCardNetwork(editingAccount.cardNetwork || 'Visa');
+          setLast4Digits(editingAccount.last4Digits || '');
+        } else {
+          resetFields();
+        }
+        setError('');
+        setConfirmDelete(false);
       }
-      setError('');
-      setConfirmDelete(false);
+    } else {
+      wasOpenRef.current = false;
+      lastEditingAccountIdRef.current = undefined;
     }
   }, [isAddAccountOpen, editingAccount]);
 

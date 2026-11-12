@@ -99,13 +99,36 @@ function getSafePopupPosition(xPct: number): React.CSSProperties {
 export const IncomeInvestmentTracker: React.FC = () => {
   const { accounts, transactions, investments, usdIdrRate, isPrivacyMode } = useFinance();
 
-  // Mode: 'both_stacked', 'month', or 'year'
-  const [viewMode, setViewMode] = useState<'both_stacked' | 'month' | 'year'>('both_stacked');
+  // Mode: 'month' or 'year' (single active chart, never stacked)
+  const [viewMode, setViewMode] = useState<'month' | 'year'>('month');
   // Chart visual style: default is 'line'
   const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   // Metric filter: 'all' (all 4 lines!), 'income', 'expense', 'investment', or 'account'
   const [viewMetric, setViewMetric] = useState<'all' | 'income' | 'expense' | 'investment' | 'account'>('all');
   const [showTable, setShowTable] = useState(false);
+
+  // Responsive viewport detection so SVG coordinate space is 1:1 proportional on mobile and desktop (never squished/gepeng)
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const svgW = isMobile ? 380 : 760;
+  const svgH = isMobile ? 250 : 330;
+  const svgPad = useMemo(
+    () =>
+      isMobile
+        ? { top: 28, bottom: 30, left: 16, right: 16 }
+        : { top: 32, bottom: 40, left: 28, right: 28 },
+    [isMobile]
+  );
 
   const currentYear = new Date().getFullYear();
   const currentMonthIdx = new Date().getMonth(); // 0-11
@@ -468,81 +491,90 @@ export const IncomeInvestmentTracker: React.FC = () => {
   }, [transactions, investments, accounts, currentTotalAccountBalance, selectedYear, availableYears, usdIdrRate, currentYear, currentMonthIdx, todayStr]);
 
   // Scaling helpers for Graph SVGs
-  const getScaleData = (points: ChartPoint[], svgWidth = 800, svgHeight = 360, padding = { top: 35, bottom: 45, left: 28, right: 28 }) => {
-    let max = 0;
-    points.forEach((p) => {
-      if (viewMetric === 'all') {
-        max = Math.max(max, p.income, p.expense, p.investment, p.accountBalance);
-      } else if (viewMetric === 'income') {
-        max = Math.max(max, p.income);
-      } else if (viewMetric === 'expense') {
-        max = Math.max(max, p.expense);
-      } else if (viewMetric === 'investment') {
-        max = Math.max(max, p.investment);
-      } else {
-        max = Math.max(max, p.accountBalance);
-      }
-    });
+  const getScaleData = useCallback(
+    (points: ChartPoint[], width: number, height: number, padding: { top: number; bottom: number; left: number; right: number }) => {
+      let max = 0;
+      points.forEach((p) => {
+        if (viewMetric === 'all') {
+          max = Math.max(max, p.income, p.expense, p.investment, p.accountBalance);
+        } else if (viewMetric === 'income') {
+          max = Math.max(max, p.income);
+        } else if (viewMetric === 'expense') {
+          max = Math.max(max, p.expense);
+        } else if (viewMetric === 'investment') {
+          max = Math.max(max, p.investment);
+        } else {
+          max = Math.max(max, p.accountBalance);
+        }
+      });
 
-    const safeMax = max > 0 ? max * 1.25 : 10_000_000;
-    const innerW = svgWidth - padding.left - padding.right;
-    const innerH = svgHeight - padding.top - padding.bottom;
-    const stepX = points.length > 1 ? innerW / (points.length - 1) : innerW / 2;
+      const safeMax = max > 0 ? max * 1.22 : 10_000_000;
+      const innerW = width - padding.left - padding.right;
+      const innerH = height - padding.top - padding.bottom;
+      const stepX = points.length > 1 ? innerW / (points.length - 1) : innerW / 2;
 
-    const incomeCoords = points.map((p, idx) => ({
-      x: padding.left + idx * stepX,
-      y: padding.top + innerH - (p.income / safeMax) * innerH,
-      data: p,
-      index: idx,
-    }));
+      const incomeCoords = points.map((p, idx) => ({
+        x: padding.left + idx * stepX,
+        y: padding.top + innerH - (p.income / safeMax) * innerH,
+        data: p,
+        index: idx,
+      }));
 
-    const expenseCoords = points.map((p, idx) => ({
-      x: padding.left + idx * stepX,
-      y: padding.top + innerH - (p.expense / safeMax) * innerH,
-      data: p,
-      index: idx,
-    }));
+      const expenseCoords = points.map((p, idx) => ({
+        x: padding.left + idx * stepX,
+        y: padding.top + innerH - (p.expense / safeMax) * innerH,
+        data: p,
+        index: idx,
+      }));
 
-    const investCoords = points.map((p, idx) => ({
-      x: padding.left + idx * stepX,
-      y: padding.top + innerH - (p.investment / safeMax) * innerH,
-      data: p,
-      index: idx,
-    }));
+      const investCoords = points.map((p, idx) => ({
+        x: padding.left + idx * stepX,
+        y: padding.top + innerH - (p.investment / safeMax) * innerH,
+        data: p,
+        index: idx,
+      }));
 
-    const accountCoords = points.map((p, idx) => ({
-      x: padding.left + idx * stepX,
-      y: padding.top + innerH - (p.accountBalance / safeMax) * innerH,
-      data: p,
-      index: idx,
-    }));
+      const accountCoords = points.map((p, idx) => ({
+        x: padding.left + idx * stepX,
+        y: padding.top + innerH - (p.accountBalance / safeMax) * innerH,
+        data: p,
+        index: idx,
+      }));
 
-    const bottomY = padding.top + innerH;
+      const bottomY = padding.top + innerH;
 
-    const ticks = [
-      { val: safeMax, y: padding.top },
-      { val: safeMax * 0.75, y: padding.top + innerH * 0.25 },
-      { val: safeMax * 0.5, y: padding.top + innerH * 0.5 },
-      { val: safeMax * 0.25, y: padding.top + innerH * 0.75 },
-      { val: 0, y: bottomY },
-    ];
+      const ticks = [
+        { val: safeMax, y: padding.top },
+        { val: safeMax * 0.75, y: padding.top + innerH * 0.25 },
+        { val: safeMax * 0.5, y: padding.top + innerH * 0.5 },
+        { val: safeMax * 0.25, y: padding.top + innerH * 0.75 },
+        { val: 0, y: bottomY },
+      ];
 
-    return {
-      incomeCoords,
-      expenseCoords,
-      investCoords,
-      accountCoords,
-      bottomY,
-      innerW,
-      innerH,
-      safeMax,
-      ticks,
-      stepX,
-    };
-  };
+      return {
+        incomeCoords,
+        expenseCoords,
+        investCoords,
+        accountCoords,
+        bottomY,
+        innerW,
+        innerH,
+        safeMax,
+        ticks,
+        stepX,
+      };
+    },
+    [viewMetric]
+  );
 
-  const monthScale = useMemo(() => getScaleData(monthlyData, 800, 360), [monthlyData, viewMetric]);
-  const yearScale = useMemo(() => getScaleData(yearlyData, 800, 360), [yearlyData, viewMetric]);
+  const monthScale = useMemo(
+    () => getScaleData(monthlyData, svgW, svgH, svgPad),
+    [monthlyData, getScaleData, svgW, svgH, svgPad]
+  );
+  const yearScale = useMemo(
+    () => getScaleData(yearlyData, svgW, svgH, svgPad),
+    [yearlyData, getScaleData, svgW, svgH, svgPad]
+  );
 
   // Unified touch, mouse, and pointer index resolver with exact SVG matrix transformation
   const resolveCoordIndex = useCallback(
@@ -575,7 +607,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
         const rect = target.getBoundingClientRect();
         if (!rect || rect.width <= 0) return;
         const relX = clientX - rect.left;
-        svgX = (relX / rect.width) * 800;
+        svgX = (relX / rect.width) * svgW;
       }
 
       let closest = 0;
@@ -589,7 +621,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
       });
       setIdx(closest);
     },
-    []
+    [svgW]
   );
 
   // Safe active indexes & objects (guaranteed non-null on both mobile & desktop)
@@ -600,143 +632,132 @@ export const IncomeInvestmentTracker: React.FC = () => {
   const safeYearIdx = activeYearIdx !== null ? Math.max(0, Math.min(yearlyData.length - 1, activeYearIdx)) : defaultYearIdx;
   const activeYearPoint = yearlyData[safeYearIdx] || yearlyData[0];
 
+  const lineStrokeWidth = isMobile ? 2.4 : 3.2;
+  const activeDotR = isMobile ? 4.8 : 6;
+  const idleDotR = isMobile ? 2.8 : 3.5;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* SECTION WRAPPER */}
-      <div className="rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] p-3.5 sm:p-5 space-y-4 font-mono shadow-sm">
+      <div className="rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] p-3 sm:p-5 space-y-3.5 sm:space-y-4 font-mono shadow-sm">
         {/* HEADER */}
-        <div className="pb-3 border-b border-slate-200 dark:border-[#1b212e]">
+        <div className="pb-2.5 sm:pb-3 border-b border-slate-200 dark:border-[#1b212e]">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <LineChartIcon className="w-3.5 h-3.5" />
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider">
+            <h3 className="text-xs sm:text-base font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider leading-snug">
               INCOME, EXPENSES, INVESTMENTS & CASH BALANCES
             </h3>
           </div>
-          <p className="text-[10px] text-slate-500 dark:text-zinc-500 mt-0.5">
+          <p className="text-[10px] text-slate-500 dark:text-zinc-500 mt-0.5 leading-relaxed">
             Multi-axis trend lines tracking monthly income, daily outflows, investment funding, and bank runways
           </p>
         </div>
 
         {/* 4-KPI SUMMARY METRICS CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 min-w-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 min-w-0">
           {/* Total Income */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
-            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium truncate">Total Income {selectedYear}</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Income {selectedYear}</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
             </div>
             <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalIncome, 'IDR', isPrivacyMode)}
             </p>
-            <p className={`text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[10px] text-slate-400 dark:text-slate-500 tabular-nums truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               Avg: {formatMasked(ytdStats.totalIncome / 12, 'IDR', isPrivacyMode)}/mo
             </p>
           </div>
 
           {/* Total Expenses */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
-            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium truncate">Total Expenses {selectedYear}</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Expenses {selectedYear}</span>
+              <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
             </div>
             <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalExpense, 'IDR', isPrivacyMode)}
             </p>
-            <p className={`text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[10px] text-slate-400 dark:text-slate-500 tabular-nums truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               Avg: {formatMasked(ytdStats.totalExpense / 12, 'IDR', isPrivacyMode)}/mo
             </p>
           </div>
 
           {/* Total Invested */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
-            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium truncate">Capital Invested {selectedYear}</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0" />
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Invested {selectedYear}</span>
+              <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
             </div>
             <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-indigo-600 dark:text-indigo-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalInvestment, 'IDR', isPrivacyMode)}
             </p>
-            <p className={`text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[10px] text-slate-400 dark:text-slate-500 tabular-nums truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               Avg: {formatMasked(ytdStats.totalInvestment / 12, 'IDR', isPrivacyMode)}/mo
             </p>
           </div>
 
           {/* Total Account Amount / Liquid Cash */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
-            <div className="flex items-center justify-between gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-medium truncate">Total Account Amount</span>
-              <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shrink-0" />
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium truncate">Liquid Cash</span>
+              <div className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
             </div>
             <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-sky-600 dark:text-sky-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(currentTotalAccountBalance, 'IDR', isPrivacyMode)}
             </p>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
               <Wallet className="w-3 h-3 text-sky-500 inline shrink-0" />
-              <span className="truncate">Bank and Cash Accounts</span>
+              <span className="truncate">Bank & Cash Accounts</span>
             </p>
           </div>
         </div>
 
         {/* UNIFIED FILTER & DISPLAY BAR (Mobile-optimized layout) */}
-        <div className="flex flex-col gap-3 p-3 sm:p-4 rounded-2xl bg-slate-100 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 shadow-sm">
-          {/* Top Row: Display Mode & Year Selector */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-200 dark:border-slate-800/80">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              <span className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase font-sans shrink-0">
-                Display:
-              </span>
-              <div className="flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('both_stacked')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
-                    viewMode === 'both_stacked'
-                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Sparkles className="w-3 h-3 text-amber-300" />
-                  <span>BOTH</span>
-                </button>
+        <div className="flex flex-col gap-2.5 p-2.5 sm:p-3.5 rounded-xl bg-slate-100 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 shadow-sm">
+          {/* Top Row: Single Chart Mode Toggle (Monthly vs Yearly) & Year Selector */}
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800/80">
+            <div className="flex items-center gap-1.5">
+              <div className="flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] sm:text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setViewMode('month')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     viewMode === 'month'
                       ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Calendar className="w-3 h-3" />
-                  <span>MONTHLY</span>
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Monthly</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode('year')}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     viewMode === 'year'
                       ? 'bg-indigo-600 text-white font-bold shadow-sm'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  <Layers className="w-3 h-3" />
-                  <span>YEARLY</span>
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Yearly</span>
                 </button>
               </div>
             </div>
 
-            {(viewMode === 'month' || viewMode === 'both_stacked') && (
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <span className="text-[11px] sm:text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase font-sans shrink-0">
+            {viewMode === 'month' ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-400 uppercase font-sans hidden xs:inline">
                   Year:
                 </span>
                 <div className="relative">
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="appearance-none bg-white dark:bg-slate-900 text-slate-900 dark:text-zinc-200 text-xs font-bold font-mono pl-3 pr-7 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
+                    className="appearance-none bg-white dark:bg-slate-900 text-slate-900 dark:text-zinc-200 text-xs font-bold font-mono pl-2.5 pr-6 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
                   >
                     {availableYears.map((yr) => (
                       <option key={yr} value={yr}>
@@ -744,108 +765,112 @@ export const IncomeInvestmentTracker: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
+            ) : (
+              <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 font-sans">
+                {yearlyData.length} Years Tracked
+              </span>
             )}
           </div>
 
           {/* Bottom Row: Metric Filter, Chart Style & Table */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Metric Filter */}
-            <div className="flex items-center overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-              <div className="flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMetric('all')}
-                  className={`px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMetric === 'all'
-                      ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm font-bold'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  All 4
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMetric('income')}
-                  className={`px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMetric === 'income'
-                      ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Income
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMetric('expense')}
-                  className={`px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMetric === 'expense'
-                      ? 'bg-rose-500 text-white font-bold shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Expense
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMetric('investment')}
-                  className={`px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMetric === 'investment'
-                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Invest
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMetric('account')}
-                  className={`px-2 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                    viewMetric === 'account'
-                      ? 'bg-sky-500 text-slate-950 font-bold shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Account
-                </button>
-              </div>
+            <div className="grid grid-cols-5 sm:flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] sm:text-xs font-semibold w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setViewMetric('all')}
+                className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
+                  viewMetric === 'all'
+                    ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm font-bold'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMetric('income')}
+                className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
+                  viewMetric === 'income'
+                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Income
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMetric('expense')}
+                className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
+                  viewMetric === 'expense'
+                    ? 'bg-rose-500 text-white font-bold shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Expense
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMetric('investment')}
+                className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
+                  viewMetric === 'investment'
+                    ? 'bg-indigo-600 text-white font-bold shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Invest
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMetric('account')}
+                className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
+                  viewMetric === 'account'
+                    ? 'bg-sky-500 text-slate-950 font-bold shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Cash
+              </button>
             </div>
 
             {/* Right Group: Chart Style & Table */}
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
               <div className="flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
                 <button
                   type="button"
                   onClick={() => setChartType('line')}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                     chartType === 'line'
-                      ? 'bg-slate-900 text-emerald-400 dark:bg-slate-800 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-slate-900 text-emerald-400 dark:bg-slate-800 shadow-sm font-semibold'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                   }`}
                   title="Line Graph View"
                 >
                   <LineChartIcon className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Line</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setChartType('bar')}
-                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                     chartType === 'bar'
-                      ? 'bg-slate-900 text-indigo-400 dark:bg-slate-800 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-slate-900 text-indigo-400 dark:bg-slate-800 shadow-sm font-semibold'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                   }`}
                   title="Bar Chart View"
                 >
                   <BarChart3 className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Bar</span>
                 </button>
               </div>
 
               <button
                 type="button"
                 onClick={() => setShowTable(!showTable)}
-                className={`p-1.5 px-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`py-1.5 px-2.5 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   showTable
                     ? 'bg-slate-900 text-white dark:bg-slate-800 border-slate-700'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -859,54 +884,53 @@ export const IncomeInvestmentTracker: React.FC = () => {
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* GRAPH 1: MONTH BY MONTH LINE GRAPH (WITH FULL MOBILE POPUP) */}
+        {/* GRAPH 1: MONTH BY MONTH GRAPH (SHOWN ONLY WHEN viewMode === 'month') */}
         {/* ------------------------------------------------------------- */}
-        {(viewMode === 'month' || viewMode === 'both_stacked') && (
-          <div className="space-y-3 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        {viewMode === 'month' && (
+          <div className="space-y-3 pt-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-emerald-500" />
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Month by Month Trend ({selectedYear})
+                <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                  Monthly Trajectory ({selectedYear})
                 </h4>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-[11px] font-mono">
                 {(viewMetric === 'all' || viewMetric === 'income') && (
-                  <span className="text-emerald-500 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                  <span className="text-emerald-500 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                     Income
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'expense') && (
-                  <span className="text-rose-500 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                  <span className="text-rose-500 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
                     Expenses
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'investment') && (
-                  <span className="text-indigo-400 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
-                    Investment
+                  <span className="text-indigo-400 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
+                    Invest
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'account') && (
-                  <span className="text-sky-400 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                    Account
+                  <span className="text-sky-400 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
+                    Cash
                   </span>
                 )}
               </div>
             </div>
 
-            {/* SVG GRAPH CONTAINER */}
-            <div className="relative w-full rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-2 sm:p-5 select-none">
-              <div className="relative w-full overflow-visible">
-                {/* SVG Canvas with Unified Touch, Pointer & Mouse support */}
+            {/* PROPORTIONAL 1-SCREEN SVG GRAPH CONTAINER */}
+            <div className="relative w-full rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-2 sm:p-4 select-none">
+              <div className="relative w-full overflow-hidden">
                 <svg
-                  viewBox="0 0 800 360"
-                  preserveAspectRatio="none"
-                  className="w-full h-96 sm:h-[420px] overflow-visible cursor-crosshair select-none block"
-                  style={{ touchAction: 'none' }}
+                  viewBox={`0 0 ${svgW} ${svgH}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  className="w-full h-auto overflow-visible cursor-crosshair select-none block"
+                  style={{ touchAction: 'pan-y' }}
                   onPointerDown={(e) => {
                     resolveCoordIndex(e.clientX, e.clientY, e.currentTarget, monthScale.incomeCoords, setActiveMonthIdx);
                     setIsMonthHovered(true);
@@ -940,20 +964,21 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   {monthScale.ticks.map((tick, i) => (
                     <g key={i}>
                       <line
-                        x1="24"
+                        x1={svgPad.left - 4}
                         y1={tick.y}
-                        x2="776"
+                        x2={svgW - svgPad.right + 4}
                         y2={tick.y}
                         stroke="currentColor"
                         className="text-slate-200 dark:text-slate-800/80"
-                        strokeDasharray="4 4"
+                        strokeDasharray="3 3"
                         strokeWidth="1"
                       />
                       <text
-                        x="26"
+                        x={svgPad.left - 2}
                         y={tick.y - 4}
                         fill="currentColor"
-                        className="text-[10px] font-mono text-slate-400 dark:text-slate-600 fill-current"
+                        fontSize={isMobile ? 8.5 : 10}
+                        className="font-mono text-slate-400 dark:text-slate-500 fill-current"
                       >
                         {formatCompactIdr(tick.val)}
                       </text>
@@ -994,7 +1019,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(monthScale.accountCoords)}
                           fill="none"
                           stroke="#0ea5e9"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1004,7 +1029,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(monthScale.incomeCoords)}
                           fill="none"
                           stroke="#10b981"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1014,7 +1039,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(monthScale.expenseCoords)}
                           fill="none"
                           stroke="#f43f5e"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1024,7 +1049,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(monthScale.investCoords)}
                           fill="none"
                           stroke="#6366f1"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1034,11 +1059,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                       {monthScale.incomeCoords[safeMonthIdx] && (
                         <line
                           x1={monthScale.incomeCoords[safeMonthIdx].x}
-                          y1="25"
+                          y1={svgPad.top - 6}
                           x2={monthScale.incomeCoords[safeMonthIdx].x}
                           y2={monthScale.bottomY}
                           stroke="#94a3b8"
-                          strokeWidth="1.5"
+                          strokeWidth="1.2"
                           strokeDasharray="3 3"
                           className="transition-all duration-75 pointer-events-none"
                         />
@@ -1060,11 +1085,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             : incPt.x - monthScale.stepX / 2;
                         const rectW =
                           monthlyData.length <= 1
-                            ? 800
+                            ? svgW
                             : idx === 0
                             ? incPt.x + monthScale.stepX / 2
                             : idx === monthlyData.length - 1
-                            ? 800 - (incPt.x - monthScale.stepX / 2)
+                            ? svgW - (incPt.x - monthScale.stepX / 2)
                             : monthScale.stepX;
 
                         return (
@@ -1073,9 +1098,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={accPt.x}
                                 cy={accPt.y}
-                                r={isActive ? 6 : 3.5}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-sky-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1083,9 +1108,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={incPt.x}
                                 cy={incPt.y}
-                                r={isActive ? 6 : 3.5}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-emerald-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1093,9 +1118,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={expPt.x}
                                 cy={expPt.y}
-                                r={isActive ? 6 : 3.5}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-rose-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1103,9 +1128,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={invPt.x}
                                 cy={invPt.y}
-                                r={isActive ? 6 : 3.5}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-indigo-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1113,7 +1138,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               x={rectX}
                               y="0"
                               width={rectW}
-                              height="360"
+                              height={svgH}
                               fill="transparent"
                               className="cursor-pointer"
                               onPointerEnter={() => {
@@ -1137,11 +1162,12 @@ export const IncomeInvestmentTracker: React.FC = () => {
 
                             <text
                               x={incPt.x}
-                              y="345"
+                              y={svgH - 8}
                               textAnchor="middle"
-                              className={`text-[10px] sm:text-[11px] font-mono fill-current pointer-events-none ${
+                              fontSize={isMobile ? 9 : 11}
+                              className={`font-mono fill-current pointer-events-none ${
                                 isActive
-                                  ? 'text-slate-900 dark:text-white font-bold'
+                                  ? 'text-emerald-600 dark:text-emerald-400 font-bold'
                                   : 'text-slate-400 dark:text-slate-500'
                               }`}
                             >
@@ -1163,7 +1189,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                         const expH = Math.max(0, monthScale.bottomY - expPt.y);
                         const invH = Math.max(0, monthScale.bottomY - invPt.y);
                         const accH = Math.max(0, monthScale.bottomY - accPt.y);
-                        const barW = Math.min(16, Math.max(6, monthScale.stepX / 5.2));
+                        const barW = Math.min(isMobile ? 6.5 : 15, Math.max(isMobile ? 4 : 6, monthScale.stepX / 5.2));
 
                         const rectX =
                           monthlyData.length <= 1
@@ -1173,11 +1199,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             : incPt.x - monthScale.stepX / 2;
                         const rectW =
                           monthlyData.length <= 1
-                            ? 800
+                            ? svgW
                             : idx === 0
                             ? incPt.x + monthScale.stepX / 2
                             : idx === monthlyData.length - 1
-                            ? 800 - (incPt.x - monthScale.stepX / 2)
+                            ? svgW - (incPt.x - monthScale.stepX / 2)
                             : monthScale.stepX;
 
                         return (
@@ -1196,7 +1222,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               x={rectX}
                               y="0"
                               width={rectW}
-                              height="360"
+                              height={svgH}
                               fill="transparent"
                               className="cursor-pointer"
                             />
@@ -1206,7 +1232,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={incPt.y}
                                 width={barW}
                                 height={incH}
-                                rx="3"
+                                rx="2"
                                 fill="#10b981"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1218,7 +1244,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={expPt.y}
                                 width={barW}
                                 height={expH}
-                                rx="3"
+                                rx="2"
                                 fill="#f43f5e"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1230,7 +1256,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={invPt.y}
                                 width={barW}
                                 height={invH}
-                                rx="3"
+                                rx="2"
                                 fill="#6366f1"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1242,7 +1268,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={accPt.y}
                                 width={barW}
                                 height={accH}
-                                rx="3"
+                                rx="2"
                                 fill="#0ea5e9"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1250,11 +1276,12 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             )}
                             <text
                               x={incPt.x}
-                              y="345"
+                              y={svgH - 8}
                               textAnchor="middle"
-                              className={`text-[10px] sm:text-[11px] font-mono fill-current pointer-events-none ${
+                              fontSize={isMobile ? 9 : 11}
+                              className={`font-mono fill-current pointer-events-none ${
                                 isActive
-                                  ? 'text-slate-900 dark:text-white font-bold'
+                                  ? 'text-emerald-600 dark:text-emerald-400 font-bold'
                                   : 'text-slate-400 dark:text-slate-500'
                               }`}
                             >
@@ -1269,48 +1296,59 @@ export const IncomeInvestmentTracker: React.FC = () => {
               </div>
             </div>
 
-            {/* HOVER INSPECTION POPUP CARD (Placed below chart plot area so it never covers the lines) */}
-            <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
+            {/* HOVER / TAP INSPECTION CARD */}
+            <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
               <div className="flex items-center justify-between font-bold border-b border-slate-200 dark:border-[#1d2332] pb-1.5 font-sans">
                 <span className="text-xs text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>{activeMonthPoint.fullMonthName} {selectedYear} · Inspected Month</span>
+                  <span>{activeMonthPoint.fullMonthName} {selectedYear}</span>
+                </span>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">
+                  Tap chart or month below
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-[11px]">
                 <div className="flex flex-col min-w-0">
                   <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                     Income
                   </span>
-                  <strong className="text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.income, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeMonthPoint.income, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                     Expenses
                   </span>
-                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.expense, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeMonthPoint.expense, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                     Invested
                   </span>
-                  <strong className="text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.investment, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeMonthPoint.investment, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sky-600 dark:text-sky-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
                     Account Balance
                   </span>
-                  <strong className="text-sky-700 dark:text-sky-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeMonthPoint.accountBalance, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-sky-700 dark:text-sky-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeMonthPoint.accountBalance, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
               </div>
             </div>
 
-            {/* Quick Month Selector Chips */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 pt-1 scrollbar-thin">
+            {/* Quick Month Selector Grid (2x6 on mobile so zero horizontal scroll is needed, 1 row on desktop) */}
+            <div className="grid grid-cols-6 sm:flex sm:items-center sm:flex-wrap gap-1.5 pt-0.5">
               <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 mr-1 hidden sm:inline">
                 Jump to Month:
               </span>
@@ -1319,9 +1357,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   key={idx}
                   type="button"
                   onClick={() => setActiveMonthIdx(idx)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer ${
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer text-center ${
                     safeMonthIdx === idx
-                      ? 'bg-emerald-600 text-white shadow-sm scale-105'
+                      ? 'bg-emerald-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                   }`}
                 >
@@ -1333,54 +1371,53 @@ export const IncomeInvestmentTracker: React.FC = () => {
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* GRAPH 2: YEAR BY YEAR LINE GRAPH */}
+        {/* GRAPH 2: YEAR BY YEAR GRAPH (SHOWN ONLY WHEN viewMode === 'year') */}
         {/* ------------------------------------------------------------- */}
-        {(viewMode === 'year' || viewMode === 'both_stacked') && (
-          <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        {viewMode === 'year' && (
+          <div className="space-y-3 pt-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
               <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-indigo-500" />
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                <Layers className="w-4 h-4 text-indigo-500 shrink-0" />
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Multi-Year Historical Trend ({yearlyData.length} Years Tracked)
                 </h4>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-[11px] font-mono">
                 {(viewMetric === 'all' || viewMetric === 'income') && (
-                  <span className="text-emerald-500 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                  <span className="text-emerald-500 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
                     Income
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'expense') && (
-                  <span className="text-rose-500 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                  <span className="text-rose-500 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
                     Expenses
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'investment') && (
-                  <span className="text-indigo-400 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
-                    Investment
+                  <span className="text-indigo-400 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
+                    Invest
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'account') && (
-                  <span className="text-sky-400 flex items-center gap-1.5 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-                    Account
+                  <span className="text-sky-400 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
+                    Cash
                   </span>
                 )}
               </div>
             </div>
 
-            {/* SVG GRAPH CONTAINER */}
-            <div className="relative w-full rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-2 sm:p-5 select-none">
-              <div className="relative w-full overflow-visible">
-                {/* SVG Canvas with Unified Touch, Pointer & Mouse support */}
+            {/* PROPORTIONAL 1-SCREEN SVG GRAPH CONTAINER */}
+            <div className="relative w-full rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-2 sm:p-4 select-none">
+              <div className="relative w-full overflow-hidden">
                 <svg
-                  viewBox="0 0 800 360"
-                  preserveAspectRatio="none"
-                  className="w-full h-96 sm:h-[420px] overflow-visible cursor-crosshair select-none block"
-                  style={{ touchAction: 'none' }}
+                  viewBox={`0 0 ${svgW} ${svgH}`}
+                  preserveAspectRatio="xMidYMid meet"
+                  className="w-full h-auto overflow-visible cursor-crosshair select-none block"
+                  style={{ touchAction: 'pan-y' }}
                   onPointerDown={(e) => {
                     resolveCoordIndex(e.clientX, e.clientY, e.currentTarget, yearScale.incomeCoords, setActiveYearIdx);
                     setIsYearHovered(true);
@@ -1414,20 +1451,21 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   {yearScale.ticks.map((tick, i) => (
                     <g key={i}>
                       <line
-                        x1="24"
+                        x1={svgPad.left - 4}
                         y1={tick.y}
-                        x2="776"
+                        x2={svgW - svgPad.right + 4}
                         y2={tick.y}
                         stroke="currentColor"
                         className="text-slate-200 dark:text-slate-800/80"
-                        strokeDasharray="4 4"
+                        strokeDasharray="3 3"
                         strokeWidth="1"
                       />
                       <text
-                        x="26"
+                        x={svgPad.left - 2}
                         y={tick.y - 4}
                         fill="currentColor"
-                        className="text-[10px] font-mono text-slate-400 dark:text-slate-600 fill-current"
+                        fontSize={isMobile ? 8.5 : 10}
+                        className="font-mono text-slate-400 dark:text-slate-500 fill-current"
                       >
                         {formatCompactIdr(tick.val)}
                       </text>
@@ -1468,7 +1506,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(yearScale.accountCoords)}
                           fill="none"
                           stroke="#0ea5e9"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1478,7 +1516,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(yearScale.incomeCoords)}
                           fill="none"
                           stroke="#10b981"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1488,7 +1526,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(yearScale.expenseCoords)}
                           fill="none"
                           stroke="#f43f5e"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1498,7 +1536,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                           d={generateLinearPath(yearScale.investCoords)}
                           fill="none"
                           stroke="#6366f1"
-                          strokeWidth="3.5"
+                          strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -1508,11 +1546,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                       {yearScale.incomeCoords[safeYearIdx] && (
                         <line
                           x1={yearScale.incomeCoords[safeYearIdx].x}
-                          y1="25"
+                          y1={svgPad.top - 6}
                           x2={yearScale.incomeCoords[safeYearIdx].x}
                           y2={yearScale.bottomY}
                           stroke="#94a3b8"
-                          strokeWidth="1.5"
+                          strokeWidth="1.2"
                           strokeDasharray="3 3"
                           className="transition-all duration-75 pointer-events-none"
                         />
@@ -1534,11 +1572,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             : incPt.x - yearScale.stepX / 2;
                         const rectW =
                           yearlyData.length <= 1
-                            ? 800
+                            ? svgW
                             : idx === 0
                             ? incPt.x + yearScale.stepX / 2
                             : idx === yearlyData.length - 1
-                            ? 800 - (incPt.x - yearScale.stepX / 2)
+                            ? svgW - (incPt.x - yearScale.stepX / 2)
                             : yearScale.stepX;
 
                         return (
@@ -1547,9 +1585,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={accPt.x}
                                 cy={accPt.y}
-                                r={isActive ? 7 : 4}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-sky-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2.5"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1557,9 +1595,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={incPt.x}
                                 cy={incPt.y}
-                                r={isActive ? 7 : 4}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-emerald-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2.5"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1567,9 +1605,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={expPt.x}
                                 cy={expPt.y}
-                                r={isActive ? 7 : 4}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-rose-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2.5"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1577,9 +1615,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               <circle
                                 cx={invPt.x}
                                 cy={invPt.y}
-                                r={isActive ? 7 : 4}
+                                r={isActive ? activeDotR : idleDotR}
                                 className="fill-indigo-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
-                                strokeWidth="2.5"
+                                strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
 
@@ -1587,7 +1625,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               x={rectX}
                               y="0"
                               width={rectW}
-                              height="360"
+                              height={svgH}
                               fill="transparent"
                               className="cursor-pointer"
                               onPointerEnter={() => {
@@ -1611,15 +1649,16 @@ export const IncomeInvestmentTracker: React.FC = () => {
 
                             <text
                               x={incPt.x}
-                              y="345"
+                              y={svgH - 8}
                               textAnchor="middle"
-                              className={`text-[11px] font-mono fill-current pointer-events-none ${
+                              fontSize={isMobile ? 9.5 : 11}
+                              className={`font-mono fill-current pointer-events-none ${
                                 isActive
-                                  ? 'text-slate-900 dark:text-white font-bold'
+                                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                                   : 'text-slate-400 dark:text-slate-500'
                               }`}
                             >
-                              Year {pt.year}
+                              {pt.year}
                             </text>
                           </g>
                         );
@@ -1637,7 +1676,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                         const expH = Math.max(0, yearScale.bottomY - expPt.y);
                         const invH = Math.max(0, yearScale.bottomY - invPt.y);
                         const accH = Math.max(0, yearScale.bottomY - accPt.y);
-                        const barW = Math.min(20, Math.max(8, yearScale.stepX / 5.2));
+                        const barW = Math.min(isMobile ? 12 : 20, Math.max(isMobile ? 6 : 8, yearScale.stepX / 5.2));
 
                         const rectX =
                           yearlyData.length <= 1
@@ -1647,11 +1686,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             : incPt.x - yearScale.stepX / 2;
                         const rectW =
                           yearlyData.length <= 1
-                            ? 800
+                            ? svgW
                             : idx === 0
                             ? incPt.x + yearScale.stepX / 2
                             : idx === yearlyData.length - 1
-                            ? 800 - (incPt.x - yearScale.stepX / 2)
+                            ? svgW - (incPt.x - yearScale.stepX / 2)
                             : yearScale.stepX;
 
                         return (
@@ -1670,7 +1709,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               x={rectX}
                               y="0"
                               width={rectW}
-                              height="360"
+                              height={svgH}
                               fill="transparent"
                               className="cursor-pointer"
                             />
@@ -1680,7 +1719,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={incPt.y}
                                 width={barW}
                                 height={incH}
-                                rx="3.5"
+                                rx="2.5"
                                 fill="#10b981"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1692,7 +1731,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={expPt.y}
                                 width={barW}
                                 height={expH}
-                                rx="3.5"
+                                rx="2.5"
                                 fill="#f43f5e"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1704,7 +1743,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={invPt.y}
                                 width={barW}
                                 height={invH}
-                                rx="3.5"
+                                rx="2.5"
                                 fill="#6366f1"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1716,7 +1755,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 y={accPt.y}
                                 width={barW}
                                 height={accH}
-                                rx="3.5"
+                                rx="2.5"
                                 fill="#0ea5e9"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
@@ -1724,15 +1763,16 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             )}
                             <text
                               x={incPt.x}
-                              y="345"
+                              y={svgH - 8}
                               textAnchor="middle"
-                              className={`text-[11px] font-mono fill-current pointer-events-none ${
+                              fontSize={isMobile ? 9.5 : 11}
+                              className={`font-mono fill-current pointer-events-none ${
                                 isActive
-                                  ? 'text-slate-900 dark:text-white font-bold'
+                                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                                   : 'text-slate-400 dark:text-slate-500'
                               }`}
                             >
-                              Year {pt.year}
+                              {pt.year}
                             </text>
                           </g>
                         );
@@ -1743,48 +1783,59 @@ export const IncomeInvestmentTracker: React.FC = () => {
               </div>
             </div>
 
-            {/* HOVER INSPECTION POPUP CARD (Placed below chart plot area so it never covers the lines) */}
-            <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
+            {/* HOVER / TAP INSPECTION CARD */}
+            <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
               <div className="flex items-center justify-between font-bold border-b border-slate-200 dark:border-[#1d2332] pb-1.5 font-sans">
                 <span className="text-xs text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                  <span>Full Year {activeYearPoint.year} · Inspected Year</span>
+                  <span>Full Year {activeYearPoint.year}</span>
+                </span>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">
+                  Tap chart or year below
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-[11px]">
                 <div className="flex flex-col min-w-0">
                   <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                     Income
                   </span>
-                  <strong className="text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.income, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-emerald-700 dark:text-emerald-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeYearPoint.income, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
                     Expenses
                   </span>
-                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.expense, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeYearPoint.expense, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                     Invested
                   </span>
-                  <strong className="text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.investment, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-indigo-700 dark:text-indigo-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeYearPoint.investment, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sky-600 dark:text-sky-400 flex items-center gap-1 text-[10px] font-sans font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
                     Account Balance
                   </span>
-                  <strong className="text-sky-700 dark:text-sky-300 font-bold text-xs sm:text-sm tabular-nums break-words">{formatMasked(activeYearPoint.accountBalance, 'IDR', isPrivacyMode)}</strong>
+                  <strong className="text-sky-700 dark:text-sky-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                    {formatMasked(activeYearPoint.accountBalance, 'IDR', isPrivacyMode)}
+                  </strong>
                 </div>
               </div>
             </div>
 
             {/* Quick Year Selector Buttons */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-thin">
+            <div className="flex items-center flex-wrap gap-1.5 pt-0.5">
               <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 mr-1 hidden sm:inline">
                 Jump to Year:
               </span>
@@ -1793,9 +1844,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   key={idx}
                   type="button"
                   onClick={() => setActiveYearIdx(idx)}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold shrink-0 transition-all cursor-pointer ${
                     safeYearIdx === idx
-                      ? 'bg-indigo-600 text-white shadow-sm scale-105'
+                      ? 'bg-indigo-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                   }`}
                 >
@@ -1811,7 +1862,9 @@ export const IncomeInvestmentTracker: React.FC = () => {
           <div className="animate-in fade-in duration-200 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden pt-2">
             <div className="px-4 py-3 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900 dark:text-white">
-                Detailed Trajectory Table ({selectedYear} & Multi-Year)
+                {viewMode === 'month'
+                  ? `Monthly Trajectory Table (${selectedYear})`
+                  : 'Multi-Year Trajectory Table'}
               </span>
             </div>
 
@@ -1829,43 +1882,93 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                  {monthlyData.map((row, idx) => {
-                    const rate = row.income > 0 ? (row.investment / row.income) * 100 : 0;
+                  {viewMode === 'month'
+                    ? monthlyData.map((row, idx) => {
+                        const rate = row.income > 0 ? (row.investment / row.income) * 100 : 0;
 
-                    return (
-                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-2 px-4 font-bold text-slate-900 dark:text-white font-sans">
-                          {row.fullMonthName} {selectedYear}
-                        </td>
-                        <td className="py-2 px-4 text-right text-emerald-600 dark:text-emerald-400 font-semibold">
-                          {formatMasked(row.income, 'IDR', isPrivacyMode)}
-                        </td>
-                        <td className="py-2 px-4 text-right text-rose-600 dark:text-rose-400 font-semibold">
-                          {formatMasked(row.expense, 'IDR', isPrivacyMode)}
-                        </td>
-                        <td className="py-2 px-4 text-right text-indigo-600 dark:text-indigo-400 font-semibold">
-                          {formatMasked(row.investment, 'IDR', isPrivacyMode)}
-                        </td>
-                        <td className="py-2 px-4 text-right text-sky-600 dark:text-sky-400 font-semibold">
-                          {formatMasked(row.accountBalance, 'IDR', isPrivacyMode)}
-                        </td>
-                        <td className="py-2 px-4 text-right">
-                          {row.income > 0 ? (
-                            <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
-                              rate >= 30 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-                            }`}>
-                              {rate.toFixed(1)}%
-                            </span>
-                          ) : '-'}
-                        </td>
-                        <td className="py-2 px-4">
-                          <div className="w-24 mx-auto h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
-                            <div style={{ width: `${Math.min(100, rate)}%` }} className="bg-indigo-500 h-full rounded-full" />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-2 px-4 font-bold text-slate-900 dark:text-white font-sans whitespace-nowrap">
+                              {row.fullMonthName} {selectedYear}
+                            </td>
+                            <td className="py-2 px-4 text-right text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.income, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-rose-600 dark:text-rose-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.expense, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-indigo-600 dark:text-indigo-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.investment, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-sky-600 dark:text-sky-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.accountBalance, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right whitespace-nowrap">
+                              {row.income > 0 ? (
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                                    rate >= 30
+                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                  }`}
+                                >
+                                  {rate.toFixed(1)}%
+                                </span>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+                            <td className="py-2 px-4">
+                              <div className="w-24 mx-auto h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
+                                <div style={{ width: `${Math.min(100, rate)}%` }} className="bg-indigo-500 h-full rounded-full" />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    : yearlyData.map((row, idx) => {
+                        const rate = row.income > 0 ? (row.investment / row.income) * 100 : 0;
+
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-2 px-4 font-bold text-slate-900 dark:text-white font-sans whitespace-nowrap">
+                              Year {row.year}
+                            </td>
+                            <td className="py-2 px-4 text-right text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.income, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-rose-600 dark:text-rose-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.expense, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-indigo-600 dark:text-indigo-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.investment, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right text-sky-600 dark:text-sky-400 font-semibold whitespace-nowrap">
+                              {formatMasked(row.accountBalance, 'IDR', isPrivacyMode)}
+                            </td>
+                            <td className="py-2 px-4 text-right whitespace-nowrap">
+                              {row.income > 0 ? (
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                                    rate >= 30
+                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                  }`}
+                                >
+                                  {rate.toFixed(1)}%
+                                </span>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+                            <td className="py-2 px-4">
+                              <div className="w-24 mx-auto h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden flex">
+                                <div style={{ width: `${Math.min(100, rate)}%` }} className="bg-indigo-500 h-full rounded-full" />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                 </tbody>
               </table>
             </div>
