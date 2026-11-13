@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   LayoutDashboard,
@@ -6,31 +6,18 @@ import {
   WalletCards,
   TrendingUp,
   PieChart,
-  Plus,
-  ArrowRightLeft,
-  ArrowDownRight,
-  LogOut,
-  User as UserIcon,
-  ChevronDown,
-  Flame,
   Eye,
   EyeOff,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   X,
   Wallet,
-  Sparkles,
   Shield,
-  Coins,
-  Smartphone,
-  Layers,
   Target,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
-import { formatIdr, formatUsd, formatMasked } from '../lib/formatters';
+import { formatIdr, formatUsd } from '../lib/formatters';
 import { isUserAdmin } from '../lib/admin';
 
 interface SidebarProps {
@@ -46,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const { user, logout, isFirebase } = useAuth();
+  const { user } = useAuth();
   const {
     activeTab,
     setActiveTab,
@@ -58,39 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     usdIdrRate,
     isPrivacyMode,
     togglePrivacyMode,
-    theme,
-    toggleTheme,
-    setIsAddExpenseOpen,
-    setTransactionInitialType,
-    setIsTransferOpen,
-    setTransferInitialMode,
-    setIsAddAccountOpen,
-    setIsHoldingTypesModalOpen,
-    setEditingTransaction,
-    setEditingAccount,
-    setIsFirebaseSetupOpen,
-    setIsMobileAppModalOpen,
   } = useFinance();
-
-  const [isNewMenuOpen, setIsNewMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-
-  const newMenuRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  // Close menus on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) {
-        setIsNewMenuOpen(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const isAdmin = isUserAdmin(user);
 
@@ -99,52 +54,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'dashboard' as const,
       label: 'Dashboard',
       icon: LayoutDashboard,
-      badge: null,
-      description: 'Wealth overview',
+      count: null,
     },
     {
       id: 'expenses' as const,
       label: 'Transactions',
       icon: Receipt,
-      badge: transactions.length > 0 ? transactions.length : null,
-      description: 'Income & expenses',
+      count: transactions.length > 0 ? transactions.length : null,
     },
     {
       id: 'budgeting' as const,
       label: 'Budgeting',
       icon: Target,
-      badge: budgets.length > 0 ? budgets.length : null,
-      description: 'Limits & tracking',
+      count: budgets.length > 0 ? budgets.length : null,
     },
     {
       id: 'accounts' as const,
       label: 'Accounts',
       icon: WalletCards,
-      badge: accounts.length > 0 ? accounts.length : null,
-      description: 'Banks & wallets',
+      count: accounts.length > 0 ? accounts.length : null,
     },
     {
       id: 'investments' as const,
       label: 'Portfolio',
       icon: TrendingUp,
-      badge: investments.length > 0 ? investments.length : null,
-      description: 'Investment assets',
+      count: investments.length > 0 ? investments.length : null,
     },
     {
       id: 'stats' as const,
       label: 'Analytics',
       icon: PieChart,
-      badge: null,
-      description: 'Reports & trends',
+      count: null,
     },
     ...(isAdmin
       ? [
           {
             id: 'admin' as const,
-            label: 'Admin Panel',
+            label: 'Admin Console',
             icon: Shield,
-            badge: 'Admin',
-            description: 'Site management',
+            count: 'Admin',
           },
         ]
       : []),
@@ -153,204 +101,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const netWorthIdr = stats?.totalNetWorthIdr || 0;
   const netWorthUsd = usdIdrRate > 0 ? netWorthIdr / usdIdrRate : 0;
 
-  const handleSelectNav = (tabId: 'dashboard' | 'expenses' | 'accounts' | 'investments' | 'budgeting' | 'stats' | 'admin') => {
+  const handleSelectNav = (
+    tabId: 'dashboard' | 'expenses' | 'accounts' | 'investments' | 'budgeting' | 'stats' | 'admin'
+  ) => {
     setActiveTab(tabId);
     onCloseMobile();
   };
 
   const renderSidebarContent = (layoutScope: 'desktop' | 'mobile') => (
-    <div className="flex flex-col h-full bg-white dark:bg-[#080a0f] border-r border-slate-200 dark:border-[#1a1f2c] text-slate-800 dark:text-zinc-200 select-none">
-      {/* 1. BRAND HEADER */}
-      <div className="p-3.5 border-b border-slate-200 dark:border-[#1a1f2c] flex items-center justify-between bg-slate-50 dark:bg-[#0b0e14]">
+    <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-[#070a0f] border-r border-slate-200/80 dark:border-[#161e2e] text-slate-800 dark:text-zinc-200 select-none">
+      {/* 1. CLEAN BRAND HEADER (Aligned with h-16 TopHeader) */}
+      <div
+        className={`h-16 border-b border-slate-200/70 dark:border-[#141c2b] flex items-center justify-between shrink-0 ${
+          isCollapsed ? 'px-2.5 justify-center' : 'px-4'
+        }`}
+      >
         <button
+          type="button"
           onClick={() => handleSelectNav('dashboard')}
-          className="flex items-center gap-2.5 text-left focus:outline-none cursor-pointer group"
+          className="flex items-center gap-2.5 text-left focus:outline-none cursor-pointer group min-w-0"
+          title="WealthTrack Pro"
         >
-          <div className="w-8 h-8 rounded bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:border-emerald-400 transition-colors shrink-0">
-            <Wallet className="w-4 h-4 stroke-[2.5]" />
+          <div className="w-8 h-8 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 flex items-center justify-center shadow-xs group-hover:opacity-90 transition-opacity shrink-0">
+            <Wallet className="w-4 h-4 stroke-[2.2]" />
           </div>
           {!isCollapsed && (
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  WealthTrack Pro
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">Personal Finance</p>
-            </div>
+            <span className="font-bold text-[15px] tracking-tight text-slate-900 dark:text-white truncate whitespace-nowrap">
+              WealthTrack
+            </span>
           )}
         </button>
 
         {/* Mobile Close Button */}
         <button
+          type="button"
           onClick={onCloseMobile}
-          className="lg:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200/70 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="lg:hidden w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#141b28] transition-colors cursor-pointer shrink-0"
+          aria-label="Close sidebar"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Desktop Collapse Toggle */}
-        <button
-          onClick={onToggleCollapse}
-          className="hidden lg:flex p-1.5 text-slate-500 hover:text-slate-900 dark:text-zinc-500 dark:hover:text-zinc-200 rounded hover:bg-slate-200/70 dark:hover:bg-zinc-800/60 transition-colors cursor-pointer"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
-      </div>
-
-      {/* 2. NET WORTH GLIMPSE CARD (Shown when expanded) */}
-      {!isCollapsed && (
-        <div className="px-3 py-2.5 border-b border-slate-200 dark:border-[#1a1f2c] bg-slate-50 dark:bg-[#0c0f16]">
-          <div className="p-2.5 rounded-xl bg-white dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 mb-1">
-              <span className="font-medium">Net Worth</span>
-              <button
-                onClick={togglePrivacyMode}
-                className="text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200 p-0.5 rounded cursor-pointer"
-                title={isPrivacyMode ? 'Show values' : 'Hide values'}
-              >
-                {isPrivacyMode ? (
-                  <EyeOff className="w-3.5 h-3.5 text-amber-500" />
-                ) : (
-                  <Eye className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
-            <div className={`font-bold text-base text-slate-900 dark:text-zinc-100 truncate tabular-nums ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-              {formatIdr(netWorthIdr)}
-            </div>
-            <div className={`text-xs text-slate-500 dark:text-zinc-400 truncate mt-0.5 tabular-nums ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-              ≈ {formatUsd(netWorthUsd)}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. PRIMARY ACTION BUTTON */}
-      <div className="p-2.5 relative" ref={newMenuRef}>
-        <button
-          onClick={() => setIsNewMenuOpen(!isNewMenuOpen)}
-          className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm transition-colors cursor-pointer ${
-            isCollapsed ? 'p-2' : ''
-          }`}
-          title="Create New Transaction"
-        >
-          <Plus className="w-4 h-4" />
-          {!isCollapsed && (
-            <>
-              <span className="flex-1 text-left text-xs font-medium">New Transaction</span>
-              <ChevronDown
-                className={`w-3.5 h-3.5 text-emerald-200 transition-transform duration-200 ${
-                  isNewMenuOpen ? 'rotate-180' : ''
-                }`}
-              />
-            </>
-          )}
-        </button>
-
-        {/* Dropdown Popover */}
-        {isNewMenuOpen && (
-          <div
-            className={`absolute z-50 mt-1.5 bg-white dark:bg-[#0f131c] border border-slate-200 dark:border-[#1f2637] rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-100 ${
-              isCollapsed ? 'left-16 top-0 w-64' : 'left-2.5 right-2.5 top-12'
-            }`}
+        {!isCollapsed && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="hidden lg:flex w-7 h-7 items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#141b28] transition-colors cursor-pointer shrink-0"
+            title="Collapse sidebar"
           >
-            <div className="px-3 py-2 border-b border-slate-100 dark:border-[#1c2231] bg-slate-50 dark:bg-[#0b0e15] flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-                Quick Actions
-              </span>
-            </div>
-
-            <div className="p-1 space-y-0.5">
-              <button
-                onClick={() => {
-                  setIsNewMenuOpen(false);
-                  setEditingTransaction(null);
-                  setTransactionInitialType('expense');
-                  setIsAddExpenseOpen(true);
-                  onCloseMobile();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#161c29] transition-colors group cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded bg-rose-500/15 border border-rose-500/30 text-rose-500 dark:text-rose-400 flex items-center justify-center shrink-0">
-                  <Receipt className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-medium text-slate-900 dark:text-zinc-200">Add Expense</div>
-                  <div className="text-[10px] text-slate-500 dark:text-zinc-500 truncate">Deduct from cash or bank</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsNewMenuOpen(false);
-                  setEditingTransaction(null);
-                  setTransactionInitialType('income');
-                  setIsAddExpenseOpen(true);
-                  onCloseMobile();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#161c29] transition-colors group cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <ArrowDownRight className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-medium text-slate-900 dark:text-zinc-200">Add Income</div>
-                  <div className="text-[10px] text-slate-500 dark:text-zinc-500 truncate">Salary, selling items, bonus</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsNewMenuOpen(false);
-                  setTransferInitialMode('bank_to_investment');
-                  setIsTransferOpen(true);
-                  onCloseMobile();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#161c29] transition-colors group cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-slate-900 dark:text-zinc-200">Bank to Investment</div>
-                  <div className="text-[10px] text-slate-500 dark:text-zinc-500 truncate">Fund existing or new asset</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsNewMenuOpen(false);
-                  setTransferInitialMode('account_to_account');
-                  setIsTransferOpen(true);
-                  onCloseMobile();
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#161c29] transition-colors group cursor-pointer"
-              >
-                <div className="w-6 h-6 rounded bg-blue-500/15 border border-blue-500/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <ArrowRightLeft className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-slate-900 dark:text-zinc-200">Account Transfer</div>
-                  <div className="text-[10px] text-slate-500 dark:text-zinc-500 truncate">Transfer between accounts</div>
-                </div>
-              </button>
-            </div>
-          </div>
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
         )}
       </div>
 
-      {/* 4. MAIN NAVIGATION LINKS */}
-      <div className="flex-1 overflow-y-auto px-2.5 py-1.5 space-y-1">
-        <div className="px-2 py-1">
-          {!isCollapsed && (
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
-              Workspace
-            </span>
-          )}
+      {/* Expand button when collapsed on desktop */}
+      {isCollapsed && (
+        <div className="hidden lg:flex justify-center pt-3 pb-1">
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#141b28] transition-colors cursor-pointer"
+            title="Expand sidebar"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
         </div>
+      )}
 
+      {/* 2. UNIFIED NAVIGATION MENU */}
+      <div className="flex-1 overflow-y-auto px-3 py-3.5 space-y-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           const Icon = item.icon;
@@ -358,48 +178,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => handleSelectNav(item.id)}
-              className={`relative w-full flex items-center gap-2.5 px-2.5 py-2 text-xs transition-colors group cursor-pointer rounded-lg overflow-hidden ${
+              className={`relative w-full flex items-center gap-3 px-3 py-2.5 text-xs rounded-xl transition-colors cursor-pointer group ${
                 isActive
-                  ? 'text-emerald-700 dark:text-emerald-300 font-semibold'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/80 dark:hover:bg-[#111520]'
-              } ${isCollapsed ? 'justify-center px-1.5' : ''}`}
-              title={item.label}
+                  ? 'text-slate-900 dark:text-white font-semibold'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-[#111723]'
+              } ${isCollapsed ? 'justify-center px-0 h-10 w-10 mx-auto' : ''}`}
+              title={isCollapsed ? item.label : undefined}
             >
               {isActive && (
                 <motion.div
-                  layoutId={`sidebar-active-bg-${layoutScope}`}
+                  layoutId={`sidebar-solid-pill-${layoutScope}`}
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  className="absolute inset-0 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/80 dark:border-emerald-500/25 shadow-2xs pointer-events-none"
-                />
-              )}
-
-              {isActive && (
-                <motion.span
-                  layoutId={`sidebar-active-bar-${layoutScope}`}
-                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-emerald-500 dark:bg-emerald-400 pointer-events-none"
+                  className="absolute inset-0 rounded-xl bg-white dark:bg-[#141b29] border border-slate-200/80 dark:border-[#222e46] shadow-2xs pointer-events-none"
                 />
               )}
 
               <Icon
                 className={`relative z-10 w-4 h-4 shrink-0 transition-colors ${
-                  isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300'
+                  isActive
+                    ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.2]'
+                    : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300'
                 }`}
               />
 
               {!isCollapsed && (
                 <>
-                  <span className="relative z-10 flex-1 text-left truncate">{item.label}</span>
-                  {item.badge !== null && (
+                  <span className="relative z-10 flex-1 text-left truncate whitespace-nowrap">
+                    {item.label}
+                  </span>
+                  {item.count !== null && (
                     <span
-                      className={`relative z-10 text-[10px] font-mono tabular-nums ${
+                      className={`relative z-10 text-[11px] font-mono tabular-nums whitespace-nowrap shrink-0 ${
                         isActive
-                          ? 'text-emerald-700 dark:text-emerald-300 font-semibold'
+                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
                           : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-400'
                       }`}
                     >
-                      {item.badge}
+                      {item.count}
                     </span>
                   )}
                 </>
@@ -409,130 +226,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </div>
 
-      {/* 5. FOOTER: USER PROFILE */}
-      <div className="p-2.5 border-t border-slate-200 dark:border-[#1a1f2c] bg-slate-50 dark:bg-[#0b0e14] relative" ref={userMenuRef}>
-        <button
-          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-          className={`w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-[#121622] transition-all text-left cursor-pointer group ${
-            isCollapsed ? 'justify-center p-1' : ''
-          }`}
-        >
-          <div className="w-7 h-7 rounded bg-slate-200 dark:bg-[#161b27] border border-slate-300 dark:border-[#232b3d] flex items-center justify-center text-[11px] font-mono font-extrabold text-slate-800 dark:text-zinc-300 shrink-0">
-            {user?.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
+      {/* 3. QUIET BOTTOM NET WORTH FOOTNOTE (Only when expanded) */}
+      {!isCollapsed && (
+        <div className="p-3.5 border-t border-slate-200/70 dark:border-[#141c2b] shrink-0">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 mb-1">
+            <span className="font-medium">Total Net Worth</span>
+            <button
+              type="button"
+              onClick={togglePrivacyMode}
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 p-0.5 rounded transition-colors cursor-pointer"
+              title={isPrivacyMode ? 'Show values' : 'Hide values'}
+            >
+              {isPrivacyMode ? (
+                <EyeOff className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
+            </button>
           </div>
 
-          {!isCollapsed && (
-            <>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 truncate">{user?.name || 'Account'}</p>
-                <p className="text-[10px] font-mono text-slate-500 dark:text-zinc-500 truncate">{user?.email}</p>
-              </div>
-              <ChevronDown
-                className={`w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-200 transition-transform ${
-                  isUserMenuOpen ? 'rotate-180' : ''
-                }`}
-              />
-            </>
-          )}
-        </button>
-
-        {/* User Popover Menu */}
-        {isUserMenuOpen && (
           <div
-            className={`absolute z-50 bg-white dark:bg-[#0f131c] border border-slate-200 dark:border-[#1f2637] rounded-xl shadow-2xl p-1.5 w-56 space-y-0.5 animate-in fade-in ${
-              isCollapsed ? 'left-16 bottom-2' : 'left-2.5 right-2.5 bottom-14'
+            className={`font-bold text-sm tracking-tight text-slate-900 dark:text-zinc-100 truncate tabular-nums ${
+              isPrivacyMode ? 'privacy-blur' : ''
             }`}
           >
-            <div className="px-2 py-1.5 border-b border-slate-100 dark:border-[#1c2231] text-[11px]">
-              <p className="font-semibold text-slate-900 dark:text-zinc-100 truncate">{user?.name || 'User'}</p>
-              <p className="text-[10px] font-mono text-slate-500 dark:text-zinc-500 truncate">{user?.email}</p>
-            </div>
-
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  setIsUserMenuOpen(false);
-                  setActiveTab('admin');
-                  onCloseMobile();
-                }}
-                className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg cursor-pointer font-semibold"
-              >
-                <span className="flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Admin Panel</span>
-                </span>
-                <span className="text-[10px] bg-emerald-500/20 px-1 rounded text-emerald-800 dark:text-emerald-300">Manage</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setIsUserMenuOpen(false);
-                setIsFirebaseSetupOpen(true);
-                onCloseMobile();
-              }}
-              className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                <Flame className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                <span>Cloud Settings</span>
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">{isFirebase ? 'Active' : 'Setup'}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                togglePrivacyMode();
-              }}
-              className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                {isPrivacyMode ? (
-                  <EyeOff className="w-3.5 h-3.5 text-amber-500" />
-                ) : (
-                  <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                )}
-                <span>Privacy Mode</span>
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                {isPrivacyMode ? 'Masked' : 'Visible'}
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                toggleTheme();
-              }}
-              className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
-            >
-              <span className="flex items-center gap-2">
-                {theme === 'dark' ? (
-                  <Sun className="w-3.5 h-3.5 text-amber-500" />
-                ) : (
-                  <Moon className="w-3.5 h-3.5 text-indigo-500" />
-                )}
-                <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-mono">
-                {theme}
-              </span>
-            </button>
-
-            <div className="border-t border-slate-200 dark:border-slate-800 my-1" />
-
-            <button
-              onClick={() => {
-                setIsUserMenuOpen(false);
-                logout();
-              }}
-              className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg cursor-pointer font-semibold"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Log Out</span>
-            </button>
+            {formatIdr(netWorthIdr)}
           </div>
-        )}
-      </div>
+
+          <div
+            className={`text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 tabular-nums font-mono ${
+              isPrivacyMode ? 'privacy-blur' : ''
+            }`}
+          >
+            ≈ {formatUsd(netWorthUsd)}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -541,10 +270,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Desktop Fixed Left Sidebar */}
       <aside
         className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'w-18' : 'w-64'
+          isCollapsed ? 'w-18' : 'w-60'
         }`}
       >
-        <div className="fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out" style={{ width: isCollapsed ? '4.5rem' : '16rem' }}>
+        <div
+          className="fixed inset-y-0 left-0 z-30 transition-all duration-300 ease-in-out"
+          style={{ width: isCollapsed ? '4.5rem' : '15rem' }}
+        >
           {renderSidebarContent('desktop')}
         </div>
       </aside>
@@ -566,7 +298,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-              className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10"
+              className="relative w-64 max-w-[85vw] h-full shadow-2xl z-10"
             >
               {renderSidebarContent('mobile')}
             </motion.div>

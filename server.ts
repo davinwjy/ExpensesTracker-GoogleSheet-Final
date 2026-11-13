@@ -1970,8 +1970,33 @@ app.post('/api/user/apps-script-url', (req: Request, res: Response): void => {
 
 async function startServer() {
   if (!isProduction) {
+    // Ensure any previously registered PWA Service Worker in the preview browser immediately clears stale caches
+    app.get(['/sw.js', '/dev-sw.js'], (_req: Request, res: Response) => {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.send(`
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then((clients) => {
+        clients.forEach((client) => {
+          if ('navigate' in client) {
+            client.navigate(client.url);
+          }
+        });
+      })
+  );
+});
+      `.trim());
+    });
+
     const { createServer: createViteServer } = await import('vite');
-    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
       server: {
         middlewareMode: true,

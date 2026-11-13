@@ -181,46 +181,88 @@ export const MobileNav: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Sleek Bottom Navigation Bar (Visible on Mobile & Tablet < 1024px) */}
-      <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-[#080a0f]/95 backdrop-blur-lg border-t border-slate-200 dark:border-[#1a1f2c] px-2 py-1.5 transition-colors">
-        <div className="grid grid-cols-5 items-center w-full max-w-lg mx-auto">
+      {/* Floating Glassmorphic Bottom Dock (Visible on Mobile & Tablet < 1024px) */}
+      <nav
+        aria-label="Mobile Navigation"
+        className="lg:hidden fixed bottom-2.5 inset-x-3 sm:inset-x-6 z-30 max-w-md mx-auto rounded-2xl bg-white/95 dark:bg-[#0d111a]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-[#1f293d] shadow-[0_12px_32px_-4px_rgba(15,23,42,0.14)] dark:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.7)] px-2 py-1.5 transition-all select-none"
+      >
+        <div className="grid grid-cols-5 items-center w-full">
           {leftNavTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative w-full flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-colors cursor-pointer ${
-                  isActive
-                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                    : 'text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300'
-                }`}
+                type="button"
+                onClick={() => {
+                  if (isQuickMenuOpen) setIsQuickMenuOpen(false);
+                  setActiveTab(tab.id);
+                }}
+                className="group relative w-full min-h-[48px] flex flex-col items-center justify-center py-1 px-1 rounded-xl cursor-pointer active:scale-95 transition-all duration-150 focus:outline-none"
               >
+                {/* Active Soft Capsule Background */}
                 {isActive && (
                   <motion.div
                     layoutId="mobile-dock-active-pill"
-                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                    className="absolute inset-0 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 pointer-events-none"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-gradient-to-b from-emerald-500/15 to-emerald-500/5 dark:from-emerald-400/20 dark:to-emerald-500/5 border border-emerald-500/25 dark:border-emerald-400/25 pointer-events-none"
                   />
                 )}
-                <Icon className="relative z-10 w-4 h-4 shrink-0" />
-                <span className="relative z-10 text-[10px] font-medium mt-0.5 truncate max-w-full">
+
+                <div className="relative z-10 flex items-center justify-center w-7 h-6">
+                  <Icon
+                    className={`w-[19px] h-[19px] shrink-0 transition-all duration-150 ${
+                      isActive
+                        ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.4] -translate-y-0.5'
+                        : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 stroke-[1.9]'
+                    }`}
+                  />
+                </div>
+
+                <span
+                  className={`relative z-10 text-[10px] tracking-tight leading-none mt-0.5 truncate max-w-full transition-colors duration-150 ${
+                    isActive
+                      ? 'text-emerald-700 dark:text-emerald-300 font-bold'
+                      : 'text-slate-500 dark:text-zinc-500 font-medium group-hover:text-slate-800 dark:group-hover:text-zinc-300'
+                  }`}
+                >
                   {tab.label}
                 </span>
+
+                {/* Active Bottom Dot Indicator */}
+                {isActive && (
+                  <motion.span
+                    layoutId="mobile-nav-bottom-dot"
+                    transition={{ type: 'spring', stiffness: 450, damping: 34 }}
+                    className="relative z-10 mt-1 w-4 h-0.5 rounded-full bg-emerald-500 dark:bg-emerald-400"
+                  />
+                )}
               </button>
             );
           })}
 
-          {/* Clean Center Action Button - Exactly Centered in Column 3 */}
-          <div className="flex items-center justify-center w-full h-full">
+          {/* Elevated Floating Center Action Orb */}
+          <div className="flex flex-col items-center justify-center w-full h-full">
             <button
+              type="button"
               onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
-              className="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 shadow-md active:scale-95 transition-all cursor-pointer"
-              aria-label="New Action"
+              aria-label="Quick Actions"
+              aria-expanded={isQuickMenuOpen}
+              className={`relative -mt-6 flex items-center justify-center w-12 h-12 rounded-full ring-4 ring-slate-50 dark:ring-[#08090c] transition-all duration-200 active:scale-90 cursor-pointer focus:outline-none ${
+                isQuickMenuOpen
+                  ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-950 shadow-xl'
+                  : 'bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white dark:text-slate-950 shadow-[0_8px_20px_-2px_rgba(16,185,129,0.55)] hover:brightness-105'
+              }`}
             >
-              <Plus className={`w-4 h-4 stroke-[2.8] transition-transform duration-150 ${isQuickMenuOpen ? 'rotate-45' : ''}`} />
+              <Plus
+                className={`w-5 h-5 stroke-[2.8] transition-transform duration-200 ${
+                  isQuickMenuOpen ? 'rotate-45' : 'rotate-0'
+                }`}
+              />
             </button>
+            <span className="text-[9px] font-semibold tracking-tight text-emerald-600 dark:text-emerald-400 mt-0.5">
+              {isQuickMenuOpen ? 'Close' : 'Action'}
+            </span>
           </div>
 
           {rightNavTabs.map((tab) => {
@@ -229,29 +271,55 @@ export const MobileNav: React.FC = () => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative w-full flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-colors cursor-pointer ${
-                  isActive
-                    ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                    : 'text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300'
-                }`}
+                type="button"
+                onClick={() => {
+                  if (isQuickMenuOpen) setIsQuickMenuOpen(false);
+                  setActiveTab(tab.id);
+                }}
+                className="group relative w-full min-h-[48px] flex flex-col items-center justify-center py-1 px-1 rounded-xl cursor-pointer active:scale-95 transition-all duration-150 focus:outline-none"
               >
+                {/* Active Soft Capsule Background */}
                 {isActive && (
                   <motion.div
                     layoutId="mobile-dock-active-pill"
-                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                    className="absolute inset-0 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 pointer-events-none"
+                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-gradient-to-b from-emerald-500/15 to-emerald-500/5 dark:from-emerald-400/20 dark:to-emerald-500/5 border border-emerald-500/25 dark:border-emerald-400/25 pointer-events-none"
                   />
                 )}
-                <Icon className="relative z-10 w-4 h-4 shrink-0" />
-                <span className="relative z-10 text-[10px] font-medium mt-0.5 truncate max-w-full">
+
+                <div className="relative z-10 flex items-center justify-center w-7 h-6">
+                  <Icon
+                    className={`w-[19px] h-[19px] shrink-0 transition-all duration-150 ${
+                      isActive
+                        ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.4] -translate-y-0.5'
+                        : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300 stroke-[1.9]'
+                    }`}
+                  />
+                </div>
+
+                <span
+                  className={`relative z-10 text-[10px] tracking-tight leading-none mt-0.5 truncate max-w-full transition-colors duration-150 ${
+                    isActive
+                      ? 'text-emerald-700 dark:text-emerald-300 font-bold'
+                      : 'text-slate-500 dark:text-zinc-500 font-medium group-hover:text-slate-800 dark:group-hover:text-zinc-300'
+                  }`}
+                >
                   {tab.label}
                 </span>
+
+                {/* Active Bottom Dot Indicator */}
+                {isActive && (
+                  <motion.span
+                    layoutId="mobile-nav-bottom-dot"
+                    transition={{ type: 'spring', stiffness: 450, damping: 34 }}
+                    className="relative z-10 mt-1 w-4 h-0.5 rounded-full bg-emerald-500 dark:bg-emerald-400"
+                  />
+                )}
               </button>
             );
           })}
         </div>
-      </div>
+      </nav>
     </>
   );
 };

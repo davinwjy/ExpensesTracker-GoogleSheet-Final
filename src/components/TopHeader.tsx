@@ -19,6 +19,11 @@ import {
   FileSpreadsheet,
   Sun,
   Moon,
+  LayoutDashboard,
+  Target,
+  WalletCards,
+  PieChart,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -100,129 +105,96 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const pageMeta: Record<string, { title: string; subtitle: string; tag: string }> = {
+  const pageMeta: Record<
+    string,
+    { title: string; subtitle: string; icon: React.ComponentType<{ className?: string }> }
+  > = {
     dashboard: {
       title: 'Dashboard',
       subtitle: 'Net Worth & Wealth Overview',
-      tag: 'Overview',
+      icon: LayoutDashboard,
     },
     expenses: {
       title: 'Transactions',
       subtitle: 'Expense, Income & Transfer Logs',
-      tag: 'Cash Flow',
+      icon: Receipt,
     },
     budgeting: {
-      title: 'Budgeting & Spending Limits',
-      subtitle: 'Monthly Category Ceilings & Live Runway Tracking',
-      tag: 'Controls',
+      title: 'Budgeting',
+      subtitle: 'Monthly Category Ceilings & Live Runway',
+      icon: Target,
     },
     accounts: {
       title: 'Accounts & Wallets',
-      subtitle: 'Bank Accounts, Cash & E-Wallets',
-      tag: 'Liquidity',
+      subtitle: 'Bank Accounts, Cash & Credit Cards',
+      icon: WalletCards,
     },
     investments: {
       title: 'Portfolio & Assets',
-      subtitle: 'Crypto, Stocks, RDPU & Precious Metals',
-      tag: 'Investments',
+      subtitle: 'Crypto, Stocks, RDPU & ETFs',
+      icon: TrendingUp,
     },
     stats: {
       title: 'Analytics & Reports',
-      subtitle: 'Cash Flow Distribution & Asset Allocation',
-      tag: 'Insights',
+      subtitle: 'Cash Flow & Asset Allocation',
+      icon: PieChart,
     },
     admin: {
       title: 'Admin Console',
-      subtitle: 'Manage Users, davinwijaya16@gmail.com Access & System Settings',
-      tag: 'Management',
+      subtitle: 'Users & System Configuration',
+      icon: Shield,
     },
   };
 
   const currentMeta = pageMeta[activeTab] || pageMeta.dashboard;
+  const PageIcon = currentMeta.icon;
 
   return (
-    <header className="sticky top-0 z-20 bg-white/95 dark:bg-[#080a0f]/95 backdrop-blur-md border-b border-slate-200 dark:border-[#1a1f2c] h-13 flex items-center px-3 sm:px-5 lg:px-6 transition-colors">
-      <div className="flex items-center justify-between w-full">
-        {/* Left: Mobile Menu Trigger + Clean Page Title */}
-        <div className="flex items-center gap-3 min-w-0">
+    <header className="sticky top-0 z-20 h-16 bg-white/90 dark:bg-[#0b0f17]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#1c2436] shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)] flex items-center px-3 sm:px-5 lg:px-6 transition-colors select-none">
+      <div className="flex items-center justify-between w-full gap-3">
+        {/* Left: Mobile Menu Trigger + Page Icon Badge + Two-Line Contextual Title */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
           <button
+            type="button"
             onClick={onOpenMobileMenu}
-            className="lg:hidden p-1.5 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-md hover:bg-slate-100 dark:hover:bg-[#121622] border border-slate-200 dark:border-[#1e2535] transition-colors cursor-pointer shrink-0"
+            className="lg:hidden flex items-center justify-center w-8 h-8 text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] border border-slate-200/80 dark:border-[#222c40] active:scale-95 transition-all cursor-pointer shrink-0"
             aria-label="Open navigation menu"
           >
             <Menu className="w-4 h-4" />
           </button>
 
-          <div className="min-w-0 overflow-hidden">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                className="min-w-0 flex items-center gap-2"
-              >
-                <h1 className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+              className="flex items-center gap-3 min-w-0"
+            >
+              {/* Active Page Icon Emblem */}
+              <div className="hidden sm:flex w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 dark:border-emerald-400/20 items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <PageIcon className="w-4 h-4 stroke-[2]" />
+              </div>
+
+              {/* Stacked Title & Subtitle */}
+              <div className="min-w-0 flex flex-col justify-center">
+                <h1 className="text-sm sm:text-[15px] font-bold tracking-tight text-slate-900 dark:text-white truncate leading-tight">
                   {currentMeta.title}
                 </h1>
-                <span className="text-zinc-400 dark:text-zinc-600 hidden sm:inline" aria-hidden="true">·</span>
-                <span className="hidden md:inline-block text-xs text-slate-500 dark:text-zinc-400 truncate">
+                <p className="hidden sm:block text-[11px] text-slate-500 dark:text-zinc-400 truncate leading-tight mt-0.5">
                   {currentMeta.subtitle}
-                </span>
-              </motion.div>
-            </AnimatePresence>
-          </div>
+                </p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        {/* Right Action Suite: Theme + Privacy + Cloud + Quick Action + Profile */}
-        <div className="flex items-center gap-2">
-          {/* Theme Switcher Button (Light / Dark) */}
+        {/* Right Action Suite: Clean Uniform Fintech Toolbar */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Google Sheets Sync Action Button */}
           <button
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-[#1d2433] bg-white dark:bg-[#10141e] text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-            aria-label="Toggle Theme Mode"
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Light</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="hidden sm:inline">Dark</span>
-              </>
-            )}
-          </button>
-
-          {/* Privacy Shield Toggle */}
-          <button
-            onClick={togglePrivacyMode}
-            title={isPrivacyMode ? 'Privacy Mode Active: All sensitive currency values blurred with CSS filter. Click to reveal.' : 'Privacy Mode Off: Click to blur sensitive currency values.'}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-              isPrivacyMode
-                ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-semibold'
-                : 'bg-white dark:bg-[#10141e] border-slate-200 dark:border-[#1d2433] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:border-slate-300 dark:hover:border-[#2a3449]'
-            }`}
-            aria-label="Toggle Privacy Mode"
-          >
-            {isPrivacyMode ? (
-              <>
-                <EyeOff className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 animate-pulse" />
-                <span className="hidden sm:inline">Privacy ON</span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Privacy</span>
-              </>
-            )}
-          </button>
-
-          {/* Google Sheets Backend Storage Button */}
-          <button
+            type="button"
             onClick={() => setIsGoogleSheetSetupOpen(true)}
             title={
               isAppsScriptConnected
@@ -231,31 +203,91 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 ? `Connected to Sheet ID: ${spreadsheetId}`
                 : 'Connect Google Sheets via Apps Script'
             }
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer whitespace-nowrap ${
+            className={`h-8 px-2.5 rounded-lg flex items-center gap-2 text-xs font-medium transition-all active:scale-95 cursor-pointer whitespace-nowrap border ${
               isAppsScriptConnected || isSheetsConnected
-                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold'
-                : 'bg-slate-100 dark:bg-[#10141e] border-slate-200 dark:border-[#1d2433] text-slate-700 dark:text-zinc-300 hover:border-emerald-500/50'
+                ? 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] text-slate-700 dark:text-zinc-200 border-slate-200/80 dark:border-[#222c40]'
+                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-[#222c40]'
             }`}
           >
-            <FileSpreadsheet className={`w-3.5 h-3.5 shrink-0 ${isAppsScriptConnected || isSheetsConnected ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-400'}`} />
+            <span className="relative flex items-center justify-center">
+              <FileSpreadsheet
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  isAppsScriptConnected || isSheetsConnected
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-slate-400 dark:text-zinc-500'
+                }`}
+              />
+              {(isAppsScriptConnected || isSheetsConnected) && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-[#131926]" />
+              )}
+            </span>
             <span className="hidden sm:inline">
-              {isAppsScriptConnected || isSheetsConnected ? 'Google Sheet' : 'Connect Sheet'}
+              {isAppsScriptConnected || isSheetsConnected ? 'Sheets' : 'Connect'}
             </span>
           </button>
 
-          {/* User Profile Avatar Popover */}
+          {/* Privacy Mode Icon Toggle */}
+          <button
+            type="button"
+            onClick={togglePrivacyMode}
+            title={
+              isPrivacyMode
+                ? 'Privacy Mode ON: Currency values are hidden. Click to show.'
+                : 'Privacy Mode OFF: Click to hide currency values.'
+            }
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-95 cursor-pointer border ${
+              isPrivacyMode
+                ? 'bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border-amber-500/30 dark:border-amber-400/30'
+                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-[#222c40]'
+            }`}
+            aria-label="Toggle Privacy Mode"
+          >
+            {isPrivacyMode ? (
+              <EyeOff className="w-3.5 h-3.5 shrink-0" />
+            ) : (
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+            )}
+          </button>
+
+          {/* Theme Switcher Icon Button */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] border border-slate-200/80 dark:border-[#222c40] active:scale-95 transition-all cursor-pointer"
+            aria-label="Toggle Theme Mode"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+            )}
+          </button>
+
+          {/* Subtle Vertical Divider */}
+          <div className="hidden sm:block w-px h-4 bg-slate-200 dark:bg-[#1e2738] mx-0.5" />
+
+          {/* User Profile Menu Trigger */}
           <div className="relative" ref={userMenuRef}>
             <button
+              type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-[#121622] border border-slate-200/70 dark:border-[#1e2535] transition-all cursor-pointer"
+              className={`h-8 flex items-center gap-1.5 pl-1 pr-2 rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] border transition-all active:scale-95 cursor-pointer ${
+                isUserMenuOpen
+                  ? 'border-emerald-500/50 ring-2 ring-emerald-500/15'
+                  : 'border-slate-200/80 dark:border-[#222c40]'
+              }`}
               title="User Profile Menu"
             >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center text-[10px] font-mono shadow-sm">
+              <div className="w-6 h-6 rounded-md bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 font-bold flex items-center justify-center text-[10px] font-mono">
                 {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
               </div>
+              <span className="hidden xl:inline-block text-xs font-medium text-slate-700 dark:text-zinc-200 max-w-[90px] truncate">
+                {user?.name ? user.name.split(' ')[0] : 'Account'}
+              </span>
               <ChevronDown
-                className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${
-                  isUserMenuOpen ? 'rotate-180' : ''
+                className={`w-3 h-3 text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
+                  isUserMenuOpen ? 'rotate-180 text-emerald-500 dark:text-emerald-400' : ''
                 }`}
               />
             </button>

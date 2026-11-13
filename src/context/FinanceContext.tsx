@@ -46,6 +46,7 @@ import {
   saveServerAppsScriptUrl,
   fetchServerAppsScriptUrl,
   isEmailExplicitlyDisconnected,
+  parseSheetMonth,
 } from '../lib/appsScriptService';
 import { generateIdempotencyKey } from '../lib/idempotency';
 
@@ -237,6 +238,9 @@ interface FinanceContextType {
   budgets: CategoryBudget[];
   saveBudget: (category: string, monthlyLimit: number, month?: string, id?: string) => Promise<void>;
   deleteBudget: (id: string) => Promise<void>;
+  saveBudgetsToSheet: () => Promise<{ savedCount: number }>;
+  loadBudgetsFromSheet: () => Promise<CategoryBudget[]>;
+  isBudgetSyncing: boolean;
   applySmartBudgetsFromLastMonth: (
     targetMonthStr: string,
     multiplier?: number
@@ -293,6 +297,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [transactions, setTransactions] = useState<Transaction[]>(() => cachedSnapshot?.transactions || []);
   const [investments, setInvestments] = useState<Investment[]>(() => cachedSnapshot?.investments || []);
   const [budgets, setBudgets] = useState<CategoryBudget[]>(() => cachedSnapshot?.budgets || []);
+  const budgetsRef = useRef<CategoryBudget[]>(budgets);
+  useEffect(() => {
+    budgetsRef.current = budgets;
+  }, [budgets]);
   const [stats, setStats] = useState<DashboardStats | null>(() => {
     if (cachedSnapshot?.stats) return cachedSnapshot.stats;
     const initAccs = cachedSnapshot?.accounts || [];
@@ -364,11 +372,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (token) {
       await googleSheetsService.ensureSpreadsheetStructure(cleanId, token);
       const sheetData = await googleSheetsService.readAllSheetData(cleanId, token);
-      if (sheetData.accounts.length > 0 || sheetData.transactions.length > 0 || sheetData.investments.length > 0) {
+      if (sheetData.accounts.length > 0 || sheetData.transactions.length > 0 || sheetData.investments.length > 0 || sheetData.budgets.length > 0) {
         setAccounts(sheetData.accounts);
         setTransactions(sheetData.transactions);
         setInvestments(sheetData.investments);
-        if (sheetData.budgets.length > 0) setBudgets(sheetData.budgets);
+        if (sheetData.budgets.length > 0) {
+          budgetsRef.current = sheetData.budgets;
+          setBudgets(sheetData.budgets);
+          offlineSyncManager.saveSnapshot({ budgets: sheetData.budgets });
+        }
         const nextStats = computeStats(sheetData.accounts, sheetData.transactions, sheetData.investments, usdIdrRate);
         setStats(nextStats);
       }
@@ -393,7 +405,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAccounts(freshData.accounts);
       setTransactions(freshData.transactions);
       setInvestments(freshData.investments);
-      if (freshData.budgets.length > 0) setBudgets(freshData.budgets);
+      if (freshData.budgets.length > 0) {
+        budgetsRef.current = freshData.budgets;
+        setBudgets(freshData.budgets);
+        offlineSyncManager.saveSnapshot({ budgets: freshData.budgets });
+      }
       const nextStats = computeStats(freshData.accounts, freshData.transactions, freshData.investments, usdIdrRate);
       setStats(nextStats);
     } catch (err: any) {
@@ -452,11 +468,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     await appsScriptService.initStructure(saved);
     const fresh = await appsScriptService.readAllData(saved);
-    if (fresh.accounts.length > 0 || fresh.transactions.length > 0 || fresh.investments.length > 0) {
+    if (fresh.accounts.length > 0 || fresh.transactions.length > 0 || fresh.investments.length > 0 || fresh.budgets.length > 0) {
       setAccounts(fresh.accounts);
       setTransactions(fresh.transactions);
       setInvestments(fresh.investments);
-      if (fresh.budgets.length > 0) setBudgets(fresh.budgets);
+      if (fresh.budgets.length > 0) {
+        budgetsRef.current = fresh.budgets;
+        setBudgets(fresh.budgets);
+        offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+      }
       const nextStats = computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRate);
       setStats(nextStats);
     }
@@ -517,7 +537,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAccounts(fresh.accounts);
       setTransactions(fresh.transactions);
       setInvestments(fresh.investments);
-      if (fresh.budgets.length > 0) setBudgets(fresh.budgets);
+      if (fresh.budgets.length > 0) {
+        budgetsRef.current = fresh.budgets;
+        setBudgets(fresh.budgets);
+        offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+      }
       const nextStats = computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRate);
       setStats(nextStats);
     } catch (err) {
@@ -750,6 +774,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [payBillCard, setPayBillCard] = useState<Account | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileQuickMenuOpen, setIsMobileQuickMenuOpen] = useState(false);
+  const [isBudgetSyncing, setIsBudgetSyncing] = useState(false);
 
   // Popup Notification State
   const [notification, setNotification] = useState<NotificationPopupItem | null>(null);
@@ -1136,15 +1161,62 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsLoading(true);
         appsScriptService
           .readAllData(appsScriptUrl)
-          .then((fresh) => {
+          .then(async (fresh) => {
             setAccounts(fresh.accounts);
             setTransactions(fresh.transactions);
             setInvestments(fresh.investments);
-            if (fresh.budgets.length > 0) setBudgets(fresh.budgets);
+            if (fresh.budgets.length > 0) {
+              budgetsRef.current = fresh.budgets;
+              setBudgets(fresh.budgets);
+              offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+              fresh.budgets.forEach((b) => {
+                try {
+                  localDb.saveBudget({
+                    id: b.id,
+                    category: b.category,
+                    monthlyLimit: b.monthlyLimit,
+                    month: b.month,
+                  });
+                } catch {}
+              });
+            } else if (user?.id) {
+              // Fallback to Firestore budgets if sheet had no budgets yet
+              const fbData = await firestoreService.fetchAllUserData(user.id);
+              if (fbData.budgets.length > 0) {
+                budgetsRef.current = fbData.budgets;
+                setBudgets(fbData.budgets);
+                offlineSyncManager.saveSnapshot({ budgets: fbData.budgets });
+                appsScriptService.syncBudgetsToSheet(appsScriptUrl, fbData.budgets).catch(() => {});
+              } else if (budgetsRef.current.length > 0) {
+                appsScriptService.syncBudgetsToSheet(appsScriptUrl, budgetsRef.current).catch(() => {});
+              }
+            }
             setStats(computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRateRef.current || 15850));
           })
           .catch((err) => console.warn('Apps Script initial load error:', err))
           .finally(() => setIsLoading(false));
+      } else if (spreadsheetId) {
+        const token = getCachedAccessToken();
+        if (token) {
+          setIsLoading(true);
+          googleSheetsService
+            .readAllSheetData(spreadsheetId, token)
+            .then(async (fresh) => {
+              setAccounts(fresh.accounts);
+              setTransactions(fresh.transactions);
+              setInvestments(fresh.investments);
+              if (fresh.budgets.length > 0) {
+                budgetsRef.current = fresh.budgets;
+                setBudgets(fresh.budgets);
+                offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+              } else if (budgetsRef.current.length > 0) {
+                googleSheetsService.replaceBudgetsSheet(spreadsheetId, token, budgetsRef.current).catch(() => {});
+              }
+              setStats(computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRateRef.current || 15850));
+            })
+            .catch((err) => console.warn('Google Sheets initial load error:', err))
+            .finally(() => setIsLoading(false));
+        }
       }
       return;
     }
@@ -1161,6 +1233,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setAccounts(data.accounts);
       setTransactions(data.transactions);
+      if (data.budgets && data.budgets.length > 0) {
+        budgetsRef.current = data.budgets;
+        setBudgets(data.budgets);
+      }
       setSettings(data.settings);
 
       // Account-bound Apps Script URL restoration and auto-sync
@@ -1177,11 +1253,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           appsScriptService
             .readAllData(boundUrl)
             .then((fresh) => {
-              if (fresh.accounts.length > 0 || fresh.transactions.length > 0 || fresh.investments.length > 0) {
+              if (fresh.accounts.length > 0 || fresh.transactions.length > 0 || fresh.investments.length > 0 || fresh.budgets.length > 0) {
                 setAccounts(fresh.accounts);
                 setTransactions(fresh.transactions);
                 setInvestments(fresh.investments);
-                if (fresh.budgets.length > 0) setBudgets(fresh.budgets);
+                if (fresh.budgets.length > 0) {
+                  budgetsRef.current = fresh.budgets;
+                  setBudgets(fresh.budgets);
+                  offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+                }
                 const nextStats = computeStats(fresh.accounts, fresh.transactions, fresh.investments, usdIdrRateRef.current || 15850);
                 setStats(nextStats);
               }
@@ -1210,6 +1290,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         accounts: data.accounts,
         transactions: data.transactions,
         investments: normalizedInvestments,
+        budgets: data.budgets && data.budgets.length > 0 ? data.budgets : budgetsRef.current,
         settings: data.settings,
         usdIdrRate: rate,
         rateSource: data.settings?.rateSource,
@@ -1265,12 +1346,58 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         exchangeRateService.setAutoUpdateEnabled(setRes.settings.autoUpdateRate);
       }
 
+      // If Apps Script or Google Sheets is connected in non-Firebase mode, hydrate latest sheet data (especially budgets)
+      if (appsScriptUrl) {
+        try {
+          const fresh = await appsScriptService.readAllData(appsScriptUrl);
+          if (fresh.accounts.length > 0) setAccounts(fresh.accounts);
+          if (fresh.transactions.length > 0) setTransactions(fresh.transactions);
+          if (fresh.investments.length > 0) setInvestments(fresh.investments);
+          if (fresh.budgets.length > 0) {
+            budgetsRef.current = fresh.budgets;
+            setBudgets(fresh.budgets);
+            fresh.budgets.forEach((b) => {
+              try {
+                localDb.saveBudget({
+                  id: b.id,
+                  category: b.category,
+                  monthlyLimit: b.monthlyLimit,
+                  month: b.month,
+                });
+              } catch {}
+            });
+          } else if (bgtRes?.budgets && bgtRes.budgets.length > 0) {
+            appsScriptService.syncBudgetsToSheet(appsScriptUrl, bgtRes.budgets).catch(() => {});
+          }
+        } catch (sheetErr) {
+          console.warn('Apps Script refresh fallback warning:', sheetErr);
+        }
+      } else if (spreadsheetId) {
+        const token = getCachedAccessToken();
+        if (token) {
+          try {
+            const fresh = await googleSheetsService.readAllSheetData(spreadsheetId, token);
+            if (fresh.accounts.length > 0) setAccounts(fresh.accounts);
+            if (fresh.transactions.length > 0) setTransactions(fresh.transactions);
+            if (fresh.investments.length > 0) setInvestments(fresh.investments);
+            if (fresh.budgets.length > 0) {
+              budgetsRef.current = fresh.budgets;
+              setBudgets(fresh.budgets);
+            } else if (bgtRes?.budgets && bgtRes.budgets.length > 0) {
+              googleSheetsService.replaceBudgetsSheet(spreadsheetId, token, bgtRes.budgets).catch(() => {});
+            }
+          } catch (sheetErr) {
+            console.warn('Google Sheets refresh fallback warning:', sheetErr);
+          }
+        }
+      }
+
       // Persist snapshot to local cache
       offlineSyncManager.saveSnapshot({
         accounts: accRes.accounts,
         transactions: txRes.transactions,
         investments: normalizedInvestments,
-        budgets: bgtRes?.budgets,
+        budgets: budgetsRef.current.length > 0 ? budgetsRef.current : bgtRes?.budgets,
         holdingTypes: htRes?.holdingTypes,
         stats: statsRes,
         settings: setRes.settings,
@@ -1281,7 +1408,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, isFirebase]);
+  }, [isAuthenticated, isFirebase, appsScriptUrl, spreadsheetId]);
 
   useEffect(() => {
     // Preserve cached snapshot while authentication session is resolving
@@ -2586,112 +2713,160 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // ---------------- BUDGETING OPERATIONS ----------------
-  const saveBudget = async (category: string, monthlyLimit: number, month?: string, id?: string) => {
-    assertOnline('Saving a budget');
-    const budgetId = id || 'bgt_' + Date.now();
-    const now = new Date().toISOString();
-    const budgetItem: CategoryBudget = {
-      id: budgetId,
-      userId: user?.id || 'usr_local',
-      category: category.trim(),
-      monthlyLimit: Number(monthlyLimit) || 0,
-      month: month || undefined,
-      createdAt: now,
-      updatedAt: now,
-    };
+  const saveBudget = useCallback(
+    async (category: string, monthlyLimit: number, month?: string, id?: string) => {
+      assertOnline('Saving a budget');
+      const cleanCategory = category.trim();
+      const normalizedMonth = parseSheetMonth(month);
+      const slug =
+        cleanCategory
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '_')
+          .replace(/^_|_$/g, '') || 'cat';
 
-    setBudgets((prev) => {
-      const idx = prev.findIndex((b) => b.id === budgetId);
-      const next = idx >= 0 ? [...prev] : [...prev, budgetItem];
-      if (idx >= 0) next[idx] = budgetItem;
-      offlineSyncManager.saveSnapshot({ budgets: next });
-      return next;
-    });
+      // Check if an existing budget matches by explicit ID or by (category, month)
+      const existing = budgetsRef.current.find((b) => {
+        if (id && b.id === id) return true;
+        const bMonth = parseSheetMonth(b.month);
+        return (
+          b.category.trim().toLowerCase() === cleanCategory.toLowerCase() &&
+          (bMonth || '') === (normalizedMonth || '')
+        );
+      });
 
-    // Auto sync to Google Sheets / Apps Script
-    syncToSheets(SHEET_TAB_NAMES.BUDGETS, 'CREATE', budgetItem.id, [
-      budgetItem.id,
-      budgetItem.category,
-      budgetItem.monthlyLimit,
-      budgetItem.month || '',
-      budgetItem.createdAt,
-      budgetItem.updatedAt,
-    ]);
-
-    if (appsScriptUrl || spreadsheetId) {
-      return;
-    }
-
-    if (!isOnline) {
-      offlineSyncManager.queueItem({
+      const budgetId = id || existing?.id || `bgt_${slug}_${normalizedMonth || 'recurring'}`;
+      const now = new Date().toISOString();
+      const budgetItem: CategoryBudget = {
         id: budgetId,
-        type: 'budget',
-        action: 'create',
-        data: budgetItem,
-      });
-      return;
-    }
+        userId: user?.id || 'usr_local',
+        category: cleanCategory,
+        monthlyLimit: Number(monthlyLimit) || 0,
+        month: normalizedMonth,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+      };
 
-    try {
-      const res = await api.saveBudget({ id, category, monthlyLimit, month });
-      if (isFirebase && user) {
-        await firestoreService.saveBudget(res.budget);
+      const prevList = budgetsRef.current;
+      const idx = prevList.findIndex((b) => b.id === budgetId);
+      const nextList = idx >= 0 ? [...prevList] : [...prevList, budgetItem];
+      if (idx >= 0) nextList[idx] = budgetItem;
+      budgetsRef.current = nextList;
+      setBudgets(nextList);
+      offlineSyncManager.saveSnapshot({ budgets: nextList });
+
+      // Auto sync to Google Sheets / Apps Script
+      if (appsScriptUrl && !appsScriptService.isBudgetsTabSupported(appsScriptUrl)) {
+        appsScriptService.syncBudgetsToSheet(appsScriptUrl, nextList).catch((err) =>
+          console.warn('Apps Script budget sync fallback warning:', err)
+        );
+      } else {
+        syncToSheets(SHEET_TAB_NAMES.BUDGETS, 'CREATE', budgetItem.id, [
+          budgetItem.id,
+          budgetItem.category,
+          budgetItem.monthlyLimit,
+          budgetItem.month || '',
+          budgetItem.createdAt,
+          budgetItem.updatedAt,
+        ]);
       }
-    } catch {
-      offlineSyncManager.queueItem({
-        id: budgetId,
-        type: 'budget',
-        action: 'create',
-        data: budgetItem,
-      });
-    }
-  };
 
-  const deleteBudget = async (id: string) => {
-    assertOnline('Deleting a budget');
-    setBudgets((prev) => {
-      const next = prev.filter((b) => b.id !== id);
-      offlineSyncManager.saveSnapshot({ budgets: next });
-      return next;
-    });
-
-    // Auto sync to Google Sheets / Apps Script
-    syncToSheets(SHEET_TAB_NAMES.BUDGETS, 'DELETE', id);
-
-    if (appsScriptUrl || spreadsheetId) {
-      return;
-    }
-
-    if (!isOnline) {
-      offlineSyncManager.queueItem({
-        id,
-        type: 'budget',
-        action: 'delete',
-        data: { id },
-      });
-      return;
-    }
-
-    try {
-      await api.deleteBudget(id);
-      if (isFirebase && user) {
-        await firestoreService.deleteBudget(id);
+      // Always keep localDb & Firestore in sync so budgets are never lost across reloads
+      try {
+        localDb.saveBudget({
+          id: budgetItem.id,
+          category: budgetItem.category,
+          monthlyLimit: budgetItem.monthlyLimit,
+          month: budgetItem.month,
+        });
+      } catch {
+        // ignore
       }
-    } catch {
-      offlineSyncManager.queueItem({
-        id,
-        type: 'budget',
-        action: 'delete',
-        data: { id },
-      });
-    }
-  };
+
+      if (!isOnline) {
+        offlineSyncManager.queueItem({
+          id: budgetId,
+          type: 'budget',
+          action: 'create',
+          data: budgetItem,
+        });
+        return;
+      }
+
+      try {
+        await api.saveBudget({
+          id: budgetItem.id,
+          category: budgetItem.category,
+          monthlyLimit: budgetItem.monthlyLimit,
+          month: budgetItem.month,
+        });
+        if (isFirebase && user) {
+          await firestoreService.saveBudget(budgetItem);
+        }
+      } catch {
+        if (!appsScriptUrl && !spreadsheetId) {
+          offlineSyncManager.queueItem({
+            id: budgetId,
+            type: 'budget',
+            action: 'create',
+            data: budgetItem,
+          });
+        }
+      }
+    },
+    [user, isOnline, isFirebase, appsScriptUrl, spreadsheetId, syncToSheets]
+  );
+
+  const deleteBudget = useCallback(
+    async (id: string) => {
+      assertOnline('Deleting a budget');
+      const nextList = budgetsRef.current.filter((b) => b.id !== id);
+      budgetsRef.current = nextList;
+      setBudgets(nextList);
+      offlineSyncManager.saveSnapshot({ budgets: nextList });
+
+      // Auto sync to Google Sheets / Apps Script
+      syncToSheets(SHEET_TAB_NAMES.BUDGETS, 'DELETE', id);
+
+      try {
+        localDb.deleteBudget(id);
+      } catch {
+        // ignore
+      }
+
+      if (!isOnline) {
+        offlineSyncManager.queueItem({
+          id,
+          type: 'budget',
+          action: 'delete',
+          data: { id },
+        });
+        return;
+      }
+
+      try {
+        await api.deleteBudget(id);
+        if (isFirebase && user) {
+          await firestoreService.deleteBudget(id);
+        }
+      } catch {
+        if (!appsScriptUrl && !spreadsheetId) {
+          offlineSyncManager.queueItem({
+            id,
+            type: 'budget',
+            action: 'delete',
+            data: { id },
+          });
+        }
+      }
+    },
+    [user, isOnline, isFirebase, appsScriptUrl, spreadsheetId, syncToSheets]
+  );
 
   const getBudgetProgressForMonth = useCallback(
     (targetMonthStr?: string) => {
       const now = new Date();
       const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const month = targetMonthStr || defaultMonth;
+      const month = parseSheetMonth(targetMonthStr) || defaultMonth;
 
       // Compute previous month string YYYY-MM
       const [yNum, mNum] = month.split('-').map(Number);
@@ -2703,25 +2878,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return Math.max(100000, Math.ceil(rawAmount / 50000) * 50000);
       };
 
-      // Group actual expenses for target month and previous month by category (excluding credit card / paylater usage)
-      const spentByCat: Record<string, { total: number; count: number }> = {};
-      const prevSpentByCat: Record<string, { total: number; count: number }> = {};
+      // Group actual expenses for target month and previous month by normalized category key
+      const spentByCatKey: Record<string, { displayCategory: string; total: number; count: number }> = {};
+      const prevSpentByCatKey: Record<string, { displayCategory: string; total: number; count: number }> = {};
       let totalPrevMonthSpent = 0;
 
       transactions.forEach((tx) => {
         if (tx.type !== 'expense' || !tx.date) return;
-        const acc = accounts.find((a) => a.id === tx.accountId);
-        if (acc && (acc.type === 'credit_card' || acc.type === 'paylater')) return;
+        const rawCat = (tx.category || 'Other Expense').trim();
+        const catKey = rawCat.toLowerCase();
+        // Exclude credit card bill settlement pseudo-expenses to prevent double counting
+        if (catKey === 'credit card bill' || catKey === 'tagihan kartu kredit') return;
 
-        const cat = tx.category || 'Other Expense';
-        if (tx.date.startsWith(month)) {
-          if (!spentByCat[cat]) spentByCat[cat] = { total: 0, count: 0 };
-          spentByCat[cat].total += tx.amount;
-          spentByCat[cat].count += 1;
-        } else if (tx.date.startsWith(prevMonthStr)) {
-          if (!prevSpentByCat[cat]) prevSpentByCat[cat] = { total: 0, count: 0 };
-          prevSpentByCat[cat].total += tx.amount;
-          prevSpentByCat[cat].count += 1;
+        const cleanDate = tx.date.trim();
+        if (cleanDate.startsWith(month)) {
+          if (!spentByCatKey[catKey]) {
+            spentByCatKey[catKey] = { displayCategory: rawCat, total: 0, count: 0 };
+          }
+          spentByCatKey[catKey].total += tx.amount;
+          spentByCatKey[catKey].count += 1;
+        } else if (cleanDate.startsWith(prevMonthStr)) {
+          if (!prevSpentByCatKey[catKey]) {
+            prevSpentByCatKey[catKey] = { displayCategory: rawCat, total: 0, count: 0 };
+          }
+          prevSpentByCatKey[catKey].total += tx.amount;
+          prevSpentByCatKey[catKey].count += 1;
           totalPrevMonthSpent += tx.amount;
         }
       });
@@ -2733,9 +2914,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Month-specific budgets first
       budgets
-        .filter((b) => b.month === month)
+        .filter((b) => parseSheetMonth(b.month) === month)
         .forEach((b) => {
-          const key = b.category.toLowerCase();
+          const key = b.category.trim().toLowerCase();
           if (!categorySeen.has(key)) {
             activeBudgets.push(b);
             categorySeen.add(key);
@@ -2745,9 +2926,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Generic recurring budgets if not overridden for this month
       budgets
-        .filter((b) => !b.month)
+        .filter((b) => !parseSheetMonth(b.month))
         .forEach((b) => {
-          const key = b.category.toLowerCase();
+          const key = b.category.trim().toLowerCase();
           if (!categorySeen.has(key)) {
             activeBudgets.push(b);
             categorySeen.add(key);
@@ -2760,8 +2941,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       let overBudgetCount = 0;
 
       const items: BudgetProgress[] = activeBudgets.map((b) => {
-        const catData = spentByCat[b.category] || { total: 0, count: 0 };
-        const prevData = prevSpentByCat[b.category] || { total: 0, count: 0 };
+        const key = b.category.trim().toLowerCase();
+        const catData = spentByCatKey[key] || { displayCategory: b.category, total: 0, count: 0 };
+        const prevData = prevSpentByCatKey[key] || { displayCategory: b.category, total: 0, count: 0 };
         const spent = catData.total;
         const prevSpent = prevData.total;
         const limit = b.monthlyLimit;
@@ -2807,14 +2989,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         suggestedSmartLimit: number;
       }> = [];
 
-      Object.entries(spentByCat).forEach(([cat, data]) => {
-        if (!categorySeen.has(cat.toLowerCase())) {
-          const prevData = prevSpentByCat[cat] || { total: 0, count: 0 };
+      Object.entries(spentByCatKey).forEach(([catKey, data]) => {
+        if (!categorySeen.has(catKey)) {
+          const prevData = prevSpentByCatKey[catKey] || { displayCategory: data.displayCategory, total: 0, count: 0 };
           const suggestedSmartLimit = roundSmartLimit(
             prevData.total > 0 ? prevData.total : data.total * 1.15
           );
           unbudgetedItems.push({
-            category: cat,
+            category: data.displayCategory,
             actualSpent: data.total,
             transactionCount: data.count,
             prevMonthSpent: prevData.total,
@@ -2825,18 +3007,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
 
       // Build list of all categories from last month's expenses for Smart Monthly Budget comparison
-      const allComparisonCats = new Set<string>([
-        ...Object.keys(prevSpentByCat),
-        ...Object.keys(spentByCat),
+      const allComparisonKeys = new Set<string>([
+        ...Object.keys(prevSpentByCatKey),
+        ...Object.keys(spentByCatKey),
       ]);
-      const prevMonthCategories = Array.from(allComparisonCats)
-        .map((cat) => {
-          const prev = prevSpentByCat[cat] || { total: 0, count: 0 };
-          const curr = spentByCat[cat] || { total: 0, count: 0 };
-          const existingBudget = budgetByCatLower[cat.toLowerCase()];
+      const prevMonthCategories = Array.from(allComparisonKeys)
+        .map((catKey) => {
+          const prev = prevSpentByCatKey[catKey] || { displayCategory: '', total: 0, count: 0 };
+          const curr = spentByCatKey[catKey] || { displayCategory: '', total: 0, count: 0 };
+          const existingBudget = budgetByCatLower[catKey];
+          const displayCategory =
+            existingBudget?.category || prev.displayCategory || curr.displayCategory || catKey;
           const baseForSmart = prev.total > 0 ? prev.total : curr.total;
           return {
-            category: cat,
+            category: displayCategory,
             prevMonthSpent: prev.total,
             prevMonthCount: prev.count,
             currentSpent: curr.total,
@@ -2882,15 +3066,133 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         overBudgetCount,
       };
     },
-    [budgets, transactions, accounts]
+    [budgets, transactions]
   );
+
+  const saveBudgetsToSheet = useCallback(async (): Promise<{ savedCount: number }> => {
+    setIsBudgetSyncing(true);
+    try {
+      const currentBudgets = budgetsRef.current;
+      offlineSyncManager.saveSnapshot({ budgets: currentBudgets });
+
+      // Persist all current budgets to localDb & API/Firestore
+      for (const b of currentBudgets) {
+        try {
+          localDb.saveBudget({
+            id: b.id,
+            category: b.category,
+            monthlyLimit: b.monthlyLimit,
+            month: b.month,
+          });
+        } catch {}
+
+        if (isOnline) {
+          api
+            .saveBudget({
+              id: b.id,
+              category: b.category,
+              monthlyLimit: b.monthlyLimit,
+              month: b.month,
+            })
+            .catch(() => {});
+          if (isFirebase && user) {
+            firestoreService.saveBudget(b).catch(() => {});
+          }
+        }
+      }
+
+      if (appsScriptUrl) {
+        await appsScriptService.syncBudgetsToSheet(appsScriptUrl, currentBudgets);
+        const nowStr = new Date().toISOString();
+        localStorage.setItem('wealthtrack_sheets_last_sync', nowStr);
+      } else if (spreadsheetId) {
+        let token = getCachedAccessToken();
+        if (!token) {
+          const authRes = await requestGoogleSheetsAccess();
+          token = authRes.accessToken;
+        }
+        if (token) {
+          await googleSheetsService.replaceBudgetsSheet(spreadsheetId, token, currentBudgets);
+          const nowStr = new Date().toISOString();
+          localStorage.setItem('wealthtrack_sheets_last_sync', nowStr);
+        }
+      }
+
+      return { savedCount: currentBudgets.length };
+    } finally {
+      setIsBudgetSyncing(false);
+    }
+  }, [appsScriptUrl, spreadsheetId, isOnline, isFirebase, user]);
+
+  const loadBudgetsFromSheet = useCallback(async (): Promise<CategoryBudget[]> => {
+    if (!appsScriptUrl && !spreadsheetId) {
+      return budgetsRef.current;
+    }
+
+    setIsBudgetSyncing(true);
+    try {
+      if (appsScriptUrl) {
+        const fresh = await appsScriptService.readAllData(appsScriptUrl);
+        if (fresh.budgets.length > 0) {
+          budgetsRef.current = fresh.budgets;
+          setBudgets(fresh.budgets);
+          offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+          fresh.budgets.forEach((b) => {
+            try {
+              localDb.saveBudget({
+                id: b.id,
+                category: b.category,
+                monthlyLimit: b.monthlyLimit,
+                month: b.month,
+              });
+            } catch {}
+          });
+          return fresh.budgets;
+        } else if (budgetsRef.current.length > 0) {
+          await appsScriptService.syncBudgetsToSheet(appsScriptUrl, budgetsRef.current);
+          return budgetsRef.current;
+        }
+      } else if (spreadsheetId) {
+        const token = getCachedAccessToken();
+        if (token) {
+          const fresh = await googleSheetsService.readAllSheetData(spreadsheetId, token);
+          if (fresh.budgets.length > 0) {
+            budgetsRef.current = fresh.budgets;
+            setBudgets(fresh.budgets);
+            offlineSyncManager.saveSnapshot({ budgets: fresh.budgets });
+            fresh.budgets.forEach((b) => {
+              try {
+                localDb.saveBudget({
+                  id: b.id,
+                  category: b.category,
+                  monthlyLimit: b.monthlyLimit,
+                  month: b.month,
+                });
+              } catch {}
+            });
+            return fresh.budgets;
+          } else if (budgetsRef.current.length > 0) {
+            await googleSheetsService.replaceBudgetsSheet(spreadsheetId, token, budgetsRef.current);
+            return budgetsRef.current;
+          }
+        }
+      }
+      return budgetsRef.current;
+    } catch (err) {
+      console.warn('loadBudgetsFromSheet warning:', err);
+      return budgetsRef.current;
+    } finally {
+      setIsBudgetSyncing(false);
+    }
+  }, [appsScriptUrl, spreadsheetId]);
 
   const applySmartBudgetsFromLastMonth = useCallback(
     async (
       targetMonthStr: string,
       multiplier: number = 1.0
     ): Promise<{ updatedCount: number; totalNewLimit: number }> => {
-      const progress = getBudgetProgressForMonth(targetMonthStr);
+      const normalizedTargetMonth = parseSheetMonth(targetMonthStr);
+      const progress = getBudgetProgressForMonth(normalizedTargetMonth);
       const candidates = progress.prevMonthCategories;
       if (candidates.length === 0) {
         return { updatedCount: 0, totalNewLimit: 0 };
@@ -2898,24 +3200,61 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       let updatedCount = 0;
       let totalNewLimit = 0;
+      const now = new Date().toISOString();
+      const nextBudgets = [...budgetsRef.current];
 
       for (const item of candidates) {
         const baseAmount = item.prevMonthSpent > 0 ? item.prevMonthSpent : item.currentSpent;
         if (baseAmount <= 0) continue;
 
         const smartLimit = Math.max(100000, Math.round((baseAmount * multiplier) / 50000) * 50000);
-        // Find if there is already a month-specific budget for targetMonthStr
-        const existingForMonth = budgets.find(
-          (b) => b.category.toLowerCase() === item.category.toLowerCase() && b.month === targetMonthStr
+        const cleanCategory = item.category.trim();
+        const slug =
+          cleanCategory
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_|_$/g, '') || 'cat';
+
+        const existingIdx = nextBudgets.findIndex(
+          (b) =>
+            b.category.trim().toLowerCase() === cleanCategory.toLowerCase() &&
+            (parseSheetMonth(b.month) || '') === (normalizedTargetMonth || '')
         );
-        await saveBudget(item.category, smartLimit, targetMonthStr, existingForMonth?.id);
+
+        const budgetId =
+          existingIdx >= 0
+            ? nextBudgets[existingIdx].id
+            : `bgt_${slug}_${normalizedTargetMonth || 'recurring'}`;
+
+        const budgetItem: CategoryBudget = {
+          id: budgetId,
+          userId: user?.id || 'usr_local',
+          category: cleanCategory,
+          monthlyLimit: smartLimit,
+          month: normalizedTargetMonth,
+          createdAt: existingIdx >= 0 ? nextBudgets[existingIdx].createdAt || now : now,
+          updatedAt: now,
+        };
+
+        if (existingIdx >= 0) {
+          nextBudgets[existingIdx] = budgetItem;
+        } else {
+          nextBudgets.push(budgetItem);
+        }
+
         updatedCount += 1;
         totalNewLimit += smartLimit;
       }
 
+      if (updatedCount > 0) {
+        budgetsRef.current = nextBudgets;
+        setBudgets(nextBudgets);
+        await saveBudgetsToSheet();
+      }
+
       return { updatedCount, totalNewLimit };
     },
-    [getBudgetProgressForMonth, budgets, saveBudget]
+    [getBudgetProgressForMonth, saveBudgetsToSheet, user?.id]
   );
 
   // Fetch latest rate from Google Finance / market feeds
@@ -3249,6 +3588,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         budgets,
         saveBudget,
         deleteBudget,
+        saveBudgetsToSheet,
+        loadBudgetsFromSheet,
+        isBudgetSyncing,
         applySmartBudgetsFromLastMonth,
         isBudgetModalOpen,
         setIsBudgetModalOpen,

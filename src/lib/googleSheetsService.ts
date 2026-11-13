@@ -1,5 +1,5 @@
 import { Account, Transaction, Investment, CategoryBudget } from '../types';
-import { parseSheetDate } from './appsScriptService';
+import { parseSheetDate, parseSheetMonth } from './appsScriptService';
 
 export interface SheetTabHeaders {
   expenses: string[];
@@ -140,13 +140,28 @@ export class GoogleSheetsService {
     ];
 
     const batchUrl = `${this.baseUrl}/${spreadsheetId}/values:batchGet?${ranges.map((r) => `ranges=${encodeURIComponent(r)}`).join('&')}`;
-    const response = await this.fetchWithAuth(batchUrl, accessToken);
+    let response: any;
+    try {
+      response = await this.fetchWithAuth(batchUrl, accessToken);
+    } catch (err: any) {
+      // If the Budgets tab doesn't exist yet on an already-connected sheet, create it and retry
+      await this.ensureSpreadsheetStructure(spreadsheetId, accessToken);
+      response = await this.fetchWithAuth(batchUrl, accessToken);
+    }
 
     const valueRanges = response.valueRanges || [];
-    const expensesRows = valueRanges[0]?.values || [];
+    const rawExpensesRows = valueRanges[0]?.values || [];
     const accountsRows = valueRanges[1]?.values || [];
     const investmentsRows = valueRanges[2]?.values || [];
     const budgetsRows = valueRanges[3]?.values || [];
+
+    const isBudgetFallbackRow = (row: any[]) =>
+      row &&
+      (String(row[0] || '').startsWith('bgt_') ||
+        String(row[6] || '').toLowerCase() === 'budget' ||
+        String(row[5] || '') === 'SYSTEM_BUDGET');
+
+    const expensesRows = rawExpensesRows.filter((row: any[]) => !isBudgetFallbackRow(row));
 
     // 1. Map Expenses / Transactions
     const transactions: Transaction[] = expensesRows
@@ -202,9 +217,9 @@ export class GoogleSheetsService {
       .filter((row: any[]) => row && row[0])
       .map((row: any[]) => ({
         id: String(row[0]),
-        category: String(row[1] || 'General'),
+        category: String(row[1] || 'General').trim(),
         monthlyLimit: Number(row[2]) || 0,
-        month: String(row[3] || new Date().toISOString().slice(0, 7)),
+        month: parseSheetMonth(row[3]),
         createdAt: String(row[4] || new Date().toISOString()),
         updatedAt: String(row[5] || new Date().toISOString()),
         userId: 'usr_sheets',
@@ -219,13 +234,24 @@ export class GoogleSheetsService {
   async appendRow(spreadsheetId: string, accessToken: string, tabName: string, values: any[]): Promise<void> {
     const range = `${tabName}!A:A`;
     const url = `${this.baseUrl}/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-    await this.fetchWithAuth(url, accessToken, {
-      method: 'POST',
-      body: JSON.stringify({
-        majorDimension: 'ROWS',
-        values: [values],
-      }),
-    });
+    try {
+      await this.fetchWithAuth(url, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({
+          majorDimension: 'ROWS',
+          values: [values],
+        }),
+      });
+    } catch {
+      await this.ensureSpreadsheetStructure(spreadsheetId, accessToken);
+      await this.fetchWithAuth(url, accessToken, {
+        method: 'POST',
+        body: JSON.stringify({
+          majorDimension: 'ROWS',
+          values: [values],
+        }),
+      });
+    }
   }
 
   /**
@@ -234,7 +260,14 @@ export class GoogleSheetsService {
   async updateRowById(spreadsheetId: string, accessToken: string, tabName: string, id: string, newValues: any[]): Promise<void> {
     // 1. Fetch column A to locate row index
     const fetchColUrl = `${this.baseUrl}/${spreadsheetId}/values/${tabName}!A:A`;
-    const colData = await this.fetchWithAuth(fetchColUrl, accessToken);
+    let colData: any;
+    try {
+      colData = await this.fetchWithAuth(fetchColUrl, accessToken);
+    } catch {
+      // Tab might not exist yet (e.g. Budgets tab added after initial connection)
+      await this.ensureSpreadsheetStructure(spreadsheetId, accessToken);
+      colData = await this.fetchWithAuth(fetchColUrl, accessToken);
+    }
 
     const rows = colData.values || [];
     const rowIndex = rows.findIndex((r: any[]) => r && String(r[0]) === String(id));
@@ -277,6 +310,41 @@ export class GoogleSheetsService {
 
     await this.fetchWithAuth(clearUrl, accessToken, {
       method: 'POST',
+    });
+  }
+
+  /**
+   * Atomically replaces all budget rows in the Budgets worksheet tab.
+   */
+  async replaceBudgetsSheet(spreadsheetId: string, accessToken: string, budgets: CategoryBudget[]): Promise<void> {
+    await this.ensureSpreadsheetStructure(spreadsheetId, accessToken);
+
+    const clearUrl = `${this.baseUrl}/${spreadsheetId}/values/${SHEET_TAB_NAMES.BUDGETS}!A2:F1000:clear`;
+    await this.fetchWithAuth(clearUrl, accessToken, {
+      method: 'POST',
+    });
+
+    if (budgets.length === 0) return;
+
+    const now = new Date().toISOString();
+    const rows = budgets.map((b) => [
+      b.id,
+      b.category,
+      b.monthlyLimit,
+      b.month || '',
+      b.createdAt || now,
+      b.updatedAt || now,
+    ]);
+
+    const range = `${SHEET_TAB_NAMES.BUDGETS}!A2:F${rows.length + 1}`;
+    const writeUrl = `${this.baseUrl}/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+    await this.fetchWithAuth(writeUrl, accessToken, {
+      method: 'PUT',
+      body: JSON.stringify({
+        range,
+        majorDimension: 'ROWS',
+        values: rows,
+      }),
     });
   }
 }

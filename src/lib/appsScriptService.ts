@@ -78,7 +78,11 @@ function handleRequest(params) {
         result.message = 'Bulk upload completed successfully.';
       }
     } else if (action === 'create' || action === 'append') {
-      const sheet = ss.getSheetByName(tabName);
+      let sheet = ss.getSheetByName(tabName);
+      if (!sheet && HEADERS[tabName]) {
+        sheet = ss.insertSheet(tabName);
+        sheet.appendRow(HEADERS[tabName]);
+      }
       if (sheet && params.values) {
         const recordId = params.id || (params.values && params.values[0]);
         if (recordId) {
@@ -88,7 +92,11 @@ function handleRequest(params) {
         }
       }
     } else if (action === 'update') {
-      const sheet = ss.getSheetByName(tabName);
+      let sheet = ss.getSheetByName(tabName);
+      if (!sheet && HEADERS[tabName]) {
+        sheet = ss.insertSheet(tabName);
+        sheet.appendRow(HEADERS[tabName]);
+      }
       if (sheet && params.id && params.values) {
         updateRowById(sheet, params.id, params.values);
       }
@@ -133,8 +141,11 @@ function getTabData(ss, tabName) {
       return row && row[0] !== undefined && row[0] !== '' && row[0] !== null;
     })
     .map(function(row) {
-      return row.map(function(cell) {
+      return row.map(function(cell, colIdx) {
         if (cell instanceof Date) {
+          if (tabName === SHEET_TABS.BUDGETS && colIdx === 3) {
+            return Utilities.formatDate(cell, tz, 'yyyy-MM');
+          }
           return Utilities.formatDate(cell, tz, 'yyyy-MM-dd');
         }
         return cell === null || cell === undefined ? '' : String(cell);
@@ -215,6 +226,34 @@ export function parseSheetDate(rawDate: any): string {
   }
 
   return str;
+}
+
+/**
+ * Normalizes a budget Month cell from Google Sheets into 'YYYY-MM' or undefined (for recurring budgets).
+ * Protects against Google Sheets automatically coercing '2026-11' into a Date ('2026-11-01').
+ */
+export function parseSheetMonth(rawMonth: any): string | undefined {
+  if (rawMonth === null || rawMonth === undefined) return undefined;
+  const str = String(rawMonth).trim().replace(/^'+/, '');
+  if (!str || str.toLowerCase() === 'recurring' || str.toLowerCase() === 'all') {
+    return undefined;
+  }
+
+  // Match YYYY-MM or YYYY-MM-DD
+  const ymMatch = str.match(/^(\d{4})-(\d{1,2})/);
+  if (ymMatch) {
+    return `${ymMatch[1]}-${ymMatch[2].padStart(2, '0')}`;
+  }
+
+  // Parse Date string or ISO timestamp
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
+  return undefined;
 }
 
 /**
@@ -425,6 +464,8 @@ const APPS_SCRIPT_QUEUE_KEY = 'wealthtrack_apps_script_queue_v1';
 export class AppsScriptService {
   private isFlushing = false;
   private flushPromise: Promise<void> | null = null;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private budgetsTabSupportedByScript = new Map<string, boolean>();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -436,6 +477,12 @@ export class AppsScriptService {
         void this.flushQueue();
       }, 1500);
     }
+  }
+
+  public isBudgetsTabSupported(scriptUrl: string): boolean {
+    if (!scriptUrl) return true;
+    const known = this.budgetsTabSupportedByScript.get(scriptUrl);
+    return known !== false;
   }
 
   private getQueue(): AppsScriptQueueItem[] {
@@ -461,6 +508,86 @@ export class AppsScriptService {
     return this.getQueue().length;
   }
 
+  private scheduleFlush(delayMs = 50): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+    }
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      void this.flushQueue();
+    }, delayMs);
+  }
+
+  private enqueueSingleItem(
+    scriptUrl: string,
+    tabName: string,
+    action: 'CREATE' | 'UPDATE' | 'DELETE',
+    recordId: string,
+    values?: any[]
+  ): void {
+    const queue = this.getQueue();
+    const freshQueueId = `asq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    // Do not coalesce into queue[0] if queue[0] is currently in-flight over HTTP
+    const searchStartIdx = this.isFlushing ? 1 : 0;
+    let existingIdx = -1;
+    for (let i = searchStartIdx; i < queue.length; i++) {
+      const item = queue[i];
+      if (item.scriptUrl === scriptUrl && item.tabName === tabName && item.recordId === recordId) {
+        existingIdx = i;
+        break;
+      }
+    }
+
+    if (existingIdx >= 0) {
+      const existing = queue[existingIdx];
+      if (action === 'DELETE') {
+        if (existing.action === 'CREATE') {
+          // Created then deleted before flushing -> cancel out both
+          queue.splice(existingIdx, 1);
+          this.saveQueue(queue);
+          return;
+        } else {
+          queue[existingIdx] = {
+            ...existing,
+            id: freshQueueId,
+            action: 'DELETE',
+            values: undefined,
+            attempts: 0,
+          };
+        }
+      } else if (action === 'UPDATE' && values) {
+        queue[existingIdx] = {
+          ...existing,
+          id: freshQueueId,
+          values,
+          attempts: 0,
+        };
+      } else if (action === 'CREATE' && values) {
+        queue[existingIdx] = {
+          ...existing,
+          id: freshQueueId,
+          action: 'CREATE',
+          values,
+          attempts: 0,
+        };
+      }
+    } else {
+      queue.push({
+        id: freshQueueId,
+        scriptUrl,
+        tabName,
+        action,
+        recordId,
+        values,
+        attempts: 0,
+        createdAt: Date.now(),
+      });
+    }
+
+    this.saveQueue(queue);
+  }
+
   /**
    * Zero-latency background queue for Google Apps Script CRUD mutations.
    * Coalesces consecutive updates to the same record ID so rapid UI edits
@@ -475,60 +602,38 @@ export class AppsScriptService {
   ): void {
     if (!scriptUrl || !scriptUrl.startsWith('https://script.google.com')) return;
 
-    const queue = this.getQueue();
-    const existingIdx = queue.findIndex(
-      (item) => item.scriptUrl === scriptUrl && item.tabName === tabName && item.recordId === recordId
-    );
+    this.enqueueSingleItem(scriptUrl, tabName, action, recordId, values);
 
-    if (existingIdx >= 0) {
-      const existing = queue[existingIdx];
-      if (action === 'DELETE') {
-        if (existing.action === 'CREATE') {
-          // Created then deleted before flushing -> cancel out both
-          queue.splice(existingIdx, 1);
-          this.saveQueue(queue);
-          return;
-        } else {
-          queue[existingIdx] = {
-            ...existing,
-            action: 'DELETE',
-            values: undefined,
-            attempts: 0,
-          };
-        }
-      } else if (action === 'UPDATE' && values) {
-        // Preserve 'CREATE' if not yet flushed, just update payload values
-        queue[existingIdx] = {
-          ...existing,
-          values,
-          attempts: 0,
-        };
-      } else if (action === 'CREATE' && values) {
-        queue[existingIdx] = {
-          ...existing,
-          action: 'CREATE',
-          values,
-          attempts: 0,
-        };
-      }
-    } else {
-      queue.push({
-        id: `asq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        scriptUrl,
-        tabName,
-        action,
-        recordId,
-        values,
-        attempts: 0,
-        createdAt: Date.now(),
-      });
+    // Unless we have confirmed that the remote script's dedicated 'Budgets' tab is storing rows,
+    // also mirror budget records into 'Expenses' with Type='budget' so they are 100% persisted in the sheet.
+    if (tabName === 'Budgets' && this.budgetsTabSupportedByScript.get(scriptUrl) !== true) {
+      const fallbackValues =
+        values && values.length >= 4
+          ? [
+              values[0], // ID (bgt_...)
+              values[3] ? `${values[3]}-01` : 'recurring', // Date column holds month
+              values[2] || 0, // Amount column holds monthlyLimit
+              values[1] || 'General', // Category
+              values[3] || 'recurring', // Description holds raw month
+              'SYSTEM_BUDGET', // AccountID marker
+              'budget', // Type marker
+              '',
+              '',
+              values[4] || new Date().toISOString(),
+              values[5] || new Date().toISOString(),
+            ]
+          : undefined;
+      this.enqueueSingleItem(scriptUrl, 'Expenses', action, recordId, fallbackValues);
     }
 
-    this.saveQueue(queue);
-    void this.flushQueue();
+    this.scheduleFlush(50);
   }
 
   public async flushQueue(): Promise<void> {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
     if (this.flushPromise) {
       return this.flushPromise;
     }
@@ -554,7 +659,7 @@ export class AppsScriptService {
             } else if (item.action === 'DELETE') {
               await this.deleteRecord(item.scriptUrl, item.tabName, item.recordId);
             }
-            // Remove processed head item
+            // Remove processed head item by its exact queue entry ID
             const updated = this.getQueue().filter((q) => q.id !== item.id);
             this.saveQueue(updated);
           } catch (err) {
@@ -625,6 +730,14 @@ export class AppsScriptService {
 
     const res = await this.sendRequest(scriptUrl, { action: 'readAll' });
     const data = res.data || {};
+    const hasConfirmedBudgetsRows = Boolean(
+      res.data && Array.isArray(res.data.budgets) && res.data.budgets.length > 0
+    );
+    if (hasConfirmedBudgetsRows) {
+      this.budgetsTabSupportedByScript.set(scriptUrl, true);
+    } else if (!res.data || !('budgets' in res.data)) {
+      this.budgetsTabSupportedByScript.set(scriptUrl, false);
+    }
 
     const applyPendingRows = (rows: any[], tabName: string): any[] => {
       const pending = this.getQueue().filter((q) => q.scriptUrl === scriptUrl && q.tabName === tabName);
@@ -645,10 +758,19 @@ export class AppsScriptService {
       return result;
     };
 
-    const expensesRows: any[] = applyPendingRows(data.expenses || [], 'Expenses');
+    const rawExpensesRows: any[] = applyPendingRows(data.expenses || [], 'Expenses');
     const accountsRows: any[] = applyPendingRows(data.accounts || [], 'Accounts');
     const investmentsRows: any[] = applyPendingRows(data.investments || [], 'Investments');
     const budgetsRows: any[] = applyPendingRows(data.budgets || [], 'Budgets');
+
+    const isBudgetFallbackRow = (row: any[]) =>
+      row &&
+      (String(row[0] || '').startsWith('bgt_') ||
+        String(row[6] || '').toLowerCase() === 'budget' ||
+        String(row[5] || '') === 'SYSTEM_BUDGET');
+
+    const expensesRows = rawExpensesRows.filter((row) => !isBudgetFallbackRow(row));
+    const fallbackBudgetRows = rawExpensesRows.filter((row) => isBudgetFallbackRow(row));
 
     // Map Expenses / Transactions
     const transactions: Transaction[] = expensesRows
@@ -707,18 +829,38 @@ export class AppsScriptService {
         userId: 'usr_script',
       }));
 
-    // Map Budgets
-    const budgets: CategoryBudget[] = budgetsRows
-      .filter((row) => row && row[0])
-      .map((row) => ({
+    // Map Budgets (combine dedicated Budgets tab + any fallback budget rows in Expenses)
+    const budgetMap = new Map<string, CategoryBudget>();
+
+    for (const row of fallbackBudgetRows) {
+      if (!row || !row[0]) continue;
+      const bgt: CategoryBudget = {
         id: String(row[0]),
-        category: String(row[1] || 'General'),
+        category: String(row[3] || 'General').trim(),
         monthlyLimit: Number(row[2]) || 0,
-        month: String(row[3] || new Date().toISOString().slice(0, 7)),
+        month: parseSheetMonth(row[4] || row[1]),
+        createdAt: String(row[9] || new Date().toISOString()),
+        updatedAt: String(row[10] || new Date().toISOString()),
+        userId: 'usr_script',
+      };
+      budgetMap.set(bgt.id, bgt);
+    }
+
+    for (const row of budgetsRows) {
+      if (!row || !row[0]) continue;
+      const bgt: CategoryBudget = {
+        id: String(row[0]),
+        category: String(row[1] || 'General').trim(),
+        monthlyLimit: Number(row[2]) || 0,
+        month: parseSheetMonth(row[3]),
         createdAt: String(row[4] || new Date().toISOString()),
         updatedAt: String(row[5] || new Date().toISOString()),
         userId: 'usr_script',
-      }));
+      };
+      budgetMap.set(bgt.id, bgt);
+    }
+
+    const budgets: CategoryBudget[] = Array.from(budgetMap.values());
 
     return { accounts, transactions, investments, budgets };
   }
@@ -763,6 +905,95 @@ export class AppsScriptService {
       action: 'bulkUpload',
       data: payload,
     });
+  }
+
+  /**
+   * Pushes all current budget targets to the connected Google Sheet via Apps Script,
+   * verifies remote persistence, and falls back to storing SYSTEM_BUDGET rows in Expenses
+   * if the user's deployed Apps Script predates the dedicated Budgets tab.
+   */
+  async syncBudgetsToSheet(scriptUrl: string, budgets: CategoryBudget[]): Promise<void> {
+    if (!scriptUrl || !scriptUrl.startsWith('https://script.google.com')) return;
+
+    // Remove any pending budget mutations from local queue to prevent race conditions
+    const cleanedQueue = this.getQueue().filter(
+      (q) =>
+        !(
+          q.scriptUrl === scriptUrl &&
+          (q.tabName === 'Budgets' || String(q.recordId || '').startsWith('bgt_'))
+        )
+    );
+    this.saveQueue(cleanedQueue);
+
+    if (this.flushPromise) {
+      try {
+        await this.flushPromise;
+      } catch {
+        // ignore
+      }
+    }
+
+    const now = new Date().toISOString();
+    const budgetRows = budgets.map((b) => [
+      b.id,
+      b.category,
+      b.monthlyLimit,
+      b.month || '',
+      b.createdAt || now,
+      b.updatedAt || now,
+    ]);
+
+    try {
+      await this.bulkUploadData(scriptUrl, { budgets: budgetRows });
+    } catch (err) {
+      console.warn('bulkUploadData budgets warning:', err);
+    }
+
+    // Verify if the remote Budgets tab stored the rows
+    let verifiedInBudgetsTab = false;
+    try {
+      const checkRes = await this.sendRequest(scriptUrl, { action: 'readAll' });
+      const remoteBudgets = checkRes?.data?.budgets;
+      if (Array.isArray(remoteBudgets) && (budgets.length === 0 || remoteBudgets.length >= budgets.length)) {
+        verifiedInBudgetsTab = true;
+        this.budgetsTabSupportedByScript.set(scriptUrl, true);
+      }
+    } catch {
+      // ignore
+    }
+
+    if (!verifiedInBudgetsTab && budgets.length > 0) {
+      this.budgetsTabSupportedByScript.set(scriptUrl, false);
+      for (const b of budgets) {
+        const rowValues = [
+          b.id,
+          b.category,
+          b.monthlyLimit,
+          b.month || '',
+          b.createdAt || now,
+          b.updatedAt || now,
+        ];
+        try {
+          await this.createRecord(scriptUrl, 'Budgets', rowValues);
+        } catch {
+          // ignore
+        }
+        const fallbackRow = [
+          b.id,
+          b.month ? `${b.month}-01` : 'recurring',
+          b.monthlyLimit,
+          b.category,
+          b.month || 'recurring',
+          'SYSTEM_BUDGET',
+          'budget',
+          '',
+          '',
+          b.createdAt || now,
+          b.updatedAt || now,
+        ];
+        await this.createRecord(scriptUrl, 'Expenses', fallbackRow);
+      }
+    }
   }
 }
 

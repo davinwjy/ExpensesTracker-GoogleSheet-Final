@@ -178,6 +178,7 @@ export const firestoreService = {
       accounts: Account[];
       transactions: Transaction[];
       investments: Investment[];
+      budgets: CategoryBudget[];
       settings: UserSettings;
     }) => void
   ): () => void {
@@ -195,6 +196,7 @@ export const firestoreService = {
     let currentAccounts: Account[] = cachedSnapshot?.accounts || [];
     let currentTransactions: Transaction[] = cachedSnapshot?.transactions || [];
     let currentInvestments: Investment[] = cachedSnapshot?.investments || [];
+    let currentBudgets: CategoryBudget[] = cachedSnapshot?.budgets || [];
     let currentSettings: UserSettings = cachedSnapshot?.settings || {
       userId,
       usdIdrRate: cachedSnapshot?.usdIdrRate || 15850,
@@ -205,6 +207,7 @@ export const firestoreService = {
     let accountsReady = false;
     let transactionsReady = false;
     let investmentsReady = false;
+    let budgetsReady = false;
     let settingsReady = false;
     let initialSettled = false;
 
@@ -216,15 +219,16 @@ export const firestoreService = {
         accounts: [...currentAccounts],
         transactions: [...currentTransactions],
         investments: [...currentInvestments],
+        budgets: [...currentBudgets],
         settings: { ...currentSettings },
       });
     };
 
     const trigger = () => {
-      // During initial load, only emit once all 4 collections have fired at least once,
+      // During initial load, only emit once all collections have fired at least once,
       // or once initialSettled is true via fallback timer.
       if (!initialSettled) {
-        if (accountsReady && transactionsReady && investmentsReady && settingsReady) {
+        if (accountsReady && transactionsReady && investmentsReady && budgetsReady && settingsReady) {
           initialSettled = true;
           if (fallbackTimer) clearTimeout(fallbackTimer);
         } else {
@@ -276,7 +280,22 @@ export const firestoreService = {
       trigger();
     });
 
-    // 4. Settings & User Profile listeners (recover appsScriptUrl from users doc if settings was overwritten)
+    // 4. Budgets listener
+    const qBudgets = query(collection(firestoreDb, 'budgets'), where('userId', '==', userId));
+    const unsubBudgets = onSnapshot(
+      qBudgets,
+      (snapshot) => {
+        currentBudgets = snapshot.docs.map((d) => d.data() as CategoryBudget);
+        budgetsReady = true;
+        trigger();
+      },
+      () => {
+        budgetsReady = true;
+        trigger();
+      }
+    );
+
+    // 5. Settings & User Profile listeners (recover appsScriptUrl from users doc if settings was overwritten)
     let userDocAppsScriptUrl = '';
     const docSettings = doc(firestoreDb, 'settings', userId);
     const unsubSettings = onSnapshot(docSettings, (snapshot) => {
@@ -324,6 +343,7 @@ export const firestoreService = {
       unsubAccounts();
       unsubTransactions();
       unsubInvestments();
+      unsubBudgets();
       unsubSettings();
       unsubUser();
     };

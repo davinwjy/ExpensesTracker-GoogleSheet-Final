@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Target,
   Plus,
@@ -14,6 +14,8 @@ import {
   TrendingDown,
   ArrowUpRight,
   Check,
+  Save,
+  RefreshCw,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 import { formatIdr, formatMasked, formatDate, CATEGORY_COLORS } from '../lib/formatters';
@@ -29,6 +31,12 @@ export const BudgetingView: React.FC = () => {
     setEditingTransaction,
     saveBudget,
     deleteBudget,
+    saveBudgetsToSheet,
+    loadBudgetsFromSheet,
+    isBudgetSyncing,
+    isAppsScriptConnected,
+    isSheetsConnected,
+    setIsGoogleSheetSetupOpen,
     applySmartBudgetsFromLastMonth,
     getBudgetProgressForMonth,
     setIsAddExpenseOpen,
@@ -47,6 +55,16 @@ export const BudgetingView: React.FC = () => {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isSmartCompareOpen, setIsSmartCompareOpen] = useState<boolean>(false);
   const [isApplyingSmart, setIsApplyingSmart] = useState<boolean>(false);
+  const [justSavedToSheet, setJustSavedToSheet] = useState<boolean>(false);
+
+  const isSheetConnected = isAppsScriptConnected || isSheetsConnected;
+
+  // Retrieve latest budget targets from connected Google Sheet upon page/view load
+  useEffect(() => {
+    if (isSheetConnected) {
+      loadBudgetsFromSheet();
+    }
+  }, [isSheetConnected, loadBudgetsFromSheet]);
 
   // Compute budget & MoM telemetry
   const {
@@ -176,15 +194,49 @@ export const BudgetingView: React.FC = () => {
         multiplier
       );
       if (updatedCount > 0) {
+        setJustSavedToSheet(true);
+        setTimeout(() => setJustSavedToSheet(false), 3000);
         showNotification({
           type: 'success',
-          title: `Smart Budget Applied (${label})`,
-          message: `Updated ${updatedCount} category limits for ${monthDisplay} (Total: ${formatIdr(totalNewLimit)})`,
+          title: `Smart Budget Saved (${label})`,
+          message: `Updated & saved ${updatedCount} category limits for ${monthDisplay} (Total: ${formatIdr(totalNewLimit)})`,
           amount: totalNewLimit,
         });
       }
     } finally {
       setIsApplyingSmart(false);
+    }
+  };
+
+  const handleSaveBudgetsToSheet = async () => {
+    if (isBudgetSyncing) return;
+    if (!isSheetConnected) {
+      await saveBudgetsToSheet();
+      setIsGoogleSheetSetupOpen(true);
+      showNotification({
+        type: 'info',
+        title: 'Connect Google Sheet',
+        message: 'Budgets saved locally. Connect your Google Sheet to sync across devices.',
+      });
+      return;
+    }
+
+    try {
+      const { savedCount } = await saveBudgetsToSheet();
+      setJustSavedToSheet(true);
+      setTimeout(() => setJustSavedToSheet(false), 3000);
+      showNotification({
+        type: 'success',
+        title: 'Budgets Saved to Google Sheet',
+        message: `Successfully pushed ${savedCount} budget target${savedCount === 1 ? '' : 's'} to your connected Google Sheet.`,
+        amount: totalBudgeted,
+      });
+    } catch (err: any) {
+      showNotification({
+        type: 'error',
+        title: 'Failed to Save Budgets',
+        message: err?.message || 'Could not sync budget targets to Google Sheet.',
+      });
     }
   };
 
@@ -247,6 +299,33 @@ export const BudgetingView: React.FC = () => {
               Current Month
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleSaveBudgetsToSheet}
+            disabled={isBudgetSyncing}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-xs border transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-sm disabled:opacity-60 ${
+              justSavedToSheet
+                ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/35'
+                : 'bg-white dark:bg-[#131722] hover:bg-slate-50 dark:hover:bg-[#1a2030] text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-[#21293a]'
+            }`}
+            title="Push all current budget targets to your connected Google Sheet"
+          >
+            {isBudgetSyncing ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+            ) : justSavedToSheet ? (
+              <Check className="w-3.5 h-3.5 text-emerald-500" />
+            ) : (
+              <Save className="w-3.5 h-3.5 text-emerald-500" />
+            )}
+            <span>
+              {isBudgetSyncing
+                ? 'Syncing...'
+                : justSavedToSheet
+                ? 'Saved to Sheet'
+                : 'Save to Sheet'}
+            </span>
+          </button>
 
           <button
             onClick={() => {

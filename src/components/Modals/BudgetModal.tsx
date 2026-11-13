@@ -49,6 +49,50 @@ export const BudgetModal: React.FC = () => {
     return Array.from(set);
   }, [transactions, expenseCategories]);
 
+  // Compute last month & current month spending for the currently selected category
+  const categoryBenchmark = React.useMemo(() => {
+    const activeCat = (isCustomCategory ? customCategory : category).trim().toLowerCase();
+    const now = new Date();
+    const baseMonthStr =
+      scope === 'specific' && specificMonth
+        ? specificMonth.slice(0, 7)
+        : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    const [yNum, mNum] = baseMonthStr.split('-').map(Number);
+    const prevDate = new Date(yNum || now.getFullYear(), (mNum || 1) - 2, 1);
+    const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    const prevMonthLabel = prevDate.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+
+    let prevSpent = 0;
+    let currSpent = 0;
+
+    if (activeCat) {
+      transactions.forEach((tx) => {
+        if (tx.type !== 'expense' || !tx.date) return;
+        if ((tx.category || '').trim().toLowerCase() !== activeCat) return;
+        const cleanDate = tx.date.trim();
+        if (cleanDate.startsWith(prevMonthStr)) {
+          prevSpent += tx.amount;
+        } else if (cleanDate.startsWith(baseMonthStr)) {
+          currSpent += tx.amount;
+        }
+      });
+    }
+
+    const round50k = (val: number) => Math.max(100000, Math.round(val / 50000) * 50000);
+    const refAmount = prevSpent > 0 ? prevSpent : currSpent;
+
+    return {
+      prevMonthLabel,
+      prevSpent,
+      currSpent,
+      hasBenchmark: refAmount > 0,
+      saverLimit: round50k(refAmount * 0.9),
+      matchLimit: prevSpent > 0 ? prevSpent : round50k(currSpent),
+      bufferLimit: round50k(refAmount * 1.1),
+    };
+  }, [isCustomCategory, customCategory, category, scope, specificMonth, transactions]);
+
   const wasOpenRef = React.useRef(false);
   const lastEditingBudgetIdRef = React.useRef<string | null | undefined>(undefined);
 
@@ -132,7 +176,7 @@ export const BudgetModal: React.FC = () => {
         targetCategory,
         parsedLimit,
         targetMonth,
-        editingBudget?.id
+        editingBudget?.id || undefined
       );
 
       showNotification({
@@ -245,6 +289,49 @@ export const BudgetModal: React.FC = () => {
                   </option>
                 ))}
               </select>
+            )}
+          </div>
+
+          {/* Last Month Benchmark Box (Patokan Bulan Lalu) */}
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#111622] border border-slate-200 dark:border-[#212a40] space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-500 dark:text-zinc-400">
+                Patokan {categoryBenchmark.prevMonthLabel}:
+              </span>
+              <strong className="text-slate-900 dark:text-zinc-100 tabular-nums">
+                {formatIdr(categoryBenchmark.prevSpent)}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-500 dark:text-zinc-400">Terpakai Bulan Ini:</span>
+              <span className="text-slate-700 dark:text-zinc-300 tabular-nums">
+                {formatIdr(categoryBenchmark.currSpent)}
+              </span>
+            </div>
+            {categoryBenchmark.hasBenchmark && (
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handlePresetClick(categoryBenchmark.saverLimit)}
+                  className="px-2 py-1 rounded text-[10px] font-mono bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 transition-colors cursor-pointer text-center"
+                >
+                  Hemat -10%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePresetClick(categoryBenchmark.matchLimit)}
+                  className="px-2 py-1 rounded text-[10px] font-mono bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors cursor-pointer text-center"
+                >
+                  100% Bulan Lalu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePresetClick(categoryBenchmark.bufferLimit)}
+                  className="px-2 py-1 rounded text-[10px] font-mono bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 transition-colors cursor-pointer text-center"
+                >
+                  Buffer +10%
+                </button>
+              </div>
             )}
           </div>
 
