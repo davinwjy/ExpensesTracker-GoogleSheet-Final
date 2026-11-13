@@ -80,24 +80,6 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div className="space-y-4 animate-in fade-in pb-10 min-w-0">
-      {/* Privacy banner notice if active */}
-      {isPrivacyMode && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-300 font-mono">
-          <div className="flex items-start sm:items-center gap-2 min-w-0">
-            <EyeOff className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
-            <span className="break-words">
-              <strong>PRIVACY SHIELD ACTIVE:</strong> All currency figures are masked for screen-sharing.
-            </span>
-          </div>
-          <button
-            onClick={togglePrivacyMode}
-            className="text-amber-600 dark:text-amber-400 hover:underline font-semibold text-xs cursor-pointer self-end sm:self-auto shrink-0"
-          >
-            Reveal Values
-          </button>
-        </div>
-      )}
-
       {/* GOOGLE APPS SCRIPT CONNECT BANNER (WITH 3-STEP GUIDE) */}
       <GoogleSheetConnectBanner />
 

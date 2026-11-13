@@ -14,6 +14,7 @@ import {
   Wallet,
   Shield,
   Target,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -33,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const {
     activeTab,
     setActiveTab,
@@ -48,6 +49,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
   } = useFinance();
 
   const isAdmin = isUserAdmin(user);
+
+  const displayName = React.useMemo(() => {
+    if (user?.name && user.name.trim()) return user.name.trim();
+    if (user?.email) {
+      const localPart = user.email.split('@')[0] || 'User';
+      return localPart
+        .replace(/[._-]+/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+    }
+    return 'Guest User';
+  }, [user]);
+
+  const userInitials = React.useMemo(() => {
+    const parts = displayName.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return displayName.slice(0, 2).toUpperCase() || 'WT';
+  }, [displayName]);
 
   const navItems = [
     {
@@ -228,7 +248,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 3. QUIET BOTTOM NET WORTH FOOTNOTE (Only when expanded) */}
       {!isCollapsed && (
-        <div className="p-3.5 border-t border-slate-200/70 dark:border-[#141c2b] shrink-0">
+        <div className="px-4 py-3 border-t border-slate-200/70 dark:border-[#141c2b] shrink-0">
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 mb-1">
             <span className="font-medium">Total Net Worth</span>
             <button
@@ -246,7 +266,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div
-            className={`font-bold text-sm tracking-tight text-slate-900 dark:text-zinc-100 truncate tabular-nums ${
+            className={`font-bold text-sm tracking-tight text-slate-900 dark:text-zinc-100 truncate tabular-nums font-mono ${
               isPrivacyMode ? 'privacy-blur' : ''
             }`}
           >
@@ -262,6 +282,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       )}
+
+      {/* 4. USER PROFILE FOOTER */}
+      <div
+        className={`border-t border-slate-200/70 dark:border-[#141c2b] shrink-0 ${
+          isCollapsed ? 'p-2.5 flex justify-center' : 'px-3.5 py-3'
+        }`}
+      >
+        {isCollapsed ? (
+          <div
+            className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center font-mono"
+            title={`${displayName}${user?.email ? ` (${user.email})` : ''}`}
+          >
+            {userInitials}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0 font-mono">
+                {userInitials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold text-slate-900 dark:text-white truncate leading-tight">
+                  {displayName}
+                </div>
+                {user?.email && (
+                  <div className="text-[11px] text-slate-500 dark:text-zinc-400 truncate leading-tight mt-0.5 font-mono">
+                    {user.email}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={logout}
+              title="Sign Out"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
