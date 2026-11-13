@@ -296,7 +296,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [accounts, setAccounts] = useState<Account[]>(() => cachedSnapshot?.accounts || []);
   const [transactions, setTransactions] = useState<Transaction[]>(() => cachedSnapshot?.transactions || []);
   const [investments, setInvestments] = useState<Investment[]>(() => cachedSnapshot?.investments || []);
-  const [budgets, setBudgets] = useState<CategoryBudget[]>(() => cachedSnapshot?.budgets || []);
+  const [budgets, setBudgets] = useState<CategoryBudget[]>(() =>
+    (cachedSnapshot?.budgets || []).map((b) => ({
+      ...b,
+      month: parseSheetMonth(b.month, b.id),
+    }))
+  );
   const budgetsRef = useRef<CategoryBudget[]>(budgets);
   useEffect(() => {
     budgetsRef.current = budgets;
@@ -2727,7 +2732,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // Check if an existing budget matches by explicit ID or by (category, month)
       const existing = budgetsRef.current.find((b) => {
         if (id && b.id === id) return true;
-        const bMonth = parseSheetMonth(b.month);
+        const bMonth = parseSheetMonth(b.month, b.id);
         return (
           b.category.trim().toLowerCase() === cleanCategory.toLowerCase() &&
           (bMonth || '') === (normalizedMonth || '')
@@ -2914,7 +2919,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Month-specific budgets first
       budgets
-        .filter((b) => parseSheetMonth(b.month) === month)
+        .filter((b) => parseSheetMonth(b.month, b.id) === month)
         .forEach((b) => {
           const key = b.category.trim().toLowerCase();
           if (!categorySeen.has(key)) {
@@ -2926,7 +2931,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Generic recurring budgets if not overridden for this month
       budgets
-        .filter((b) => !parseSheetMonth(b.month))
+        .filter((b) => !parseSheetMonth(b.month, b.id))
         .forEach((b) => {
           const key = b.category.trim().toLowerCase();
           if (!categorySeen.has(key)) {
@@ -3218,7 +3223,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const existingIdx = nextBudgets.findIndex(
           (b) =>
             b.category.trim().toLowerCase() === cleanCategory.toLowerCase() &&
-            (parseSheetMonth(b.month) || '') === (normalizedTargetMonth || '')
+            (parseSheetMonth(b.month, b.id) || '') === (normalizedTargetMonth || '')
         );
 
         const budgetId =

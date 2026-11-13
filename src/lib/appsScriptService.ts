@@ -232,24 +232,39 @@ export function parseSheetDate(rawDate: any): string {
  * Normalizes a budget Month cell from Google Sheets into 'YYYY-MM' or undefined (for recurring budgets).
  * Protects against Google Sheets automatically coercing '2026-11' into a Date ('2026-11-01').
  */
-export function parseSheetMonth(rawMonth: any): string | undefined {
+export function parseSheetMonth(rawMonth: any, recordId?: any): string | undefined {
+  if (recordId) {
+    const idStr = String(recordId).trim();
+    const idMatch = idStr.match(/_(\d{4})-(\d{2})$/);
+    if (idMatch) {
+      return `${idMatch[1]}-${idMatch[2]}`;
+    }
+    if (idStr.endsWith('_recurring')) {
+      return undefined;
+    }
+  }
+
   if (rawMonth === null || rawMonth === undefined) return undefined;
   const str = String(rawMonth).trim().replace(/^'+/, '');
   if (!str || str.toLowerCase() === 'recurring' || str.toLowerCase() === 'all') {
     return undefined;
   }
 
-  // Match YYYY-MM or YYYY-MM-DD
-  const ymMatch = str.match(/^(\d{4})-(\d{1,2})/);
-  if (ymMatch) {
-    return `${ymMatch[1]}-${ymMatch[2].padStart(2, '0')}`;
+  // Match ONLY exact YYYY-MM or YYYY-MM-DD strings (must NOT match ISO strings with 'T' like 2026-10-31T17:00:00.000Z)
+  const exactYmMatch = str.match(/^(\d{4})-(\d{1,2})(?:-\d{1,2})?$/);
+  if (exactYmMatch) {
+    return `${exactYmMatch[1]}-${exactYmMatch[2].padStart(2, '0')}`;
   }
 
-  // Parse Date string or ISO timestamp
+  // Parse Date string or UTC ISO timestamp from Google Apps Script JSON.stringify.
+  // When Google Sheets converts '2026-11' into a Date cell, it creates YYYY-MM-01 00:00:00 in the sheet's timezone
+  // (e.g. 2026-11-01 00:00 GMT+7 serializes to '2026-10-31T17:00:00.000Z').
+  // Adding 14 hours ensures midnight on the 1st in any timezone (UTC-10 to UTC+14) lands in the exact intended month in UTC.
   const d = new Date(str);
   if (!isNaN(d.getTime())) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const shifted = new Date(d.getTime() + 14 * 3600 * 1000);
+    const y = shifted.getUTCFullYear();
+    const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
     return `${y}-${m}`;
   }
 
@@ -829,38 +844,50 @@ export class AppsScriptService {
         userId: 'usr_script',
       }));
 
-    // Map Budgets (combine dedicated Budgets tab + any fallback budget rows in Expenses)
-    const budgetMap = new Map<string, CategoryBudget>();
+    // Map Budgets (combine dedicated Budgets tab + any fallback budget rows in Expenses, deduplicated by category + month)
+    const budgetByCatMonth = new Map<string, CategoryBudget>();
+
+    const upsertParsedBudget = (bgt: CategoryBudget) => {
+      if (!bgt.category || bgt.monthlyLimit <= 0) return;
+      const key = `${bgt.category.trim().toLowerCase()}__${bgt.month || 'recurring'}`;
+      budgetByCatMonth.set(key, bgt);
+    };
 
     for (const row of fallbackBudgetRows) {
       if (!row || !row[0]) continue;
+      const rawId = String(row[0]);
+      const cleanCategory = String(row[3] || 'General').trim();
+      const parsedMonth = parseSheetMonth(row[4] || row[1], rawId);
       const bgt: CategoryBudget = {
-        id: String(row[0]),
-        category: String(row[3] || 'General').trim(),
+        id: rawId,
+        category: cleanCategory,
         monthlyLimit: Number(row[2]) || 0,
-        month: parseSheetMonth(row[4] || row[1]),
+        month: parsedMonth,
         createdAt: String(row[9] || new Date().toISOString()),
         updatedAt: String(row[10] || new Date().toISOString()),
         userId: 'usr_script',
       };
-      budgetMap.set(bgt.id, bgt);
+      upsertParsedBudget(bgt);
     }
 
     for (const row of budgetsRows) {
       if (!row || !row[0]) continue;
+      const rawId = String(row[0]);
+      const cleanCategory = String(row[1] || 'General').trim();
+      const parsedMonth = parseSheetMonth(row[3], rawId);
       const bgt: CategoryBudget = {
-        id: String(row[0]),
-        category: String(row[1] || 'General').trim(),
+        id: rawId,
+        category: cleanCategory,
         monthlyLimit: Number(row[2]) || 0,
-        month: parseSheetMonth(row[3]),
+        month: parsedMonth,
         createdAt: String(row[4] || new Date().toISOString()),
         updatedAt: String(row[5] || new Date().toISOString()),
         userId: 'usr_script',
       };
-      budgetMap.set(bgt.id, bgt);
+      upsertParsedBudget(bgt);
     }
 
-    const budgets: CategoryBudget[] = Array.from(budgetMap.values());
+    const budgets: CategoryBudget[] = Array.from(budgetByCatMonth.values());
 
     return { accounts, transactions, investments, budgets };
   }

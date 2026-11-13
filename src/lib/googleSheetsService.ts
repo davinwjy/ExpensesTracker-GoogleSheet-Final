@@ -212,18 +212,28 @@ export class GoogleSheetsService {
         userId: 'usr_sheets',
       }));
 
-    // 4. Map Budgets
-    const budgets: CategoryBudget[] = budgetsRows
-      .filter((row: any[]) => row && row[0])
-      .map((row: any[]) => ({
-        id: String(row[0]),
-        category: String(row[1] || 'General').trim(),
+    // 4. Map Budgets (deduplicated by category + month)
+    const budgetByCatMonth = new Map<string, CategoryBudget>();
+    for (const row of budgetsRows) {
+      if (!row || !row[0]) continue;
+      const rawId = String(row[0]);
+      const cleanCategory = String(row[1] || 'General').trim();
+      const parsedMonth = parseSheetMonth(row[3], rawId);
+      const bgt: CategoryBudget = {
+        id: rawId,
+        category: cleanCategory,
         monthlyLimit: Number(row[2]) || 0,
-        month: parseSheetMonth(row[3]),
+        month: parsedMonth,
         createdAt: String(row[4] || new Date().toISOString()),
         updatedAt: String(row[5] || new Date().toISOString()),
         userId: 'usr_sheets',
-      }));
+      };
+      if (bgt.category && bgt.monthlyLimit > 0) {
+        const key = `${bgt.category.toLowerCase()}__${bgt.month || 'recurring'}`;
+        budgetByCatMonth.set(key, bgt);
+      }
+    }
+    const budgets: CategoryBudget[] = Array.from(budgetByCatMonth.values());
 
     return { accounts, transactions, investments, budgets };
   }
