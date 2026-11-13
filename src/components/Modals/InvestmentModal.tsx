@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, TrendingUp, RotateCcw, AlertCircle, Trash2, Layers } from 'lucide-react';
+import {
+  X,
+  Check,
+  TrendingUp,
+  RotateCcw,
+  AlertCircle,
+  Trash2,
+  Layers,
+  FileText,
+  Loader2,
+} from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { InvestmentCategory } from '../../types';
 import { formatIdr, formatUsd } from '../../lib/formatters';
@@ -173,7 +183,7 @@ export const InvestmentModal: React.FC = () => {
         });
         showNotification({
           type: 'success',
-          title: 'Portofolio Diperbarui',
+          title: 'Holding Updated',
           accountName: name.trim(),
         });
       } else {
@@ -190,7 +200,7 @@ export const InvestmentModal: React.FC = () => {
         });
         showNotification({
           type: 'success',
-          title: 'Portofolio Ditambahkan',
+          title: 'Holding Added',
           accountName: name.trim(),
           amount: resolvedCurrency === 'IDR' ? parsedInvested : Math.round(parsedInvested * (parsedCustomRate || usdIdrRate)),
         });
@@ -212,7 +222,7 @@ export const InvestmentModal: React.FC = () => {
       await deleteInvestment(editingInvestment.id);
       showNotification({
         type: 'info',
-        title: 'Portofolio Dihapus',
+        title: 'Holding Removed',
         accountName: targetName,
       });
       handleClose();
@@ -238,44 +248,42 @@ export const InvestmentModal: React.FC = () => {
       {/* Backdrop */}
       <div
         onClick={handleClose}
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
       />
 
-      {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0d1017] border-t sm:border border-slate-200 dark:border-[#1b212e] rounded-t sm:rounded shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 font-mono text-slate-900 dark:text-zinc-100">
-        {/* Mobile Drag Indicator */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0 bg-slate-100 dark:bg-[#080a0f]">
-          <div className="w-8 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+      {/* Modal Card */}
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
-        {/* Command Strip Header */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-[#1b212e] bg-slate-50 dark:bg-[#080a0f] shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-3.5 h-3.5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm tracking-wider uppercase">
-                MODIFY ASSET POSITION
-              </h3>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-500">
-                Update holding valuation, broker notes, and position details
-              </p>
-            </div>
+        {/* Clean Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
+              Edit Investment Holding
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              Update market valuation, principal cost, and broker details
+            </p>
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={resetFields}
-              title="Reset fields"
-              className="p-1 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              title="Reset form"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="p-1 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              aria-label="Close modal"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -283,71 +291,158 @@ export const InvestmentModal: React.FC = () => {
         </div>
 
         {/* Scrollable Form Body */}
-        <form id="investment-modal-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain">
+        <form
+          id="investment-modal-form"
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain"
+        >
           {error && (
-            <div className="flex items-center gap-2 p-2.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Category Selector */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                ASSET CLASSIFICATION <span className="text-rose-500">*</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-slate-400" />
+                <span>Asset Class</span>
               </label>
               <button
                 type="button"
                 onClick={() => setIsHoldingTypesModalOpen(true)}
-                className="text-[9px] font-mono text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Manage or add custom holding types"
+                className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <Layers className="w-2.5 h-2.5" />
-                <span>Master Holdings</span>
+                <Layers className="w-3 h-3" />
+                <span>Manage Classes</span>
               </button>
             </div>
-            <div className="flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-[#080a0f] rounded border border-slate-200 dark:border-[#1d2332] text-xs">
+
+            <div className="flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
               {categoriesList.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`py-1 px-2 rounded text-center whitespace-nowrap transition-all cursor-pointer flex-1 min-w-[75px] ${
+                  className={`py-1.5 px-2.5 rounded-lg text-center whitespace-nowrap transition-all cursor-pointer flex-1 min-w-[75px] ${
                     category === cat.id
-                      ? 'bg-white dark:bg-[#1b212e] text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-[#2a3449] shadow-xs font-bold'
-                      : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
+                      ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white border border-slate-200/80 dark:border-[#2a364f] shadow-xs font-semibold'
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
                   }`}
                 >
-                  <span className="block text-[11px] font-mono">{cat.id}</span>
-                  <span className="block text-[9px] opacity-75 font-mono">({cat.defaultCurrency})</span>
+                  <span className="block text-xs">{cat.id}</span>
+                  <span className="block text-[10px] opacity-70 font-mono">
+                    {cat.defaultCurrency}
+                  </span>
                 </button>
               ))}
             </div>
-            <div className="flex items-center justify-between mt-1 text-[10px] font-mono">
-              <span className="text-slate-500 dark:text-zinc-500">
-                CATEGORY: <strong className="text-emerald-600 dark:text-emerald-400">{selectedCategoryMeta.id}</strong> • {selectedCategoryMeta.example}
-              </span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-500 dark:text-zinc-500 uppercase tracking-wider text-[9px]">DENOMINATION:</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${isUsd ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'}`}>
-                  {isUsd ? 'USD ($)' : 'IDR (Rp)'}
-                </span>
+          </div>
+
+          {/* Asset Name / Ticker */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
+              <span>Asset Name / Ticker</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={selectedCategoryMeta.example}
+              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+              required
+              autoFocus
+            />
+          </div>
+
+          {/* Hero Principal & Market Valuation Card */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                  Principal Cost ({isUsd ? 'USD' : 'IDR'})
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                    {isUsd ? '$' : 'Rp'}
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={amountInvested}
+                    onChange={(e) => setAmountInvested(e.target.value)}
+                    placeholder={isUsd ? '100.00' : '1,000,000'}
+                    className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                  Current Value ({isUsd ? 'USD' : 'IDR'})
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                    {isUsd ? '$' : 'Rp'}
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={currentValue}
+                    onChange={(e) => setCurrentValue(e.target.value)}
+                    placeholder={amountInvested || (isUsd ? '100.00' : '1,000,000')}
+                    className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                  />
+                </div>
               </div>
             </div>
+
+            {/* Live PnL Preview */}
+            {invNumber > 0 && (
+              <div className="px-3 py-2 bg-white dark:bg-[#0b0f17] rounded-xl border border-slate-200/80 dark:border-[#222d42] flex flex-wrap items-center justify-between text-xs gap-2">
+                <div>
+                  <span className="text-slate-500 dark:text-zinc-400">Unrealized Return: </span>
+                  <span
+                    className={`font-bold font-mono tabular-nums ${
+                      pnl >= 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                    }`}
+                  >
+                    {pnl >= 0 ? '+' : ''}
+                    {isUsd ? formatUsd(pnl) : formatIdr(pnl)} ({pnlPercent >= 0 ? '+' : ''}
+                    {pnlPercent.toFixed(2)}%)
+                  </span>
+                </div>
+                {isUsd && (
+                  <div className="text-slate-500 dark:text-zinc-400 text-[11px]">
+                    IDR Value:{' '}
+                    <strong className="text-slate-900 dark:text-zinc-200 font-mono tabular-nums">
+                      {formatIdr(curNumber * effectiveRate)}
+                    </strong>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Custom Broker Exchange Rate (Only shown when currency is USD) */}
           {isUsd && (
-            <div className="p-2.5 rounded bg-indigo-50/60 dark:bg-[#0d1017] border border-indigo-200 dark:border-indigo-500/30 space-y-1.5 animate-in fade-in">
-              <div className="flex items-center justify-between">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
-                  BROKER / APP EXCHANGE RATE (IDR per USD)
+            <div className="p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-[#101622] border border-indigo-200/80 dark:border-indigo-500/30 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-medium text-indigo-800 dark:text-indigo-300">
+                  Broker Exchange Rate (IDR per USD)
                 </label>
-                <span className="text-[9px] font-mono text-slate-500 dark:text-zinc-500">CUSTOM RATE</span>
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
+                  Spot: {formatIdr(usdIdrRate)}
+                </span>
               </div>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-zinc-500">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
                   Rp
                 </span>
                 <input
@@ -356,138 +451,59 @@ export const InvestmentModal: React.FC = () => {
                   value={customExchangeRate}
                   onChange={(e) => setCustomExchangeRate(e.target.value)}
                   placeholder={usdIdrRate.toString()}
-                  className="w-full bg-white dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-indigo-500 rounded pl-8 pr-3 py-2 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                  className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                 />
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-500">
-                Current system spot rate: <strong className="text-slate-700 dark:text-zinc-300 font-mono tabular-nums">{formatIdr(usdIdrRate)}</strong>. Fill this in if your broker uses a specific deposit/buying exchange rate (e.g. Rp 16,250).
-              </p>
-            </div>
-          )}
-
-          {/* Asset Name / Ticker */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-              ASSET TICKER / IDENTIFIER <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={selectedCategoryMeta.example}
-              className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
-              required
-              autoFocus
-            />
-          </div>
-
-          {/* Amount Invested & Current Value */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                PRINCIPAL COST ({isUsd ? 'USD' : 'IDR'}) <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-zinc-500">
-                  {isUsd ? '$' : 'Rp'}
-                </span>
-                <input
-                  type="number"
-                  step="any"
-                  value={amountInvested}
-                  onChange={(e) => setAmountInvested(e.target.value)}
-                  placeholder={isUsd ? '100.00' : '1,000,000'}
-                  className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded pl-8 pr-3 py-2 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                MARKET VALUATION ({isUsd ? 'USD' : 'IDR'})
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-zinc-500">
-                  {isUsd ? '$' : 'Rp'}
-                </span>
-                <input
-                  type="number"
-                  step="any"
-                  value={currentValue}
-                  onChange={(e) => setCurrentValue(e.target.value)}
-                  placeholder={amountInvested || (isUsd ? '100.00' : '1,000,000')}
-                  className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded pl-8 pr-3 py-2 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Live PnL Preview */}
-          {invNumber > 0 && (
-            <div className="p-2.5 bg-slate-50 dark:bg-[#080a0f] rounded border border-slate-200 dark:border-[#1d2332] flex flex-wrap items-center justify-between text-xs gap-2">
-              <div>
-                <span className="text-slate-500 dark:text-zinc-500">UNREALIZED PnL: </span>
-                <span className={`font-bold font-mono tabular-nums ${pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {pnl >= 0 ? '+' : ''}
-                  {isUsd ? formatUsd(pnl) : formatIdr(pnl)} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
-                </span>
-              </div>
-              {isUsd && (
-                <div className="text-slate-500 dark:text-zinc-500 text-[10px]">
-                  IDR VALUATION: <strong className="text-slate-900 dark:text-zinc-200 font-mono tabular-nums">{formatIdr(curNumber * effectiveRate)}</strong>
-                  {customExchangeRate ? <span className="text-indigo-600 dark:text-indigo-400 ml-1">(Broker Rate: Rp {Number(customExchangeRate).toLocaleString('en-US')})</span> : null}
-                </div>
-              )}
             </div>
           )}
 
           {/* Units & Platform */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                QUANTITY / UNITS (OPTIONAL)
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                Quantity / Units (Optional)
               </label>
               <input
                 type="number"
                 step="any"
                 value={units}
                 onChange={(e) => setUnits(e.target.value)}
-                placeholder={category === 'Bitcoin' ? 'e.g. 0.015 BTC' : 'e.g. 10 shares'}
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono"
+                placeholder={category === 'Bitcoin' ? 'e.g. 0.015' : 'e.g. 10'}
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono tabular-nums"
               />
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                PLATFORM / BROKER (OPTIONAL)
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                Platform / Broker (Optional)
               </label>
               <input
                 type="text"
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                placeholder="e.g. GoTrade, Bibit, Ajaib..."
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
+                placeholder="e.g. GoTrade, Bibit, Stockbit..."
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-              POSITION NOTES (OPTIONAL)
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span>Note (Optional)</span>
             </label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. DCA recurring, thesis..."
-              className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
+              placeholder="e.g. Monthly DCA, long-term hold..."
+              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
             />
           </div>
         </form>
 
-        {/* Command Strip Footer */}
-        <div className="shrink-0 p-3 bg-slate-50 dark:bg-[#080a0f] border-t border-slate-200 dark:border-[#1b212e] flex items-center justify-between gap-2">
+        {/* Clean Footer */}
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-between gap-2">
           {editingInvestment ? (
             confirmDelete ? (
               <div className="flex items-center gap-1.5">
@@ -495,46 +511,58 @@ export const InvestmentModal: React.FC = () => {
                   type="button"
                   onClick={handleDelete}
                   disabled={isSubmitting}
-                  className="px-2.5 py-1.5 rounded bg-rose-600 text-xs font-bold text-white hover:bg-rose-500"
+                  className="h-9 px-3 rounded-xl bg-rose-600 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
                 >
-                  CONFIRM PURGE
+                  Confirm Delete
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="px-2 py-1.5 text-xs text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
+                  className="h-9 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
                 >
-                  CANCEL
+                  Cancel
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-500/10 rounded cursor-pointer transition-colors"
+                className="h-9 px-3 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>DELETE</span>
+                <span>Delete</span>
               </button>
             )
-          ) : <div />}
+          ) : (
+            <div />
+          )}
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleClose}
-              className="px-3 py-1.5 rounded text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
-              DISCARD
+              Cancel
             </button>
             <button
               type="submit"
               form="investment-modal-form"
               disabled={isSubmitting}
-              className="flex items-center gap-1 px-3.5 py-1.5 rounded text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 cursor-pointer disabled:opacity-50"
+              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
             >
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>{isSubmitting ? 'SAVING...' : 'UPDATE POSITION'}</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[2.2]" />
+                  <span>Save Changes</span>
+                </>
+              )}
             </button>
           </div>
         </div>

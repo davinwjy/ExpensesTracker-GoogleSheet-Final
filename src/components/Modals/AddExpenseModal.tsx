@@ -1,7 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, RotateCcw, AlertCircle, ArrowDownRight, Receipt, Loader2, Plus } from 'lucide-react';
+import {
+  X,
+  Check,
+  RotateCcw,
+  AlertCircle,
+  ArrowDownRight,
+  ArrowUpRight,
+  Loader2,
+  Plus,
+  Wallet,
+  Tag,
+  Calendar,
+  FileText,
+} from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
-import { formatIdr, EXPENSE_CATEGORIES, INCOME_CATEGORIES, getLocalDateString } from '../../lib/formatters';
+import {
+  formatIdr,
+  EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
+  getLocalDateString,
+} from '../../lib/formatters';
 
 export const AddExpenseModal: React.FC = () => {
   const {
@@ -9,7 +27,6 @@ export const AddExpenseModal: React.FC = () => {
     setIsAddExpenseOpen,
     transactionInitialType,
     accounts,
-    transactions,
     addTransaction,
     editingTransaction,
     setEditingTransaction,
@@ -34,11 +51,13 @@ export const AddExpenseModal: React.FC = () => {
       if (targetType === 'expense') {
         return accounts;
       }
-      // In 'income' mode, hide Credit Card and PayLater accounts whose limit is not currently used (balance <= 0),
-      // unless we are editing an existing income transaction that was recorded on that specific account.
       return accounts.filter((acc) => {
         if (acc.type === 'credit_card' || acc.type === 'paylater') {
-          if (editingTransaction && editingTransaction.accountId === acc.id && editingTransaction.type === 'income') {
+          if (
+            editingTransaction &&
+            editingTransaction.accountId === acc.id &&
+            editingTransaction.type === 'income'
+          ) {
             return true;
           }
           return (Number(acc.balance) || 0) > 0;
@@ -74,7 +93,8 @@ export const AddExpenseModal: React.FC = () => {
           setType(txType);
           setAmount(editingTransaction.amount.toString());
           setAccountId(editingTransaction.accountId);
-          const fallbackCat = txType === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0];
+          const fallbackCat =
+            txType === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0];
           setCategory(editingTransaction.category || fallbackCat);
           setDate(editingTransaction.date);
           setNotes(editingTransaction.notes || '');
@@ -86,7 +106,9 @@ export const AddExpenseModal: React.FC = () => {
           setAmount('');
           setAccountId(defaultAcc ? defaultAcc.id : '');
           if (initType === 'income') {
-            const isCreditAcc = defaultAcc && (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
+            const isCreditAcc =
+              defaultAcc &&
+              (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
             setCategory(isCreditAcc ? 'Cashback & Refunds' : INCOME_CATEGORIES[0]);
           } else {
             setCategory(EXPENSE_CATEGORIES[0]);
@@ -100,7 +122,12 @@ export const AddExpenseModal: React.FC = () => {
       wasOpenRef.current = false;
       lastEditingTxIdRef.current = undefined;
     }
-  }, [isAddExpenseOpen, editingTransaction, transactionInitialType, getSelectableAccountsForType]);
+  }, [
+    isAddExpenseOpen,
+    editingTransaction,
+    transactionInitialType,
+    getSelectableAccountsForType,
+  ]);
 
   // If modal opened while accounts were still empty and sync finishes, bind default account without resetting user inputs
   useEffect(() => {
@@ -118,7 +145,9 @@ export const AddExpenseModal: React.FC = () => {
     setAmount('');
     setAccountId(defaultAcc ? defaultAcc.id : '');
     if (initType === 'income') {
-      const isCreditAcc = defaultAcc && (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
+      const isCreditAcc =
+        defaultAcc &&
+        (defaultAcc.type === 'credit_card' || defaultAcc.type === 'paylater');
       setCategory(isCreditAcc ? 'Cashback & Refunds' : INCOME_CATEGORIES[0]);
     } else {
       setCategory(EXPENSE_CATEGORIES[0]);
@@ -139,14 +168,14 @@ export const AddExpenseModal: React.FC = () => {
     }
 
     if (newType === 'income') {
-      const isCreditAcc = nextAcc && (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater');
+      const isCreditAcc =
+        nextAcc && (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater');
       if (isCreditAcc) {
         setCategory('Cashback & Refunds');
       } else if (!incomeCategories.includes(category)) {
         setCategory(incomeCategories[0] || INCOME_CATEGORIES[0]);
       }
     } else {
-      // Switch category if current category is not in expense categories
       if (!expenseCategories.includes(category)) {
         setCategory(expenseCategories[0] || EXPENSE_CATEGORIES[0]);
       }
@@ -156,7 +185,11 @@ export const AddExpenseModal: React.FC = () => {
   const handleAccountChange = (newAccountId: string) => {
     setAccountId(newAccountId);
     const nextAcc = accounts.find((a) => a.id === newAccountId);
-    if (type === 'income' && nextAcc && (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater')) {
+    if (
+      type === 'income' &&
+      nextAcc &&
+      (nextAcc.type === 'credit_card' || nextAcc.type === 'paylater')
+    ) {
       setCategory('Cashback & Refunds');
     }
   };
@@ -176,13 +209,17 @@ export const AddExpenseModal: React.FC = () => {
 
   const availableBalance = React.useMemo(() => {
     if (!selectedAccount) return 0;
-    if (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') {
+    if (
+      selectedAccount.type === 'credit_card' ||
+      selectedAccount.type === 'paylater'
+    ) {
       if (selectedAccount.creditLimit === undefined) return 0;
       let revertedDebt = selectedAccount.balance;
       if (
         editingTransaction &&
         editingTransaction.accountId === selectedAccount.id &&
-        (editingTransaction.type === 'expense' || editingTransaction.type === 'cc_debt')
+        (editingTransaction.type === 'expense' ||
+          editingTransaction.type === 'cc_debt')
       ) {
         revertedDebt = Math.max(0, revertedDebt - editingTransaction.amount);
       }
@@ -192,7 +229,8 @@ export const AddExpenseModal: React.FC = () => {
     if (
       editingTransaction &&
       editingTransaction.accountId === selectedAccount.id &&
-      (editingTransaction.type === 'expense' || editingTransaction.type === 'cc_debt')
+      (editingTransaction.type === 'expense' ||
+        editingTransaction.type === 'cc_debt')
     ) {
       revertedBal += editingTransaction.amount;
     }
@@ -201,7 +239,10 @@ export const AddExpenseModal: React.FC = () => {
 
   const refundableDebt = React.useMemo(() => {
     if (!selectedAccount) return 0;
-    if (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') {
+    if (
+      selectedAccount.type === 'credit_card' ||
+      selectedAccount.type === 'paylater'
+    ) {
       let currentUsedDebt = Number(selectedAccount.balance) || 0;
       if (
         editingTransaction &&
@@ -218,19 +259,20 @@ export const AddExpenseModal: React.FC = () => {
   const parsedNumAmount = Number(amount);
   const isInsufficientBalance = Boolean(
     type === 'expense' &&
-    selectedAccount &&
-    !isNaN(parsedNumAmount) &&
-    parsedNumAmount > 0 &&
-    parsedNumAmount > availableBalance
+      selectedAccount &&
+      !isNaN(parsedNumAmount) &&
+      parsedNumAmount > 0 &&
+      parsedNumAmount > availableBalance
   );
 
   const isExceedingRefundableDebt = Boolean(
     type === 'income' &&
-    selectedAccount &&
-    (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') &&
-    !isNaN(parsedNumAmount) &&
-    parsedNumAmount > 0 &&
-    parsedNumAmount > refundableDebt
+      selectedAccount &&
+      (selectedAccount.type === 'credit_card' ||
+        selectedAccount.type === 'paylater') &&
+      !isNaN(parsedNumAmount) &&
+      parsedNumAmount > 0 &&
+      parsedNumAmount > refundableDebt
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -247,24 +289,27 @@ export const AddExpenseModal: React.FC = () => {
     }
 
     if (!accountId) {
-      setError('Please select a target account');
+      setError('Please select an account');
       setIsSubmitting(false);
       return;
     }
 
     if (type === 'expense' && selectedAccount) {
       if (parsedAmount > availableBalance) {
-        if (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') {
+        if (
+          selectedAccount.type === 'credit_card' ||
+          selectedAccount.type === 'paylater'
+        ) {
           setError(
-            `Credit limit insufficient (${formatIdr(availableBalance)}). Expense amount ${formatIdr(
-              parsedAmount
-            )} cannot be submitted.`
+            `Credit limit insufficient (${formatIdr(
+              availableBalance
+            )}). Expense amount ${formatIdr(parsedAmount)} cannot be submitted.`
           );
         } else {
           setError(
-            `Insufficient balance (${formatIdr(availableBalance)}). Expense amount ${formatIdr(
-              parsedAmount
-            )} cannot be submitted.`
+            `Insufficient balance (${formatIdr(
+              availableBalance
+            )}). Expense amount ${formatIdr(parsedAmount)} cannot be submitted.`
           );
         }
         setIsSubmitting(false);
@@ -275,13 +320,14 @@ export const AddExpenseModal: React.FC = () => {
     if (
       type === 'income' &&
       selectedAccount &&
-      (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater')
+      (selectedAccount.type === 'credit_card' ||
+        selectedAccount.type === 'paylater')
     ) {
       if (parsedAmount > refundableDebt) {
         setError(
-          `Refund amount (${formatIdr(parsedAmount)}) cannot exceed used credit limit / debt (${formatIdr(
-            refundableDebt
-          )}).`
+          `Refund amount (${formatIdr(
+            parsedAmount
+          )}) cannot exceed used credit limit (${formatIdr(refundableDebt)}).`
         );
         setIsSubmitting(false);
         return;
@@ -309,25 +355,26 @@ export const AddExpenseModal: React.FC = () => {
         });
       }
 
-      // Trigger sleek success popup notification
       const targetAcc = accounts.find((a) => a.id === accountId);
       const accName = targetAcc ? targetAcc.name : 'Account';
       const isCreditRefund =
-        type === 'income' && targetAcc && (targetAcc.type === 'credit_card' || targetAcc.type === 'paylater');
+        type === 'income' &&
+        targetAcc &&
+        (targetAcc.type === 'credit_card' || targetAcc.type === 'paylater');
       showNotification({
         type: 'success',
         txType: type,
         title: editingTransaction
           ? isCreditRefund
-            ? 'Credit Refund Updated Successfully'
+            ? 'Credit Refund Updated'
             : type === 'expense'
-            ? 'Expense Updated Successfully'
-            : 'Income Updated Successfully'
+            ? 'Expense Updated'
+            : 'Income Updated'
           : isCreditRefund
           ? 'Credit Card Refund Recorded'
           : type === 'expense'
-          ? 'Expense Recorded Successfully'
-          : 'Income Recorded Successfully',
+          ? 'Expense Recorded'
+          : 'Income Recorded',
         message: notes?.trim() ? notes.trim() : undefined,
         amount: parsedAmount,
         category,
@@ -344,8 +391,8 @@ export const AddExpenseModal: React.FC = () => {
 
   if (!isAddExpenseOpen) return null;
 
-  // Active categories for select dropdown
-  const activeCategories: readonly string[] = type === 'income' ? incomeCategories : expenseCategories;
+  const activeCategories: readonly string[] =
+    type === 'income' ? incomeCategories : expenseCategories;
   const categoryOptions = activeCategories.includes(category)
     ? [...activeCategories]
     : [category, ...activeCategories];
@@ -359,56 +406,36 @@ export const AddExpenseModal: React.FC = () => {
       {/* Backdrop */}
       <div
         onClick={handleClose}
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
       />
 
-      {/* Modal Dialog Card (Bottom sheet on mobile, centered modal on desktop) */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0d1017] border-t sm:border border-slate-200 dark:border-[#1b212e] rounded-t sm:rounded shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 font-mono text-slate-900 dark:text-zinc-100">
-        {/* Mobile Drag Indicator */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0 bg-slate-100 dark:bg-[#080a0f]">
-          <div className="w-8 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+      {/* Modal Card */}
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
-        {/* Command Strip Header */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-[#1b212e] bg-slate-50 dark:bg-[#080a0f] shrink-0">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border ${
-                type === 'expense'
-                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-500 dark:text-rose-400'
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              {type === 'expense' ? (
-                <Receipt className="w-3.5 h-3.5" />
-              ) : (
-                <ArrowDownRight className="w-3.5 h-3.5" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm tracking-wider uppercase">
-                {editingTransaction
-                  ? editingTransaction.type === 'income'
-                    ? 'EDIT INCOME LOG'
-                    : 'EDIT EXPENSE LOG'
-                  : type === 'expense'
-                  ? 'RECORD CASH OUTFLOW'
-                  : 'RECORD CASH INFLOW'}
-              </h3>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-500">
-                {type === 'expense'
-                  ? 'Immediate debit from selected account ledger'
-                  : 'Immediate credit to selected account ledger'}
-              </p>
-            </div>
+        {/* Clean Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
+              {editingTransaction ? 'Edit Transaction' : 'New Transaction'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              {editingTransaction
+                ? 'Update transaction details and account balance'
+                : 'Record an expense or income to your account'}
+            </p>
           </div>
+
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={resetForm}
               disabled={isSubmitting}
-              title="Reset fields"
-              className="p-1 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Reset form"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -416,7 +443,8 @@ export const AddExpenseModal: React.FC = () => {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="p-1 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              aria-label="Close modal"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -427,61 +455,79 @@ export const AddExpenseModal: React.FC = () => {
         <form
           id="expense-modal-form"
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
+          className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain"
         >
           {error && (
-            <div className="flex items-center gap-2 p-2.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Type Toggle */}
-          <div>
-            <div className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mb-1">
-              FLOW DIRECTION
-            </div>
-            <div className="grid grid-cols-2 p-0.5 bg-slate-100 dark:bg-[#080a0f] rounded border border-slate-300 dark:border-[#1d2332] text-xs font-semibold">
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleTypeChange('expense')}
-                className={`py-1.5 rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                  type === 'expense'
-                    ? 'bg-rose-600 text-white font-bold'
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+          {/* Segmented Type Selector */}
+          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleTypeChange('expense')}
+              className={`py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                type === 'expense'
+                  ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+              }`}
+            >
+              <ArrowUpRight
+                className={`w-3.5 h-3.5 ${
+                  type === 'expense' ? 'text-rose-500' : 'text-slate-400'
                 }`}
-              >
-                <Receipt className="w-3 h-3" />
-                <span>EXPENSE (-)</span>
-              </button>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => handleTypeChange('income')}
-                className={`py-1.5 rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                  type === 'income'
-                    ? 'bg-emerald-500 text-slate-950 font-bold'
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+              />
+              <span>Expense</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleTypeChange('income')}
+              className={`py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                type === 'income'
+                  ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+              }`}
+            >
+              <ArrowDownRight
+                className={`w-3.5 h-3.5 ${
+                  type === 'income' ? 'text-emerald-500' : 'text-slate-400'
                 }`}
-              >
-                <ArrowDownRight className="w-3 h-3" />
-                <span>INCOME (+)</span>
-              </button>
-            </div>
+              />
+              <span>Income</span>
+            </button>
           </div>
 
-          {/* Amount in IDR */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">
-              {type === 'expense' ? 'OUTFLOW AMOUNT (IDR)' : 'INFLOW AMOUNT (IDR)'}{' '}
-              <span className="text-rose-500 dark:text-rose-400">*</span>
-            </label>
+          {/* Hero Amount Card */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2.5">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
+              <label htmlFor="tx-amount-input" className="font-medium text-slate-700 dark:text-zinc-300">
+                {type === 'expense' ? 'Expense Amount' : 'Income Amount'}
+              </label>
+              {amount && !isNaN(Number(amount)) && Number(amount) > 0 && (
+                <span
+                  className={`font-mono font-semibold tabular-nums ${
+                    type === 'expense'
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : 'text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  {formatIdr(Number(amount))}
+                </span>
+              )}
+            </div>
+
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-zinc-500">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 dark:text-zinc-500 select-none">
                 Rp
               </span>
               <input
+                id="tx-amount-input"
                 type="number"
                 min="0"
                 step="any"
@@ -489,91 +535,87 @@ export const AddExpenseModal: React.FC = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="50,000"
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-300 dark:border-[#1d2332] focus:border-emerald-500 rounded pl-9 pr-3 py-2 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums disabled:opacity-60 disabled:cursor-not-allowed"
+                className={`w-full bg-white dark:bg-[#0b0f17] border rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors disabled:opacity-60 ${
+                  isInsufficientBalance || isExceedingRefundableDebt
+                    ? 'border-rose-500/60 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-[#222d42] focus:border-emerald-500'
+                }`}
                 required
                 autoFocus
               />
             </div>
 
-            {/* Live Formatted IDR Preview */}
-            {amount && !isNaN(Number(amount)) && Number(amount) > 0 && (
-              <div className="mt-1 flex items-center justify-between px-1 text-[11px] font-mono">
-                <span className="text-slate-500 dark:text-zinc-500">FORMATTED VALUE:</span>
-                <span className={`font-bold tabular-nums ${type === 'expense' ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {formatIdr(Number(amount))}
-                </span>
-              </div>
-            )}
+            {/* Quick Add Chips */}
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {[10000, 50000, 100000, 250000, 500000, 1000000, 5000000].map(
+                (inc) => (
+                  <button
+                    key={inc}
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleQuickAdd(inc)}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 dark:bg-[#151d2c] dark:hover:bg-[#1c263a] text-[11px] font-medium text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-[#232f46] transition-colors cursor-pointer tabular-nums font-mono disabled:opacity-40"
+                  >
+                    +{inc >= 1000000 ? `${inc / 1000000}M` : `${inc / 1000}k`}
+                  </button>
+                )
+              )}
+            </div>
 
-            {/* Insufficient balance warning under amount */}
+            {/* Balance / Limit Warning */}
             {isInsufficientBalance && (
-              <div className="mt-1.5 flex items-center gap-1.5 p-2 rounded bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-[11px] font-mono">
-                <AlertCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+              <div className="mt-2.5 flex items-center gap-1.5 text-rose-600 dark:text-rose-400 text-xs">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>
-                  Amount exceeds available balance (short by{' '}
-                  <strong className="text-rose-700 dark:text-rose-200 tabular-nums">
+                  Exceeds available balance by{' '}
+                  <strong className="font-mono tabular-nums">
                     {formatIdr(parsedNumAmount - availableBalance)}
                   </strong>
-                  )
                 </span>
               </div>
             )}
 
-            {/* Exceeding refundable debt warning under amount */}
             {isExceedingRefundableDebt && (
-              <div className="mt-1.5 flex items-center gap-1.5 p-2 rounded bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-[11px] font-mono">
-                <AlertCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+              <div className="mt-2.5 flex items-center gap-1.5 text-rose-600 dark:text-rose-400 text-xs">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>
-                  Refund exceeds used credit limit (max refundable:{' '}
-                  <strong className="text-rose-700 dark:text-rose-200 tabular-nums">
+                  Refund exceeds used credit limit (max{' '}
+                  <strong className="font-mono tabular-nums">
                     {formatIdr(refundableDebt)}
                   </strong>
                   )
                 </span>
               </div>
             )}
-
-            {/* Quick Increment Buttons */}
-            <div className="flex flex-wrap gap-1 mt-2">
-              {[10000, 50000, 100000, 250000, 500000, 1000000, 5000000].map((inc) => (
-                <button
-                  key={inc}
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleQuickAdd(inc)}
-                  className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-[#080a0f] dark:hover:bg-[#161a25] active:bg-slate-300 dark:active:bg-[#1f2637] text-[10px] font-medium text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-[#1d2332] hover:border-slate-400 dark:hover:border-zinc-500 transition-colors cursor-pointer font-mono tabular-nums disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  +{inc >= 1000000 ? `${inc / 1000000}M` : `${inc / 1000}k`}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Source Account (Bank / Cash) */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                {type === 'expense'
-                  ? 'SOURCE LEDGER (DEBIT)'
-                  : 'DESTINATION LEDGER (CREDIT)'}{' '}
-                <span className="text-rose-500 dark:text-rose-400">*</span>
+          {/* Account Selector */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-slate-400" />
+                <span>{type === 'expense' ? 'From Account' : 'To Account'}</span>
               </label>
+
               {selectedAccount && (
-                <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-                  {selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater'
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                  {selectedAccount.type === 'credit_card' ||
+                  selectedAccount.type === 'paylater'
                     ? type === 'income'
-                      ? 'USED LIMIT (DEBT): '
-                      : 'AVAILABLE LIMIT: '
-                    : 'BALANCE: '}
+                      ? 'Used Debt: '
+                      : 'Available: '
+                    : 'Balance: '}
                   <strong
-                    className={`tabular-nums ${
+                    className={`font-mono tabular-nums ${
                       isInsufficientBalance || isExceedingRefundableDebt
-                        ? 'text-rose-500 dark:text-rose-400'
+                        ? 'text-rose-600 dark:text-rose-400'
                         : 'text-emerald-600 dark:text-emerald-400'
                     }`}
                   >
                     {formatIdr(
-                      (selectedAccount.type === 'credit_card' || selectedAccount.type === 'paylater') && type === 'income'
+                      (selectedAccount.type === 'credit_card' ||
+                        selectedAccount.type === 'paylater') &&
+                        type === 'income'
                         ? refundableDebt
                         : availableBalance
                     )}
@@ -581,66 +623,60 @@ export const AddExpenseModal: React.FC = () => {
                 </span>
               )}
             </div>
+
             <select
               value={accountId}
               disabled={isSubmitting}
               onChange={(e) => handleAccountChange(e.target.value)}
-              className={`w-full bg-slate-50 dark:bg-[#080a0f] border rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono disabled:opacity-60 disabled:cursor-not-allowed ${
-                isInsufficientBalance || isExceedingRefundableDebt
-                  ? 'border-rose-500/60 focus:border-rose-500'
-                  : 'border-slate-300 dark:border-[#1d2332] focus:border-emerald-500'
-              }`}
+              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
               required
             >
-              {selectableAccounts.length === 0 && <option value="">No accounts found - add one first</option>}
+              {selectableAccounts.length === 0 && (
+                <option value="">No accounts found — add one first</option>
+              )}
               {selectableAccounts.map((acc) => {
-                const isCredit = acc.type === 'credit_card' || acc.type === 'paylater';
-                const avail = isCredit ? Math.max(0, (acc.creditLimit || 0) - acc.balance) : acc.balance;
+                const isCredit =
+                  acc.type === 'credit_card' || acc.type === 'paylater';
+                const avail = isCredit
+                  ? Math.max(0, (acc.creditLimit || 0) - acc.balance)
+                  : acc.balance;
                 return (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.type.toUpperCase()}) —{' '}
+                    {acc.name} —{' '}
                     {isCredit
                       ? type === 'income'
-                        ? `Used Limit: ${formatIdr(acc.balance)} (Available: ${formatIdr(avail)})`
-                        : `Available Limit: ${formatIdr(avail)} (Used: ${formatIdr(acc.balance)})`
-                      : `Balance: ${formatIdr(acc.balance)}`}
+                        ? `Used: ${formatIdr(acc.balance)}`
+                        : `Avail: ${formatIdr(avail)}`
+                      : formatIdr(acc.balance)}
                   </option>
                 );
               })}
             </select>
           </div>
 
-          {/* Category - Specific to Expense or Income */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                CLASSIFICATION / CATEGORY <span className="text-rose-500 dark:text-rose-400">*</span>
+          {/* Category Selector */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-slate-400" />
+                <span>Category</span>
               </label>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setIsCategoryModalOpen(true)}
-                  className="flex items-center gap-0.5 text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Add Category</span>
-                </button>
-                <span
-                  className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                    type === 'income'
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25'
-                  }`}
-                >
-                  {type === 'income' ? 'INCOME TAXONOMY' : 'EXPENSE TAXONOMY'}
-                </span>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Manage Categories</span>
+              </button>
             </div>
+
             <select
               value={category}
               disabled={isSubmitting}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-300 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
             >
               {categoryOptions.map((cat) => (
                 <option key={cat} value={cat}>
@@ -650,24 +686,27 @@ export const AddExpenseModal: React.FC = () => {
             </select>
           </div>
 
-          {/* Date & Notes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">
-                VALUE DATE
+          {/* Date & Note Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Date</span>
               </label>
               <input
                 type="date"
                 value={date}
                 disabled={isSubmitting}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-300 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
                 required
               />
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">
-                MEMO / DESCRIPTOR
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                <span>Note (Optional)</span>
               </label>
               <input
                 type="text"
@@ -676,59 +715,60 @@ export const AddExpenseModal: React.FC = () => {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={
                   type === 'income'
-                    ? 'e.g. Monthly salary, bonus...'
-                    : 'e.g. Lunch with team, taxi...'
+                    ? 'e.g. Salary, bonus...'
+                    : 'e.g. Lunch, coffee...'
                 }
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-300 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors disabled:opacity-60"
               />
             </div>
           </div>
         </form>
 
-        {/* Command Strip Footer */}
-        <div className="shrink-0 p-3 bg-slate-50 dark:bg-[#080a0f] border-t border-slate-200 dark:border-[#1b212e] flex items-center justify-end gap-2">
+        {/* Clean Footer */}
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-3 py-1.5 rounded text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
           >
-            DISCARD
+            Cancel
           </button>
+
           <button
             type="submit"
             form="expense-modal-form"
-            disabled={isSubmitting || isInsufficientBalance || isExceedingRefundableDebt}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded text-xs font-bold transition-all shadow-md select-none ${
+            disabled={
+              isSubmitting ||
+              isInsufficientBalance ||
+              isExceedingRefundableDebt
+            }
+            className={`h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs select-none ${
               isSubmitting
-                ? 'bg-slate-300 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-400 dark:border-zinc-700 cursor-not-allowed opacity-60 pointer-events-none'
+                ? 'bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 cursor-not-allowed opacity-60'
                 : isInsufficientBalance || isExceedingRefundableDebt
-                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40 cursor-not-allowed opacity-75'
-                : type === 'expense'
-                ? 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white cursor-pointer hover:shadow-rose-600/20'
-                : 'bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 cursor-pointer hover:shadow-emerald-500/20'
+                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white cursor-pointer'
             }`}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>
-                  {type === 'expense' ? 'SAVING EXPENSE...' : 'SAVING INCOME...'}
-                </span>
+                <span>Saving...</span>
               </>
             ) : (
               <>
-                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Check className="w-3.5 h-3.5 stroke-[2.2]" />
                 <span>
                   {isInsufficientBalance
-                    ? 'INSUFFICIENT BALANCE'
+                    ? 'Insufficient Balance'
                     : isExceedingRefundableDebt
-                    ? 'EXCEEDS USED LIMIT'
+                    ? 'Exceeds Used Limit'
                     : editingTransaction
-                    ? 'SAVE CHANGES'
+                    ? 'Save Changes'
                     : type === 'expense'
-                    ? 'SAVE EXPENSE'
-                    : 'SAVE INCOME'}
+                    ? 'Save Expense'
+                    : 'Save Income'}
                 </span>
               </>
             )}

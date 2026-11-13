@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, AlertCircle, Trash2, Sliders, Target, Calendar } from 'lucide-react';
+import {
+  X,
+  Check,
+  AlertCircle,
+  Trash2,
+  Target,
+  Calendar,
+  Tag,
+  Loader2,
+  Plus,
+} from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { EXPENSE_CATEGORIES, formatIdr } from '../../lib/formatters';
 
 const PRESET_AMOUNTS = [
-  { label: '500K', value: 500000 },
+  { label: '500k', value: 500000 },
   { label: '1M', value: 1000000 },
   { label: '2M', value: 2000000 },
   { label: '3M', value: 3000000 },
@@ -38,7 +48,6 @@ export const BudgetModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Collect all unique categories from transactions + custom categories to offer as choices
   const availableCategories = React.useMemo(() => {
     const set = new Set<string>(expenseCategories);
     transactions.forEach((tx) => {
@@ -202,7 +211,7 @@ export const BudgetModal: React.FC = () => {
       await deleteBudget(editingBudget.id);
       showNotification({
         type: 'info',
-        title: 'Budget Limit Dihapus',
+        title: 'Budget Limit Removed',
         category: cat,
       });
       handleClose();
@@ -219,61 +228,79 @@ export const BudgetModal: React.FC = () => {
     <div
       role="dialog"
       aria-modal="true"
-      className="no-pull-to-refresh fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
     >
-      <div className="bg-white dark:bg-[#0c0f17] border border-slate-200 dark:border-[#1d2436] rounded-xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-slate-900 dark:text-zinc-100 font-mono">
-        {/* Modal Header */}
-        <div className="p-4 border-b border-slate-200 dark:border-[#1b2234] flex items-center justify-between bg-slate-50 dark:bg-[#0f131e]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <Target className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm tracking-wide text-slate-900 dark:text-zinc-100 font-mono">
-                {editingBudget ? 'EDIT CATEGORY BUDGET' : 'SET CATEGORY BUDGET'}
-              </h3>
-              <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
-                Monthly spending ceiling & real-time tracker
-              </p>
-            </div>
+      {/* Backdrop */}
+      <div
+        onClick={handleClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+      />
+
+      {/* Modal Card */}
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+        </div>
+
+        {/* Clean Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
+              {editingBudget ? 'Edit Category Budget' : 'Set Category Budget'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              Configure your monthly spending target and alerts
+            </p>
           </div>
           <button
+            type="button"
             onClick={handleClose}
-            className="p-1 rounded text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            disabled={isSubmitting}
+            aria-label="Close modal"
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        {/* Scrollable Form Body */}
+        <form
+          id="budget-modal-form"
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain"
+        >
           {error && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded flex items-center gap-2.5 text-xs text-rose-300 font-mono">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Category Selection */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center justify-between">
-              <span>Expense Category</span>
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-slate-400" />
+                <span>Expense Category</span>
+              </label>
               <button
                 type="button"
                 onClick={() => setIsCustomCategory(!isCustomCategory)}
-                className="text-[10px] text-emerald-400 hover:underline cursor-pointer"
+                className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
               >
-                {isCustomCategory ? 'Choose from list' : '+ Custom category'}
+                <Plus className="w-3 h-3" />
+                <span>{isCustomCategory ? 'Choose from list' : 'Custom category'}</span>
               </button>
-            </label>
+            </div>
 
             {isCustomCategory ? (
               <input
                 type="text"
                 value={customCategory}
                 onChange={(e) => setCustomCategory(e.target.value)}
-                placeholder="e.g. Gym & Supplements, Cloud Subscriptions"
-                className="w-full bg-[#111622] border border-[#212a40] focus:border-emerald-500 focus:outline-none rounded px-3 py-2 text-xs font-medium text-zinc-100 transition-all placeholder:text-zinc-600 font-mono"
+                placeholder="e.g. Gym & Supplements, Subscriptions..."
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
                 required
                 autoFocus
               />
@@ -281,10 +308,10 @@ export const BudgetModal: React.FC = () => {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-[#111622] border border-[#212a40] focus:border-emerald-500 focus:outline-none rounded px-3 py-2 text-xs font-medium text-zinc-100 transition-all cursor-pointer font-mono"
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors cursor-pointer"
               >
                 {availableCategories.map((cat) => (
-                  <option key={cat} value={cat} className="bg-[#0f131e] text-zinc-200">
+                  <option key={cat} value={cat}>
                     {cat}
                   </option>
                 ))}
@@ -292,63 +319,22 @@ export const BudgetModal: React.FC = () => {
             )}
           </div>
 
-          {/* Last Month Benchmark Box (Patokan Bulan Lalu) */}
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#111622] border border-slate-200 dark:border-[#212a40] space-y-2">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-500 dark:text-zinc-400">
-                Patokan {categoryBenchmark.prevMonthLabel}:
-              </span>
-              <strong className="text-slate-900 dark:text-zinc-100 tabular-nums">
-                {formatIdr(categoryBenchmark.prevSpent)}
-              </strong>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-500 dark:text-zinc-400">Terpakai Bulan Ini:</span>
-              <span className="text-slate-700 dark:text-zinc-300 tabular-nums">
-                {formatIdr(categoryBenchmark.currSpent)}
-              </span>
-            </div>
-            {categoryBenchmark.hasBenchmark && (
-              <div className="grid grid-cols-3 gap-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => handlePresetClick(categoryBenchmark.saverLimit)}
-                  className="px-2 py-1 rounded text-[10px] font-mono bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 transition-colors cursor-pointer text-center"
-                >
-                  Hemat -10%
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetClick(categoryBenchmark.matchLimit)}
-                  className="px-2 py-1 rounded text-[10px] font-mono bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors cursor-pointer text-center"
-                >
-                  100% Bulan Lalu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetClick(categoryBenchmark.bufferLimit)}
-                  className="px-2 py-1 rounded text-[10px] font-mono bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 transition-colors cursor-pointer text-center"
-                >
-                  Buffer +10%
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Monthly Limit Input */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400">
-                Monthly Spending Limit (IDR)
+          {/* Hero Monthly Limit Input Card */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-slate-400" />
+                <span>Monthly Limit</span>
               </label>
               {currentLimitNumber > 0 && (
-                <span className="text-xs font-mono font-bold text-emerald-400">
+                <span className="font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                   {formatIdr(currentLimitNumber)}
                 </span>
               )}
             </div>
+
             <div className="relative">
-              <span className="absolute left-3 top-2 text-xs font-mono font-bold text-zinc-500">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 dark:text-zinc-500 select-none">
                 Rp
               </span>
               <input
@@ -359,23 +345,22 @@ export const BudgetModal: React.FC = () => {
                   setLimit(val);
                 }}
                 placeholder="2000000"
-                className="w-full bg-[#111622] border border-[#212a40] focus:border-emerald-500 focus:outline-none rounded pl-10 pr-3 py-2 text-sm font-bold text-zinc-100 transition-all font-mono placeholder:text-zinc-600"
+                className="w-full bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
                 required
               />
             </div>
 
             {/* Quick preset amount chips */}
-            <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-              <span className="text-[10px] font-mono text-zinc-500 mr-1">PRESETS:</span>
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
               {PRESET_AMOUNTS.map((p) => (
                 <button
                   key={p.label}
                   type="button"
                   onClick={() => handlePresetClick(p.value)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer tabular-nums font-mono ${
                     currentLimitNumber === p.value
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold'
-                      : 'bg-[#141a27] border-[#222b3e] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600'
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold'
+                      : 'bg-white hover:bg-slate-100 dark:bg-[#151d2c] dark:hover:bg-[#1c263a] text-slate-600 dark:text-zinc-300 border-slate-200/80 dark:border-[#232f46]'
                   }`}
                 >
                   {p.label}
@@ -384,115 +369,159 @@ export const BudgetModal: React.FC = () => {
             </div>
           </div>
 
+          {/* Last Month Benchmark Box */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 dark:text-zinc-400">
+                Last Month ({categoryBenchmark.prevMonthLabel}):
+              </span>
+              <strong className="text-slate-900 dark:text-zinc-100 font-mono tabular-nums">
+                {formatIdr(categoryBenchmark.prevSpent)}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-500 dark:text-zinc-400">Spent This Month:</span>
+              <span className="text-slate-700 dark:text-zinc-300 font-mono tabular-nums">
+                {formatIdr(categoryBenchmark.currSpent)}
+              </span>
+            </div>
+            {categoryBenchmark.hasBenchmark && (
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handlePresetClick(categoryBenchmark.saverLimit)}
+                  className="px-2 py-1.5 rounded-xl text-[11px] font-medium bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-600 dark:text-emerald-300 transition-colors cursor-pointer text-center"
+                >
+                  Save -10%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePresetClick(categoryBenchmark.matchLimit)}
+                  className="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer text-center"
+                >
+                  Match 100%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePresetClick(categoryBenchmark.bufferLimit)}
+                  className="px-2 py-1.5 rounded-xl text-[11px] font-medium bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 text-indigo-600 dark:text-indigo-300 transition-colors cursor-pointer text-center"
+                >
+                  Buffer +10%
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Budget Scope (Recurring vs Month-Specific) */}
-          <div className="space-y-2 pt-1 border-t border-[#1b2234]">
-            <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-              <span>Budget Period Scope</span>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>Budget Period</span>
             </label>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
               <button
                 type="button"
                 onClick={() => setScope('recurring')}
-                className={`p-2.5 rounded border text-left cursor-pointer transition-all ${
+                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   scope === 'recurring'
-                    ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
-                    : 'bg-[#111622] border-[#20293d] text-zinc-400 hover:border-zinc-700'
+                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-xs font-bold font-mono">
-                  <span>Recurring Every Month</span>
-                </div>
-                <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
-                  Applies continuously each month
-                </p>
+                Every Month
               </button>
 
               <button
                 type="button"
                 onClick={() => setScope('specific')}
-                className={`p-2.5 rounded border text-left cursor-pointer transition-all ${
+                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   scope === 'specific'
-                    ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
-                    : 'bg-[#111622] border-[#20293d] text-zinc-400 hover:border-zinc-700'
+                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-xs font-bold font-mono">
-                  <span>Specific Month Only</span>
-                </div>
-                <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
-                  One-time monthly target
-                </p>
+                Specific Month
               </button>
             </div>
 
             {scope === 'specific' && (
-              <div className="pt-1.5">
+              <div className="pt-1">
                 <input
                   type="month"
                   value={specificMonth}
                   onChange={(e) => setSpecificMonth(e.target.value)}
-                  className="w-full bg-[#111622] border border-[#212a40] focus:border-emerald-500 focus:outline-none rounded px-3 py-1.5 text-xs font-mono text-zinc-200"
+                  className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
                 />
               </div>
             )}
           </div>
+        </form>
 
-          {/* Action Buttons */}
-          <div className="pt-3 border-t border-[#1b2234] flex items-center justify-between gap-3">
-            {editingBudget ? (
-              confirmDelete ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={isSubmitting}
-                    className="px-2.5 py-1.5 rounded bg-rose-500 hover:bg-rose-600 text-white font-mono text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Confirm Delete
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(false)}
-                    className="px-2 py-1.5 rounded text-zinc-400 hover:text-white font-mono text-xs cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
+        {/* Clean Footer */}
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-between gap-2">
+          {editingBudget ? (
+            confirmDelete ? (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-mono text-xs transition-all cursor-pointer"
+                  onClick={handleDelete}
+                  disabled={isSubmitting}
+                  className="h-9 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition-all cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete</span>
+                  Confirm Delete
                 </button>
-              )
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="h-9 px-2.5 text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white text-xs font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
             ) : (
-              <div />
-            )}
-
-            <div className="flex items-center gap-2 ml-auto">
               <button
                 type="button"
-                onClick={handleClose}
-                className="px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-mono text-xs transition-all cursor-pointer"
+                onClick={() => setConfirmDelete(true)}
+                className="h-9 px-3 flex items-center gap-1.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-medium transition-colors cursor-pointer"
               >
-                Cancel
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
               </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-mono text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                <span>{isSubmitting ? 'Saving...' : editingBudget ? 'Update Budget' : 'Save Budget'}</span>
-              </button>
-            </div>
+            )
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="budget-modal-form"
+              disabled={isSubmitting}
+              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5 stroke-[2.2]" />
+                  <span>{editingBudget ? 'Update Budget' : 'Save Budget'}</span>
+                </>
+              )}
+            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

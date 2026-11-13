@@ -11,6 +11,9 @@ import {
   Sparkles,
   Info,
   Loader2,
+  Wallet,
+  Calendar,
+  FileText,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { formatIdr, formatUsd } from '../../lib/formatters';
@@ -184,7 +187,6 @@ export const TransferModal: React.FC = () => {
     const numUsd = Number(val);
     const numIdr = Number(amountIdr);
     if (!isNaN(numUsd) && numUsd > 0 && !isNaN(numIdr) && numIdr > 0) {
-      // Calculate effective exchange rate from broker (IDR / USD)
       const calculatedRate = (numIdr / numUsd).toFixed(2);
       setExchangeRate(calculatedRate);
     }
@@ -225,6 +227,11 @@ export const TransferModal: React.FC = () => {
     if (!isNaN(numIdr) && numIdr > 0 && rate > 0) {
       setAmountUsd((numIdr / rate).toFixed(2));
     }
+  };
+
+  const handleQuickAdd = (inc: number) => {
+    const current = Number(amountIdr) || 0;
+    handleAmountIdrChange((current + inc).toString());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -320,6 +327,10 @@ export const TransferModal: React.FC = () => {
 
   if (!isTransferOpen) return null;
 
+  const isInsufficientSource = Boolean(
+    selectedSourceAccount && numericAmount > selectedSourceAccount.balance
+  );
+
   return (
     <div
       role="dialog"
@@ -329,56 +340,45 @@ export const TransferModal: React.FC = () => {
       {/* Backdrop */}
       <div
         onClick={handleClose}
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
       />
 
-      {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0d1017] border-t sm:border border-slate-200 dark:border-[#1b212e] rounded-t sm:rounded shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 font-mono text-slate-900 dark:text-zinc-100">
-        {/* Mobile Drag Indicator */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0 bg-slate-100 dark:bg-[#080a0f]">
-          <div className="w-8 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+      {/* Modal Card */}
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+        {/* Mobile Drag Handle */}
+        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
-        {/* Command Strip Header */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 border-b border-slate-200 dark:border-[#1b212e] bg-slate-50 dark:bg-[#080a0f] shrink-0">
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border ${
-                mode === 'bank_to_investment'
-                  ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400'
-                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              {mode === 'bank_to_investment' ? (
-                <TrendingUp className="w-3.5 h-3.5" />
-              ) : (
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm tracking-wider uppercase">
-                {mode === 'bank_to_investment' ? 'BANK TO INVESTMENT TRANSFER' : 'INTER-ACCOUNT TRANSFER'}
-              </h3>
-              <p className="text-[10px] text-slate-500 dark:text-zinc-500">
-                {mode === 'bank_to_investment'
-                  ? 'Fund investment positions directly from bank or cash accounts'
-                  : 'Move balances between bank accounts, wallets, or cash'}
-              </p>
-            </div>
+        {/* Clean Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
+              {mode === 'bank_to_investment' ? 'Fund Investment' : 'Account Transfer'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+              {mode === 'bank_to_investment'
+                ? 'Top up an investment holding directly from your bank or cash'
+                : 'Transfer balances between your bank accounts or cash wallets'}
+            </p>
           </div>
+
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={resetFields}
-              title="Reset fields"
-              className="p-1 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              title="Reset form"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="p-1 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              aria-label="Close modal"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -389,128 +389,206 @@ export const TransferModal: React.FC = () => {
         <form
           id="transfer-modal-form"
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-4 space-y-3.5 overscroll-contain"
+          className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain"
         >
           {error && (
-            <div className="flex items-center gap-2 p-2.5 rounded bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Primary Mode Switcher */}
-          <div className="grid grid-cols-2 p-0.5 bg-slate-100 dark:bg-[#080a0f] rounded border border-slate-200 dark:border-[#1d2332] text-xs font-semibold">
+          {/* Segmented Mode Switcher */}
+          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => setMode('bank_to_investment')}
-              className={`py-1.5 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
                 mode === 'bank_to_investment'
-                  ? 'bg-white dark:bg-[#1b212e] text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-[#2a3449] shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
-              <TrendingUp className="w-3 h-3" />
-              <span>TO INVESTMENT</span>
+              <TrendingUp
+                className={`w-3.5 h-3.5 ${
+                  mode === 'bank_to_investment' ? 'text-indigo-500' : 'text-slate-400'
+                }`}
+              />
+              <span>To Investment</span>
             </button>
+
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => setMode('account_to_account')}
-              className={`py-1.5 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
                 mode === 'account_to_account'
-                  ? 'bg-white dark:bg-[#1b212e] text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-[#2a3449] shadow-xs font-bold'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
               }`}
             >
-              <ArrowRightLeft className="w-3 h-3" />
-              <span>ACCOUNT TRANSFER</span>
+              <ArrowRightLeft
+                className={`w-3.5 h-3.5 ${
+                  mode === 'account_to_account' ? 'text-emerald-500' : 'text-slate-400'
+                }`}
+              />
+              <span>Between Accounts</span>
             </button>
           </div>
 
-          {/* Source Account (Always in IDR) */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-              SOURCE ACCOUNT (BANK / CASH) <span className="text-rose-500">*</span>
-            </label>
+          {/* Hero Transfer Amount Card */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2.5">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
+              <label htmlFor="transfer-amount-input" className="font-medium text-slate-700 dark:text-zinc-300">
+                Transfer Amount (IDR)
+              </label>
+              {numericAmount > 0 && (
+                <span className="font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {formatIdr(numericAmount)}
+                </span>
+              )}
+            </div>
+
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 dark:text-zinc-500 select-none">
+                Rp
+              </span>
+              <input
+                id="transfer-amount-input"
+                type="number"
+                min="0"
+                step="any"
+                disabled={isSubmitting}
+                value={amountIdr}
+                onChange={(e) => handleAmountIdrChange(e.target.value)}
+                placeholder="1,000,000"
+                className={`w-full bg-white dark:bg-[#0b0f17] border rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors disabled:opacity-60 ${
+                  isInsufficientSource
+                    ? 'border-amber-500/60 focus:border-amber-500'
+                    : 'border-slate-200 dark:border-[#222d42] focus:border-emerald-500'
+                }`}
+                required
+                autoFocus
+              />
+            </div>
+
+            {/* Quick Add Chips */}
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {[100000, 250000, 500000, 1000000, 2500000, 5000000, 10000000].map(
+                (inc) => (
+                  <button
+                    key={inc}
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleQuickAdd(inc)}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 dark:bg-[#151d2c] dark:hover:bg-[#1c263a] text-[11px] font-medium text-slate-600 dark:text-zinc-300 border border-slate-200/80 dark:border-[#232f46] transition-colors cursor-pointer tabular-nums font-mono disabled:opacity-40"
+                  >
+                    +{inc >= 1000000 ? `${inc / 1000000}M` : `${inc / 1000}k`}
+                  </button>
+                )
+              )}
+            </div>
+
+            {isInsufficientSource && selectedSourceAccount && (
+              <div className="mt-2 flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  Exceeds {selectedSourceAccount.name} balance by{' '}
+                  <strong className="font-mono tabular-nums">
+                    {formatIdr(numericAmount - selectedSourceAccount.balance)}
+                  </strong>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Source Account */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Wallet className="w-3.5 h-3.5 text-slate-400" />
+                <span>From Account</span>
+              </label>
+              {selectedSourceAccount && (
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                  Available:{' '}
+                  <strong className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {formatIdr(selectedSourceAccount.balance)}
+                  </strong>
+                </span>
+              )}
+            </div>
             <select
               value={fromAccountId}
+              disabled={isSubmitting}
               onChange={(e) => setFromAccountId(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-indigo-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono"
+              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
               required
             >
               {accounts
                 .filter((a) => a.type === 'bank' || a.type === 'cash')
                 .map((acc) => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.type.toUpperCase()}) — Balance: {formatIdr(acc.balance)}
+                    {acc.name} — {formatIdr(acc.balance)}
                   </option>
                 ))}
             </select>
-            {selectedSourceAccount && (
-              <div className="flex items-center justify-between mt-1 text-[10px] font-mono">
-                <span className="text-slate-500 dark:text-zinc-500">
-                  AVAILABLE BALANCE: <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatIdr(selectedSourceAccount.balance)}</span>
-                </span>
-                {numericAmount > selectedSourceAccount.balance && (
-                  <span className="text-amber-600 dark:text-amber-400 font-bold">
-                    [DEFICIT {formatIdr(numericAmount - selectedSourceAccount.balance)}]
-                  </span>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Destination: Investment OR Account */}
           {mode === 'bank_to_investment' ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                  TARGET INVESTMENT ASSET <span className="text-rose-500">*</span>
+                <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Target Investment</span>
                 </label>
 
                 {/* Sub-toggle: Existing vs New Holding */}
-                <div className="flex p-0.5 bg-slate-100 dark:bg-[#080a0f] rounded border border-slate-200 dark:border-[#1d2332] text-[10px]">
+                <div className="flex p-0.5 bg-slate-100 dark:bg-[#111723] rounded-lg border border-slate-200/70 dark:border-[#1c2536] text-[11px]">
                   <button
                     type="button"
                     onClick={() => setTargetType('existing')}
                     disabled={investments.length === 0}
-                    className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer font-medium disabled:opacity-40 disabled:cursor-not-allowed ${
                       targetType === 'existing'
-                        ? 'bg-white dark:bg-[#1b212e] text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-[#2a3449] shadow-xs font-bold'
-                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                        ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    <Layers className="w-2.5 h-2.5" />
-                    <span>EXISTING ASSETS ({investments.length})</span>
+                    <Layers className="w-3 h-3" />
+                    <span>Existing ({investments.length})</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setTargetType('new')}
-                    className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer font-medium ${
                       targetType === 'new'
-                        ? 'bg-white dark:bg-[#1b212e] text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-[#2a3449] shadow-xs font-bold'
-                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                        ? 'bg-white dark:bg-[#1b2436] text-emerald-600 dark:text-emerald-400 shadow-xs'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    <Plus className="w-2.5 h-2.5" />
-                    <span>+ NEW ASSET</span>
+                    <Plus className="w-3 h-3" />
+                    <span>New Asset</span>
                   </button>
                 </div>
               </div>
 
               {/* OPTION A: Existing Investment */}
               {targetType === 'existing' && (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {investments.length === 0 ? (
-                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                      <Info className="w-3.5 h-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span>No investment assets yet. Click "+ NEW ASSET" to create and fund your first position!</span>
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      <Info className="w-4 h-4 shrink-0 text-amber-500" />
+                      <span>No investment assets yet. Select "New Asset" to create and fund your first position.</span>
                     </div>
                   ) : (
                     <>
                       <select
                         value={toInvestmentId}
                         onChange={(e) => handleSelectInvestment(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-indigo-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono"
+                        className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors"
                         required
                       >
                         {investments.map((inv) => (
@@ -520,13 +598,13 @@ export const TransferModal: React.FC = () => {
                         ))}
                       </select>
                       {selectedInvestment && (
-                        <div className="p-2 rounded bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] text-[10px] text-slate-600 dark:text-zinc-400 flex items-center justify-between font-mono">
+                        <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] text-[11px] text-slate-600 dark:text-zinc-400 flex items-center justify-between">
                           <span>
-                            ASSET CLASS: <strong className="text-slate-900 dark:text-zinc-200">{selectedInvestment.category}</strong>
+                            Asset Class: <strong className="text-slate-900 dark:text-zinc-200">{selectedInvestment.category}</strong>
                           </span>
                           <span>
-                            VALUATION BASIS:{' '}
-                            <strong className={isUsdTarget ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-blue-600 dark:text-blue-400 font-bold'}>
+                            Currency:{' '}
+                            <strong className={isUsdTarget ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'}>
                               {isUsdTarget ? 'USD ($) — Live Conversion' : 'IDR (Rupiah)'}
                             </strong>
                           </span>
@@ -537,49 +615,45 @@ export const TransferModal: React.FC = () => {
                 </div>
               )}
 
-              {/* OPTION B: Brand-New Investment (No currency buttons, automatic classification) */}
+              {/* OPTION B: Brand-New Investment */}
               {targetType === 'new' && (
-                <div className="p-3 rounded bg-slate-50/80 dark:bg-[#080a0f] border border-emerald-500/30 space-y-3 animate-in fade-in">
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-[#1b212e]">
-                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider">
-                      <Sparkles className="w-3 h-3" />
-                      <span>CREATE NEW INVESTMENT ASSET</span>
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-[#1d273a]">
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>New Investment Asset</span>
                     </span>
-                    <span className="text-[9px] text-slate-500 dark:text-zinc-500">AUTO-REGISTERED</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsHoldingTypesModalOpen(true)}
+                      className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Layers className="w-3 h-3" />
+                      <span>Manage Classes</span>
+                    </button>
                   </div>
 
                   {/* Asset Name */}
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                      ASSET NAME / TICKER <span className="text-rose-500">*</span>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                      Asset Name / Ticker
                     </label>
                     <input
                       type="text"
                       value={newInvName}
                       onChange={(e) => setNewInvName(e.target.value)}
-                      placeholder="e.g. S&P 500 (VOO), BBCA, Apple, Bitcoin..."
-                      className="w-full bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-1.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono"
+                      placeholder="e.g. S&P 500 (VOO), BBCA, Bitcoin..."
+                      className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
                       required
                     />
                   </div>
 
                   {/* Category Selection */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider">
-                        ASSET CLASS / HOLDING TYPE <span className="text-rose-500">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setIsHoldingTypesModalOpen(true)}
-                        className="text-[9px] font-mono text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Manage or add custom holding types"
-                      >
-                        <Layers className="w-2.5 h-2.5" />
-                        <span>Master Holdings</span>
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                      Asset Class
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                       {categoryOptions.map((cat) => {
                         const isSelected = newInvCategory === cat.id;
                         return (
@@ -587,14 +661,14 @@ export const TransferModal: React.FC = () => {
                             key={cat.id}
                             type="button"
                             onClick={() => handleSelectCategory(cat.id)}
-                            className={`p-1.5 rounded text-left border transition-all cursor-pointer ${
+                            className={`p-2 rounded-xl text-left border transition-all cursor-pointer ${
                               isSelected
-                                ? 'bg-emerald-50 dark:bg-[#1b212e] border-emerald-500/50 text-emerald-700 dark:text-emerald-400 shadow-xs'
-                                : 'bg-white dark:bg-[#0d1017] border-slate-200 dark:border-[#1d2332] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                                ? 'bg-white dark:bg-[#1b2436] border-emerald-500/60 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                                : 'bg-white/70 dark:bg-[#0b0f17] border-slate-200/80 dark:border-[#222d42] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                             }`}
                           >
-                            <div className="font-bold text-xs font-mono">{cat.label}</div>
-                            <div className="text-[9px] text-slate-500 dark:text-zinc-500">{cat.badge}</div>
+                            <div className="font-semibold text-xs truncate">{cat.label}</div>
+                            <div className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">{cat.badge}</div>
                           </button>
                         );
                       })}
@@ -602,26 +676,25 @@ export const TransferModal: React.FC = () => {
                   </div>
 
                   {/* Platform / Broker & Units */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                        BROKER / PLATFORM
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                        Broker / Platform
                       </label>
                       <input
                         type="text"
                         value={newInvPlatform}
                         onChange={(e) => setNewInvPlatform(e.target.value)}
-                        placeholder="e.g. Gotrade, Pluang, Bibit, IBKR..."
-                        className="w-full bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-2.5 py-1.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono"
+                        placeholder="e.g. Gotrade, Bibit, Stockbit..."
+                        className="w-full h-9 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
                       />
-                      {/* Quick platform pills */}
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      <div className="flex flex-wrap gap-1 pt-0.5">
                         {PLATFORM_SUGGESTIONS.slice(0, 4).map((p) => (
                           <button
                             key={p}
                             type="button"
                             onClick={() => setNewInvPlatform(p)}
-                            className="text-[9px] px-1.5 py-0.5 rounded bg-slate-200/70 hover:bg-slate-200 dark:bg-[#161a25] dark:hover:bg-[#1f2637] text-slate-600 dark:text-zinc-400 border border-slate-300 dark:border-[#232b3d] transition-colors"
+                            className="text-[10px] px-2 py-0.5 rounded-md bg-white hover:bg-slate-100 dark:bg-[#151d2c] dark:hover:bg-[#1c263a] text-slate-600 dark:text-zinc-400 border border-slate-200/80 dark:border-[#232f46] transition-colors cursor-pointer"
                           >
                             {p}
                           </button>
@@ -629,9 +702,9 @@ export const TransferModal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 dark:text-zinc-400 uppercase tracking-wider mb-1">
-                        QUANTITY / UNITS (OPTIONAL)
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                        Quantity / Units (Optional)
                       </label>
                       <input
                         type="number"
@@ -639,7 +712,7 @@ export const TransferModal: React.FC = () => {
                         value={newInvUnits}
                         onChange={(e) => setNewInvUnits(e.target.value)}
                         placeholder="e.g. 1.25"
-                        className="w-full bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-2.5 py-1.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono"
+                        className="w-full h-9 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                       />
                     </div>
                   </div>
@@ -647,82 +720,63 @@ export const TransferModal: React.FC = () => {
               )}
             </div>
           ) : (
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                DESTINATION ACCOUNT <span className="text-rose-500">*</span>
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <Wallet className="w-3.5 h-3.5 text-slate-400" />
+                  <span>To Account</span>
+                </label>
+                {selectedDestAccount && (
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    Balance:{' '}
+                    <strong className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {formatIdr(selectedDestAccount.balance)}
+                    </strong>
+                  </span>
+                )}
+              </div>
               <select
                 value={toAccountId}
                 onChange={(e) => setToAccountId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono"
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors"
                 required
               >
                 {accounts
                   .filter((a) => a.id !== fromAccountId && a.type !== 'credit_card' && a.type !== 'paylater')
                   .map((acc) => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.name} ({acc.type.toUpperCase()}) — Balance: {formatIdr(acc.balance)}
+                      {acc.name} — {formatIdr(acc.balance)}
                     </option>
                   ))}
               </select>
-              {selectedDestAccount && (
-                <p className="text-[10px] text-slate-500 dark:text-zinc-500 mt-1 font-mono">
-                  CURRENT BALANCE:{' '}
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatIdr(selectedDestAccount.balance)}</span>
-                </p>
-              )}
             </div>
           )}
 
-          {/* Amount in IDR (Always entered in Rupiah) */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1">
-              TRANSFER CASH AMOUNT (IDR) <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 dark:text-zinc-500">
-                Rp
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={amountIdr}
-                onChange={(e) => handleAmountIdrChange(e.target.value)}
-                placeholder="1,000,000"
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded pl-9 pr-3 py-2 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
-                required
-              />
-            </div>
-            {amountIdr && !isNaN(Number(amountIdr)) && Number(amountIdr) > 0 && (
-              <div className="mt-1 flex items-center justify-between px-1 text-[11px] font-mono">
-                <span className="text-slate-500 dark:text-zinc-500">READOUT:</span>
-                <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatIdr(Number(amountIdr))}</span>
-              </div>
-            )}
-          </div>
-
-          {/* USD Conversion Box - Shown when target is USD. Converted USD amount is directly editable! */}
+          {/* USD Conversion Box */}
           {mode === 'bank_to_investment' && isUsdTarget && (
-            <div className="p-3 bg-indigo-50/60 dark:bg-[#0a0d14] border border-indigo-200 dark:border-indigo-500/40 rounded space-y-3 animate-in fade-in">
-              <div className="flex items-center justify-between pb-1.5 border-b border-indigo-100 dark:border-[#1b212e]">
-                <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
-                  <Sparkles className="w-3 h-3" />
-                  <span>USD CONVERSION (INVESTMENT CREDIT)</span>
+            <div className="p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-[#101622] border border-indigo-200/80 dark:border-indigo-500/30 space-y-3 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>USD Conversion</span>
                 </span>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 font-bold">
-                  EDITABLE
-                </span>
+                <button
+                  type="button"
+                  onClick={handleResetToGoogleRate}
+                  className="text-[11px] text-slate-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Spot Rate ({formatIdr(usdIdrRate)})</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* Converted USD Amount - Fully Editable */}
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300 mb-1">
-                    USD AMOUNT RECEIVED ($) <span className="text-rose-500">*</span>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                    USD Received ($)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                       $
                     </span>
                     <input
@@ -732,32 +786,17 @@ export const TransferModal: React.FC = () => {
                       value={amountUsd}
                       onChange={(e) => handleAmountUsdChange(e.target.value)}
                       placeholder="0.00"
-                      className="w-full bg-white dark:bg-[#111622] border border-indigo-300 dark:border-indigo-500/60 focus:border-indigo-500 rounded pl-7 pr-2.5 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                      className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-indigo-200 dark:border-indigo-500/40 focus:border-indigo-500 rounded-xl pl-7 pr-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                     />
                   </div>
-                  <p className="text-[9px] text-slate-500 dark:text-zinc-500 mt-1">
-                    Enter the exact USD ($) amount credited in your investment app
-                  </p>
                 </div>
 
-                {/* Broker Exchange Rate - Fully Editable */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400">
-                      BROKER RATE (IDR/USD)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleResetToGoogleRate}
-                      title="Reset to Google spot rate"
-                      className="text-[9px] text-slate-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-300 flex items-center gap-0.5 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-2.5 h-2.5" />
-                      <span>Google Spot Rate (Rp {formatIdr(usdIdrRate).replace('Rp', '').trim()})</span>
-                    </button>
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                    Exchange Rate (IDR/USD)
+                  </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 dark:text-zinc-500">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
                       Rp
                     </span>
                     <input
@@ -765,101 +804,84 @@ export const TransferModal: React.FC = () => {
                       step="any"
                       value={exchangeRate}
                       onChange={(e) => handleExchangeRateChange(e.target.value)}
-                      className="w-full bg-white dark:bg-[#111622] border border-slate-200 dark:border-[#1d2332] focus:border-indigo-500 rounded pl-8 pr-2.5 py-1.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums text-right"
+                      className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-xs font-semibold text-slate-900 dark:text-zinc-100 focus:outline-none font-mono tabular-nums"
                     />
                   </div>
-                  <p className="text-[9px] text-slate-500 dark:text-zinc-500 mt-1">
-                    Automatically calculated when you edit the received USD amount
-                  </p>
                 </div>
               </div>
 
-              {/* Explanatory Banner */}
-              <div className="p-2 rounded bg-white/80 dark:bg-[#0d1017] border border-indigo-100 dark:border-[#1d2332] text-[10px] text-slate-600 dark:text-zinc-400 space-y-1 font-mono">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 dark:text-zinc-500">Deducted from {selectedSourceAccount?.name || 'Bank'}:</span>
-                  <span className="font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-                    {numericAmount > 0 ? `-${formatIdr(numericAmount)}` : 'Rp 0'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 dark:text-zinc-500">Credited to {targetType === 'existing' ? (selectedInvestment?.name || 'Investment') : (newInvName || 'New Asset')}:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {amountUsd && Number(amountUsd) > 0 ? `+${formatUsd(Number(amountUsd))}` : '$0.00'}
-                  </span>
-                </div>
-                {numericAmount > 0 && amountUsd && Number(amountUsd) > 0 && (
-                  <div className="flex items-center justify-between pt-1 border-t border-indigo-100 dark:border-[#1b212e] text-[9px] text-indigo-700 dark:text-indigo-300">
-                    <span>Effective Broker Exchange Rate:</span>
-                    <span className="font-bold">
-                      Rp {Number(exchangeRate).toLocaleString('en-US', { maximumFractionDigits: 2 })} / USD
-                    </span>
-                  </div>
-                )}
+              <div className="px-3 py-2 rounded-xl bg-white/80 dark:bg-[#0b0f17] border border-indigo-100 dark:border-[#1d273a] text-[11px] text-slate-600 dark:text-zinc-400 flex items-center justify-between">
+                <span>Credited to {targetType === 'existing' ? (selectedInvestment?.name || 'Asset') : (newInvName || 'New Asset')}:</span>
+                <strong className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {amountUsd && Number(amountUsd) > 0 ? `+${formatUsd(Number(amountUsd))}` : '$0.00'}
+                </strong>
               </div>
             </div>
           )}
 
           {/* Date & Notes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                EXECUTION DATE
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                <span>Date</span>
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono"
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors"
                 required
               />
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
-                MEMO / NOTES
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                <span>Note (Optional)</span>
               </label>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Monthly top-up, DCA GoTrade..."
-                className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono"
+                placeholder="e.g. Monthly DCA, savings transfer..."
+                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
               />
             </div>
           </div>
         </form>
 
-        {/* Command Strip Footer */}
-        <div className="shrink-0 p-3 bg-slate-50 dark:bg-[#080a0f] border-t border-slate-200 dark:border-[#1b212e] flex items-center justify-end gap-2">
+        {/* Clean Footer */}
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={handleClose}
-            className="px-3 py-1.5 rounded text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-[#161a25] transition-colors cursor-pointer"
+            disabled={isSubmitting}
+            className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
           >
-            CANCEL
+            Cancel
           </button>
           <button
             type="submit"
             form="transfer-modal-form"
             disabled={isSubmitting}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded text-xs font-bold transition-all shadow-md select-none ${
+            className={`h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs select-none ${
               isSubmitting
-                ? 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-400 border border-slate-300 dark:border-zinc-700 cursor-not-allowed opacity-60 pointer-events-none'
-                : 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 cursor-pointer hover:shadow-emerald-500/20'
+                ? 'bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 cursor-not-allowed opacity-60'
+                : 'bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white cursor-pointer'
             }`}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>PROCESSING TRANSFER...</span>
+                <span>Transferring...</span>
               </>
             ) : (
               <>
-                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <Check className="w-3.5 h-3.5 stroke-[2.2]" />
                 <span>
                   {mode === 'bank_to_investment' && targetType === 'new'
-                    ? 'INITIALIZE & FUND ASSET'
-                    : 'EXECUTE TRANSFER'}
+                    ? 'Create & Fund Asset'
+                    : 'Confirm Transfer'}
                 </span>
               </>
             )}
