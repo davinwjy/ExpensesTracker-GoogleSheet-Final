@@ -14,8 +14,14 @@ export const PayBillModal: React.FC = () => {
     showNotification,
   } = useFinance();
 
-  const creditCards = accounts.filter((a) => a.type === 'credit_card' || a.type === 'paylater');
-  const fundingAccounts = accounts.filter((a) => a.type === 'bank' || a.type === 'cash');
+  const creditCards = React.useMemo(
+    () => accounts.filter((a) => a.type === 'credit_card' || a.type === 'paylater'),
+    [accounts]
+  );
+  const fundingAccounts = React.useMemo(
+    () => accounts.filter((a) => a.type === 'bank' || a.type === 'cash'),
+    [accounts]
+  );
 
   const [creditCardAccountId, setCreditCardAccountId] = useState<string>('');
   const [sourceAccountId, setSourceAccountId] = useState<string>('');
@@ -28,29 +34,25 @@ export const PayBillModal: React.FC = () => {
 
   const wasOpenRef = React.useRef(false);
   const lastPayBillCardIdRef = React.useRef<string | null | undefined>(undefined);
-  const lastSelectedCardIdRef = React.useRef<string | null>(null);
 
   useEffect(() => {
     if (isPayBillOpen) {
       const isFreshOpen = !wasOpenRef.current;
-      const isCardChanged = payBillCard?.id !== lastPayBillCardIdRef.current;
+      const currentCardId = payBillCard ? payBillCard.id : null;
+      const isCardChanged = currentCardId !== lastPayBillCardIdRef.current;
 
       if (isFreshOpen || isCardChanged) {
         setIsSubmitting(false);
         wasOpenRef.current = true;
-        lastPayBillCardIdRef.current = payBillCard?.id || null;
+        lastPayBillCardIdRef.current = currentCardId;
 
-        let activeCardId = '';
         if (payBillCard) {
-          activeCardId = payBillCard.id;
           setCreditCardAccountId(payBillCard.id);
           setAmountIdr(payBillCard.balance > 0 ? payBillCard.balance.toString() : '');
         } else if (creditCards.length > 0) {
-          activeCardId = creditCards[0].id;
           setCreditCardAccountId(creditCards[0].id);
           setAmountIdr(creditCards[0].balance > 0 ? creditCards[0].balance.toString() : '');
         }
-        lastSelectedCardIdRef.current = activeCardId;
 
         if (fundingAccounts.length > 0) {
           setSourceAccountId(fundingAccounts[0].id);
@@ -60,34 +62,34 @@ export const PayBillModal: React.FC = () => {
         setDate(new Date().toISOString().split('T')[0]);
         setNotes('');
         setError('');
-      } else {
-        // Modal is already open: protect user's custom typed amount, admin fee, date, notes!
-        // Only bind card or funding account if they were previously unselected:
-        if (!creditCardAccountId && creditCards.length > 0) {
-          setCreditCardAccountId(creditCards[0].id);
-          lastSelectedCardIdRef.current = creditCards[0].id;
-        }
-        if (!sourceAccountId && fundingAccounts.length > 0) {
-          setSourceAccountId(fundingAccounts[0].id);
-        }
       }
     } else {
       wasOpenRef.current = false;
       lastPayBillCardIdRef.current = undefined;
-      lastSelectedCardIdRef.current = null;
     }
-  }, [isPayBillOpen, payBillCard, creditCards, fundingAccounts, creditCardAccountId, sourceAccountId]);
+  }, [isPayBillOpen, payBillCard, creditCards, fundingAccounts]);
 
-  // When user actively switches to a different card, pre-fill its full balance (do NOT run on background sync)
+  // If modal opened before accounts finished loading, bind default card/funding account without resetting typed fields
   useEffect(() => {
-    if (creditCardAccountId && creditCardAccountId !== lastSelectedCardIdRef.current) {
-      lastSelectedCardIdRef.current = creditCardAccountId;
-      const card = accounts.find((a) => a.id === creditCardAccountId);
-      if (card && card.balance > 0) {
-        setAmountIdr(card.balance.toString());
+    if (!isPayBillOpen) return;
+    if (!creditCardAccountId && creditCards.length > 0) {
+      setCreditCardAccountId(creditCards[0].id);
+      if (!amountIdr && creditCards[0].balance > 0) {
+        setAmountIdr(creditCards[0].balance.toString());
       }
     }
-  }, [creditCardAccountId, accounts]);
+    if (!sourceAccountId && fundingAccounts.length > 0) {
+      setSourceAccountId(fundingAccounts[0].id);
+    }
+  }, [isPayBillOpen, creditCards, fundingAccounts, creditCardAccountId, sourceAccountId, amountIdr]);
+
+  const handleCardSelectChange = (newCardId: string) => {
+    setCreditCardAccountId(newCardId);
+    const card = accounts.find((a) => a.id === newCardId);
+    if (card && card.balance > 0) {
+      setAmountIdr(card.balance.toString());
+    }
+  };
 
   const resetForm = () => {
     setIsSubmitting(false);
@@ -180,7 +182,11 @@ export const PayBillModal: React.FC = () => {
   const selectedSource = accounts.find((a) => a.id === sourceAccountId);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+    >
       <div
         onClick={handleClose}
         className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
@@ -239,7 +245,7 @@ export const PayBillModal: React.FC = () => {
             </label>
             <select
               value={creditCardAccountId}
-              onChange={(e) => setCreditCardAccountId(e.target.value)}
+              onChange={(e) => handleCardSelectChange(e.target.value)}
               className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-300 dark:border-[#1d2332] focus:border-amber-500 rounded px-3 py-2 text-xs text-slate-900 dark:text-zinc-100 focus:outline-none font-mono"
               required
             >

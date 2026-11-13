@@ -424,6 +424,7 @@ const APPS_SCRIPT_QUEUE_KEY = 'wealthtrack_apps_script_queue_v1';
 
 export class AppsScriptService {
   private isFlushing = false;
+  private flushPromise: Promise<void> | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -528,52 +529,59 @@ export class AppsScriptService {
   }
 
   public async flushQueue(): Promise<void> {
-    if (this.isFlushing) return;
+    if (this.flushPromise) {
+      return this.flushPromise;
+    }
     if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
     const queue = this.getQueue();
     if (queue.length === 0) return;
 
     this.isFlushing = true;
-    try {
-      while (true) {
-        const currentQueue = this.getQueue();
-        if (currentQueue.length === 0) break;
-        if (typeof navigator !== 'undefined' && !navigator.onLine) break;
+    this.flushPromise = (async () => {
+      try {
+        while (true) {
+          const currentQueue = this.getQueue();
+          if (currentQueue.length === 0) break;
+          if (typeof navigator !== 'undefined' && !navigator.onLine) break;
 
-        const item = currentQueue[0];
-        try {
-          if (item.action === 'CREATE' && item.values) {
-            await this.createRecord(item.scriptUrl, item.tabName, item.values);
-          } else if (item.action === 'UPDATE' && item.values) {
-            await this.updateRecord(item.scriptUrl, item.tabName, item.recordId, item.values);
-          } else if (item.action === 'DELETE') {
-            await this.deleteRecord(item.scriptUrl, item.tabName, item.recordId);
-          }
-          // Remove processed head item
-          const updated = this.getQueue().filter((q) => q.id !== item.id);
-          this.saveQueue(updated);
-        } catch (err) {
-          const nextAttempts = (item.attempts || 0) + 1;
-          const updated = this.getQueue();
-          const idx = updated.findIndex((q) => q.id === item.id);
-          if (idx >= 0) {
-            if (nextAttempts >= 3) {
-              // Drop after 3 failed attempts to avoid blocking queue forever
-              updated.splice(idx, 1);
-            } else {
-              updated[idx].attempts = nextAttempts;
+          const item = currentQueue[0];
+          try {
+            if (item.action === 'CREATE' && item.values) {
+              await this.createRecord(item.scriptUrl, item.tabName, item.values);
+            } else if (item.action === 'UPDATE' && item.values) {
+              await this.updateRecord(item.scriptUrl, item.tabName, item.recordId, item.values);
+            } else if (item.action === 'DELETE') {
+              await this.deleteRecord(item.scriptUrl, item.tabName, item.recordId);
             }
+            // Remove processed head item
+            const updated = this.getQueue().filter((q) => q.id !== item.id);
             this.saveQueue(updated);
+          } catch (err) {
+            const nextAttempts = (item.attempts || 0) + 1;
+            const updated = this.getQueue();
+            const idx = updated.findIndex((q) => q.id === item.id);
+            if (idx >= 0) {
+              if (nextAttempts >= 3) {
+                // Drop after 3 failed attempts to avoid blocking queue forever
+                updated.splice(idx, 1);
+              } else {
+                updated[idx].attempts = nextAttempts;
+              }
+              this.saveQueue(updated);
+            }
+            // Exponential backoff pause before next retry
+            await new Promise((r) => setTimeout(r, Math.min(4000, 600 * Math.pow(2, nextAttempts))));
+            break;
           }
-          // Exponential backoff pause before next retry
-          await new Promise((r) => setTimeout(r, Math.min(4000, 600 * Math.pow(2, nextAttempts))));
-          break;
         }
+      } finally {
+        this.isFlushing = false;
+        this.flushPromise = null;
       }
-    } finally {
-      this.isFlushing = false;
-    }
+    })();
+
+    return this.flushPromise;
   }
 
   private async sendRequest(scriptUrl: string, payload: any): Promise<any> {
@@ -612,13 +620,35 @@ export class AppsScriptService {
     investments: Investment[];
     budgets: CategoryBudget[];
   }> {
+    // Ensure any pending or in-flight local mutations are flushed before reading remote sheet state
+    await this.flushQueue();
+
     const res = await this.sendRequest(scriptUrl, { action: 'readAll' });
     const data = res.data || {};
 
-    const expensesRows: any[] = data.expenses || [];
-    const accountsRows: any[] = data.accounts || [];
-    const investmentsRows: any[] = data.investments || [];
-    const budgetsRows: any[] = data.budgets || [];
+    const applyPendingRows = (rows: any[], tabName: string): any[] => {
+      const pending = this.getQueue().filter((q) => q.scriptUrl === scriptUrl && q.tabName === tabName);
+      if (pending.length === 0) return rows;
+      const result = [...rows];
+      for (const item of pending) {
+        const idx = result.findIndex((r) => r && String(r[0]) === String(item.recordId));
+        if (item.action === 'DELETE') {
+          if (idx >= 0) result.splice(idx, 1);
+        } else if ((item.action === 'CREATE' || item.action === 'UPDATE') && item.values) {
+          if (idx >= 0) {
+            result[idx] = item.values;
+          } else {
+            result.push(item.values);
+          }
+        }
+      }
+      return result;
+    };
+
+    const expensesRows: any[] = applyPendingRows(data.expenses || [], 'Expenses');
+    const accountsRows: any[] = applyPendingRows(data.accounts || [], 'Accounts');
+    const investmentsRows: any[] = applyPendingRows(data.investments || [], 'Investments');
+    const budgetsRows: any[] = applyPendingRows(data.budgets || [], 'Budgets');
 
     // Map Expenses / Transactions
     const transactions: Transaction[] = expensesRows

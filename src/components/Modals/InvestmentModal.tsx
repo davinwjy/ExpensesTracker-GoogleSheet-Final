@@ -40,14 +40,18 @@ export const InvestmentModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const categoriesList = holdingTypes && holdingTypes.length > 0
-    ? holdingTypes.map((h) => ({
-        id: h.id,
-        label: h.label,
-        defaultCurrency: h.defaultCurrency,
-        example: h.example || `e.g. ${h.label}`,
-      }))
-    : DEFAULT_INVESTMENT_CATEGORIES;
+  const categoriesList = React.useMemo(
+    () =>
+      holdingTypes && holdingTypes.length > 0
+        ? holdingTypes.map((h) => ({
+            id: h.id,
+            label: h.label,
+            defaultCurrency: h.defaultCurrency,
+            example: h.example || `e.g. ${h.label}`,
+          }))
+        : DEFAULT_INVESTMENT_CATEGORIES,
+    [holdingTypes]
+  );
 
   const selectedCategoryMeta = categoriesList.find((c) => c.id === category) || {
     id: category,
@@ -66,12 +70,13 @@ export const InvestmentModal: React.FC = () => {
   useEffect(() => {
     if (isAddInvestmentOpen) {
       const isFreshOpen = !wasOpenRef.current;
-      const isEditingInvestmentChanged = editingInvestment?.id !== lastEditingInvestmentIdRef.current;
+      const currentEditingId = editingInvestment ? editingInvestment.id : null;
+      const isEditingInvestmentChanged = currentEditingId !== lastEditingInvestmentIdRef.current;
 
       if (isFreshOpen || isEditingInvestmentChanged) {
         setIsSubmitting(false);
         wasOpenRef.current = true;
-        lastEditingInvestmentIdRef.current = editingInvestment?.id || null;
+        lastEditingInvestmentIdRef.current = currentEditingId;
 
         if (editingInvestment) {
           setCategory(editingInvestment.category);
@@ -225,7 +230,11 @@ export const InvestmentModal: React.FC = () => {
   if (!isAddInvestmentOpen || !editingInvestment) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+    >
       {/* Backdrop */}
       <div
         onClick={handleClose}

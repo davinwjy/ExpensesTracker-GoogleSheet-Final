@@ -66,44 +66,54 @@ export class SheetsSyncQueueManager {
     this.saveQueue();
   }
 
+  private processingPromise: Promise<{ success: boolean; syncedCount: number; errors: any[] }> | null = null;
+
   async processQueue(spreadsheetId: string, accessToken: string): Promise<{ success: boolean; syncedCount: number; errors: any[] }> {
-    if (this.isProcessing || this.queue.length === 0 || !spreadsheetId || !accessToken) {
+    if (this.processingPromise) {
+      return this.processingPromise;
+    }
+    if (this.queue.length === 0 || !spreadsheetId || !accessToken) {
       return { success: true, syncedCount: 0, errors: [] };
     }
 
     this.isProcessing = true;
-    const errors: any[] = [];
-    let syncedCount = 0;
+    this.processingPromise = (async () => {
+      const errors: any[] = [];
+      let syncedCount = 0;
 
-    const currentItems = [...this.queue];
+      const currentItems = [...this.queue];
 
-    for (const item of currentItems) {
-      try {
-        if (item.action === 'CREATE') {
-          if (item.rowValues) {
-            // Use updateRowById (upsert) to protect against duplicate row appends if recordId already exists
-            await googleSheetsService.updateRowById(spreadsheetId, accessToken, item.tabName, item.recordId, item.rowValues);
+      for (const item of currentItems) {
+        try {
+          if (item.action === 'CREATE') {
+            if (item.rowValues) {
+              // Use updateRowById (upsert) to protect against duplicate row appends if recordId already exists
+              await googleSheetsService.updateRowById(spreadsheetId, accessToken, item.tabName, item.recordId, item.rowValues);
+            }
+          } else if (item.action === 'UPDATE') {
+            if (item.rowValues) {
+              await googleSheetsService.updateRowById(spreadsheetId, accessToken, item.tabName, item.recordId, item.rowValues);
+            }
+          } else if (item.action === 'DELETE') {
+            await googleSheetsService.deleteRowById(spreadsheetId, accessToken, item.tabName, item.recordId);
           }
-        } else if (item.action === 'UPDATE') {
-          if (item.rowValues) {
-            await googleSheetsService.updateRowById(spreadsheetId, accessToken, item.tabName, item.recordId, item.rowValues);
-          }
-        } else if (item.action === 'DELETE') {
-          await googleSheetsService.deleteRowById(spreadsheetId, accessToken, item.tabName, item.recordId);
+
+          // Successfully executed, remove from queue
+          this.queue = this.queue.filter((q) => q.id !== item.id);
+          this.saveQueue();
+          syncedCount++;
+        } catch (err: any) {
+          console.warn(`Queue sync failed for item ${item.id}:`, err);
+          errors.push({ item, error: err?.message || 'Sync error' });
         }
-
-        // Successfully executed, remove from queue
-        this.queue = this.queue.filter((q) => q.id !== item.id);
-        this.saveQueue();
-        syncedCount++;
-      } catch (err: any) {
-        console.warn(`Queue sync failed for item ${item.id}:`, err);
-        errors.push({ item, error: err?.message || 'Sync error' });
       }
-    }
 
-    this.isProcessing = false;
-    return { success: errors.length === 0, syncedCount, errors };
+      this.isProcessing = false;
+      this.processingPromise = null;
+      return { success: errors.length === 0, syncedCount, errors };
+    })();
+
+    return this.processingPromise;
   }
 
   clearQueue() {

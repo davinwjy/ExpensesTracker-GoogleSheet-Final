@@ -61,12 +61,13 @@ export const AddExpenseModal: React.FC = () => {
   useEffect(() => {
     if (isAddExpenseOpen) {
       const isFreshOpen = !wasOpenRef.current;
-      const isEditingTxChanged = editingTransaction?.id !== lastEditingTxIdRef.current;
+      const currentEditingId = editingTransaction ? editingTransaction.id : null;
+      const isEditingTxChanged = currentEditingId !== lastEditingTxIdRef.current;
 
       if (isFreshOpen || isEditingTxChanged) {
         setIsSubmitting(false);
         wasOpenRef.current = true;
-        lastEditingTxIdRef.current = editingTransaction?.id || null;
+        lastEditingTxIdRef.current = currentEditingId;
 
         if (editingTransaction) {
           const txType = editingTransaction.type === 'income' ? 'income' : 'expense';
@@ -94,21 +95,19 @@ export const AddExpenseModal: React.FC = () => {
           setNotes('');
         }
         setError('');
-      } else {
-        // Modal is already open and user may be typing: preserve amount, notes, date, category!
-        // Only if accountId was previously blank because accounts were still syncing, bind first valid account:
-        if (!accountId) {
-          const validAccs = getSelectableAccountsForType(type);
-          if (validAccs.length > 0) {
-            setAccountId(validAccs[0].id);
-          }
-        }
       }
     } else {
       wasOpenRef.current = false;
       lastEditingTxIdRef.current = undefined;
     }
-  }, [isAddExpenseOpen, editingTransaction, accounts, transactionInitialType, getSelectableAccountsForType, accountId, type]);
+  }, [isAddExpenseOpen, editingTransaction, transactionInitialType, getSelectableAccountsForType]);
+
+  // If modal opened while accounts were still empty and sync finishes, bind default account without resetting user inputs
+  useEffect(() => {
+    if (isAddExpenseOpen && !accountId && selectableAccounts.length > 0) {
+      setAccountId(selectableAccounts[0].id);
+    }
+  }, [isAddExpenseOpen, accountId, selectableAccounts]);
 
   const resetForm = () => {
     setIsSubmitting(false);
@@ -352,7 +351,11 @@ export const AddExpenseModal: React.FC = () => {
     : [category, ...activeCategories];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+    >
       {/* Backdrop */}
       <div
         onClick={handleClose}

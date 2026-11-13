@@ -18,7 +18,36 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
     isSheetsSyncing,
     refreshData,
     showNotification,
+    isAddExpenseOpen,
+    isTransferOpen,
+    isAddAccountOpen,
+    isAddInvestmentOpen,
+    isBudgetModalOpen,
+    isPayBillOpen,
+    isHoldingTypesModalOpen,
+    isCategoryModalOpen,
+    isGoogleSheetSetupOpen,
+    isFirebaseSetupOpen,
+    isMobileAppModalOpen,
+    isMobileMenuOpen,
+    isMobileQuickMenuOpen,
   } = useFinance();
+
+  const isAnyModalOpen = Boolean(
+    isAddExpenseOpen ||
+      isTransferOpen ||
+      isAddAccountOpen ||
+      isAddInvestmentOpen ||
+      isBudgetModalOpen ||
+      isPayBillOpen ||
+      isHoldingTypesModalOpen ||
+      isCategoryModalOpen ||
+      isGoogleSheetSetupOpen ||
+      isFirebaseSetupOpen ||
+      isMobileAppModalOpen ||
+      isMobileMenuOpen ||
+      isMobileQuickMenuOpen
+  );
 
   const [pullDistance, setPullDistance] = useState<number>(0);
   const [isPulling, setIsPulling] = useState<boolean>(false);
@@ -148,8 +177,8 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
   // Touch event listeners
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
-      // Don't intercept if already refreshing
-      if (isRefreshing) return;
+      // Don't intercept if already refreshing or if any modal/drawer is open
+      if (isRefreshing || isAnyModalOpen || document.querySelector('[role="dialog"]')) return;
 
       // Only activate when at the very top of the page
       const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
@@ -254,7 +283,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
 
     // Mouse drag support for desktop/testing
     const handleMouseDown = (e: MouseEvent) => {
-      if (isRefreshing || e.button !== 0) return;
+      if (isRefreshing || isAnyModalOpen || e.button !== 0 || document.querySelector('[role="dialog"]')) return;
       const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
       if (scrollTop > 5) return;
 
@@ -343,7 +372,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isRefreshing, pullDistance, performSync]);
+  }, [isRefreshing, isAnyModalOpen, pullDistance, performSync]);
 
   const rotationDeg = Math.min(180, (pullDistance / THRESHOLD) * 180);
   const showPill = pullDistance > 10 || isRefreshing;

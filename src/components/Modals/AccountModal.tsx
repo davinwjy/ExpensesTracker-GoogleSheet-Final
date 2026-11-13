@@ -52,12 +52,13 @@ export const AccountModal: React.FC = () => {
   useEffect(() => {
     if (isAddAccountOpen) {
       const isFreshOpen = !wasOpenRef.current;
-      const isEditingAccountChanged = editingAccount?.id !== lastEditingAccountIdRef.current;
+      const currentEditingId = editingAccount ? editingAccount.id : null;
+      const isEditingAccountChanged = currentEditingId !== lastEditingAccountIdRef.current;
 
       if (isFreshOpen || isEditingAccountChanged) {
         setIsSubmitting(false);
         wasOpenRef.current = true;
-        lastEditingAccountIdRef.current = editingAccount?.id || null;
+        lastEditingAccountIdRef.current = currentEditingId;
 
         if (editingAccount) {
           setName(editingAccount.name);
@@ -198,7 +199,11 @@ export const AccountModal: React.FC = () => {
   if (!isAddAccountOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+    >
       <div
         onClick={handleClose}
         className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"

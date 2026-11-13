@@ -55,14 +55,15 @@ export const BudgetModal: React.FC = () => {
   useEffect(() => {
     if (isBudgetModalOpen) {
       const isFreshOpen = !wasOpenRef.current;
-      const isEditingBudgetChanged = editingBudget?.id !== lastEditingBudgetIdRef.current;
+      const currentEditingId = editingBudget ? editingBudget.id : null;
+      const isEditingBudgetChanged = currentEditingId !== lastEditingBudgetIdRef.current;
 
       if (isFreshOpen || isEditingBudgetChanged) {
         setError('');
         setIsSubmitting(false);
         setConfirmDelete(false);
         wasOpenRef.current = true;
-        lastEditingBudgetIdRef.current = editingBudget?.id || null;
+        lastEditingBudgetIdRef.current = currentEditingId;
 
         if (editingBudget) {
           if (availableCategories.includes(editingBudget.category)) {
@@ -171,7 +172,11 @@ export const BudgetModal: React.FC = () => {
   const currentLimitNumber = parseFloat(limit.replace(/[^0-9.]/g, '')) || 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div className="bg-white dark:bg-[#0c0f17] border border-slate-200 dark:border-[#1d2436] rounded-xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-slate-900 dark:text-zinc-100 font-mono">
         {/* Modal Header */}
         <div className="p-4 border-b border-slate-200 dark:border-[#1b2234] flex items-center justify-between bg-slate-50 dark:bg-[#0f131e]">

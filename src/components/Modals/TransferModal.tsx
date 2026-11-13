@@ -78,32 +78,35 @@ export const TransferModal: React.FC = () => {
   useEffect(() => {
     if (isTransferOpen) {
       const isFreshOpen = !wasOpenRef.current;
-      const isModeChanged = transferInitialMode !== lastInitialModeRef.current;
+      const currentMode = transferInitialMode || 'bank_to_investment';
+      const isModeChanged = currentMode !== lastInitialModeRef.current;
 
       if (isFreshOpen || isModeChanged) {
         setIsSubmitting(false);
         wasOpenRef.current = true;
-        lastInitialModeRef.current = transferInitialMode;
-        setMode(transferInitialMode || 'bank_to_investment');
+        lastInitialModeRef.current = currentMode;
+        setMode(currentMode);
         resetFields();
-      } else {
-        // Modal is already open: protect typed amount, notes, date, conversion!
-        // Only bind account/investment defaults if they were previously empty:
-        if (!fromAccountId && accounts.length > 0) {
-          setFromAccountId(accounts[0].id);
-        }
-        if (!toAccountId && accounts.length > 1) {
-          setToAccountId(accounts[1].id);
-        }
-        if (!toInvestmentId && investments.length > 0) {
-          setToInvestmentId(investments[0].id);
-        }
       }
     } else {
       wasOpenRef.current = false;
       lastInitialModeRef.current = undefined;
     }
-  }, [isTransferOpen, transferInitialMode, accounts, investments, fromAccountId, toAccountId, toInvestmentId]);
+  }, [isTransferOpen, transferInitialMode]);
+
+  // Bind default accounts/investments if modal opened while data was still syncing, without resetting typed inputs
+  useEffect(() => {
+    if (!isTransferOpen) return;
+    if (!fromAccountId && accounts.length > 0) {
+      setFromAccountId(accounts[0].id);
+    }
+    if (!toAccountId && accounts.length > 1) {
+      setToAccountId(accounts[1].id);
+    }
+    if (!toInvestmentId && investments.length > 0) {
+      setToInvestmentId(investments[0].id);
+    }
+  }, [isTransferOpen, accounts, investments, fromAccountId, toAccountId, toInvestmentId]);
 
   const resetFields = () => {
     setIsSubmitting(false);
@@ -318,7 +321,11 @@ export const TransferModal: React.FC = () => {
   if (!isTransferOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="no-pull-to-refresh fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-hidden"
+    >
       {/* Backdrop */}
       <div
         onClick={handleClose}
