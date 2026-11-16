@@ -6,12 +6,12 @@ def create_png(width, height, is_maskable=False):
     # Prepare RGBA raw data
     raw_data = bytearray()
     
-    # Colors
-    bg_r, bg_g, bg_b = 9, 13, 22          # #090d16
-    emerald_r, emerald_g, emerald_b = 16, 185, 129 # #10b981
-    teal_r, teal_g, teal_b = 20, 184, 166      # #14b8a6
-    dark_r, dark_g, dark_b = 2, 6, 23         # #020617
-    white_r, white_g, white_b = 255, 255, 255
+    # Colors (Midnight Navy & Sapphire Blue)
+    bg_r, bg_g, bg_b = 5, 12, 23             # #050c17
+    sapphire_r, sapphire_g, sapphire_b = 29, 100, 232 # #1d64e8
+    royal_r, royal_g, royal_b = 21, 76, 194  # #154cc2
+    dark_r, dark_g, dark_b = 5, 12, 23       # #050c17
+    sky_r, sky_g, sky_b = 59, 147, 255       # #3b93ff
 
     cx, cy = width / 2.0, height / 2.0
     scale = (width / 512.0) * (0.8 if is_maskable else 1.0)
@@ -42,20 +42,20 @@ def create_png(width, height, is_maskable=False):
             dist_lock = math.hypot(dx - 70, dy - 20)
             
             if dist_box <= 0:
-                # Gradient emerald
+                # Gradient sapphire to royal blue
                 t = (dy + 100) / 200.0
                 t = max(0.0, min(1.0, t))
-                r = int(emerald_r * (1 - t) + teal_r * t)
-                g = int(emerald_g * (1 - t) + teal_g * t)
-                b = int(emerald_b * (1 - t) + teal_b * t)
+                r = int(sapphire_r * (1 - t) + royal_r * t)
+                g = int(sapphire_g * (1 - t) + royal_g * t)
+                b = int(sapphire_b * (1 - t) + royal_b * t)
             elif dist_flap <= 0:
-                r, g, b = 52, 211, 153 # #34d399
+                r, g, b = sky_r, sky_g, sky_b
             
             # Draw Lock Plate
             if abs(dx - 70) <= 40 and abs(dy - 20) <= 24:
                 r, g, b = dark_r, dark_g, dark_b
             if dist_lock <= 10:
-                r, g, b = emerald_r, emerald_g, emerald_b
+                r, g, b = sky_r, sky_g, sky_b
             
             raw_data.extend([r, g, b, a])
 

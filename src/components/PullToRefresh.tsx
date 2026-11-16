@@ -387,21 +387,21 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
             : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full shadow-xl backdrop-blur-md border text-xs font-medium tracking-tight bg-white/95 dark:bg-[#0d1017]/95 text-slate-800 dark:text-zinc-100 border-emerald-500/30 shadow-emerald-500/10">
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full shadow-xl backdrop-blur-md border text-xs font-medium tracking-tight bg-white/95 dark:bg-[#091528]/95 text-slate-800 dark:text-zinc-100 border-indigo-500/30 shadow-indigo-500/10">
           {syncStatus === 'refreshing' || isAppsScriptSyncing || isSheetsSyncing ? (
-            <RefreshCw className="w-4 h-4 text-emerald-500 animate-spin flex-shrink-0" />
+            <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin flex-shrink-0" />
           ) : syncStatus === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-indigo-500 flex-shrink-0" />
           ) : syncStatus === 'error' ? (
             <AlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0" />
           ) : syncStatus === 'threshold' ? (
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400 animate-pulse flex-shrink-0" />
+            <FileSpreadsheet className="w-4 h-4 text-indigo-400 animate-pulse flex-shrink-0" />
           ) : (
             <div
               className="transition-transform duration-100 flex-shrink-0"
               style={{ transform: `rotate(${rotationDeg}deg)` }}
             >
-              <ArrowDown className="w-4 h-4 text-emerald-500" />
+              <ArrowDown className="w-4 h-4 text-indigo-500" />
             </div>
           )}
 

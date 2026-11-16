@@ -3,7 +3,7 @@ import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
-const UI_CACHE_VERSION = 'wealthtrack_ui_design_v2026_11_13_v2';
+const UI_CACHE_VERSION = 'wealthtrack_ui_navy_v2026_11_16_v7';
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   if (import.meta.env.DEV) {
@@ -28,20 +28,36 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       caches.keys().then((keys) => {
         Promise.all(keys.map((k) => caches.delete(k))).then(() => {
           navigator.serviceWorker.getRegistrations().then((regs) => {
-            regs.forEach((r) => r.update().catch(() => {}));
+            Promise.all(regs.map((r) => r.update().catch(() => {}))).then(() => {
+              if (!sessionStorage.getItem('wt_sw_updated')) {
+                sessionStorage.setItem('wt_sw_updated', '1');
+                window.location.reload();
+              }
+            });
           });
         });
       });
     }
 
-    registerSW({
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
+    const updateSW = registerSW({
       immediate: true,
+      onNeedRefresh() {
+        updateSW(true);
+      },
       onRegisteredSW(_swScriptUrl, registration) {
         if (registration) {
           registration.update().catch(() => {});
           setInterval(() => {
             registration.update().catch(() => {});
-          }, 15 * 60 * 1000);
+          }, 5 * 60 * 1000);
         }
       },
       onRegisterError(error) {
