@@ -123,14 +123,14 @@ export const CategoryModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Handle */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
           <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
         {/* Clean Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#1b2540] shrink-0">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
               Manage Categories
@@ -143,7 +143,7 @@ export const CategoryModal: React.FC = () => {
             type="button"
             onClick={handleClose}
             aria-label="Close modal"
-            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#141d33] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -168,9 +168,9 @@ export const CategoryModal: React.FC = () => {
           {/* Add New Category Card */}
           <form
             onSubmit={handleSubmit}
-            className="p-4 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-3.5"
+            className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-3.5"
           >
-            <div className="grid grid-cols-2 p-1 bg-slate-200/70 dark:bg-[#0b0f17] rounded-xl border border-slate-200/80 dark:border-[#222d42]">
+            <div className="grid grid-cols-2 p-1 bg-slate-200/70 dark:bg-[#080d1a] rounded-xl border border-slate-200/80 dark:border-[#1e2946]">
               <button
                 type="button"
                 onClick={() => {
@@ -180,7 +180,7 @@ export const CategoryModal: React.FC = () => {
                 }}
                 className={`py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeType === 'expense'
-                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs'
+                    ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -195,7 +195,7 @@ export const CategoryModal: React.FC = () => {
                 }}
                 className={`py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeType === 'income'
-                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs'
+                    ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -217,7 +217,7 @@ export const CategoryModal: React.FC = () => {
                     ? 'e.g. Subscriptions, Coffee, Pet Care...'
                     : 'e.g. Royalties, Consulting, Dividends...'
                 }
-                className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
+                className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
                 required
                 autoFocus
               />
@@ -236,7 +236,7 @@ export const CategoryModal: React.FC = () => {
                     onClick={() => setColor(c)}
                     className={`w-6 h-6 rounded-lg border transition-transform cursor-pointer ${
                       color === c
-                        ? 'scale-110 border-slate-900 dark:border-white ring-2 ring-emerald-500/40'
+                        ? 'scale-110 border-slate-900 dark:border-white ring-2 ring-indigo-500/40'
                         : 'border-transparent opacity-75 hover:opacity-100'
                     }`}
                     style={{ backgroundColor: c }}
@@ -249,7 +249,7 @@ export const CategoryModal: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || !name.trim()}
-                className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer transition-all disabled:opacity-50"
+                className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer transition-all disabled:opacity-50"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>{isSubmitting ? 'Adding...' : 'Add Category'}</span>
@@ -265,7 +265,7 @@ export const CategoryModal: React.FC = () => {
               </span>
             </div>
 
-            <div className="divide-y divide-slate-200/70 dark:divide-[#192233] rounded-2xl border border-slate-200/80 dark:border-[#1d273a] bg-slate-50/60 dark:bg-[#101622] overflow-hidden max-h-60 overflow-y-auto">
+            <div className="divide-y divide-slate-200/70 dark:divide-[#1b2540] rounded-2xl border border-slate-200/80 dark:border-[#1e2946] bg-slate-50/60 dark:bg-[#0f1629] overflow-hidden max-h-60 overflow-y-auto">
               {allDisplayedCategories.map(({ name: catName, type: catType }) => {
                 const isSystem =
                   catType === 'expense'
@@ -274,7 +274,7 @@ export const CategoryModal: React.FC = () => {
                 const customObj = customCategories.find(
                   (c) => c.type === catType && c.name.toLowerCase() === catName.toLowerCase()
                 );
-                const dotColor = customObj?.color || CATEGORY_COLORS[catName] || '#10b981';
+                const dotColor = customObj?.color || CATEGORY_COLORS[catName] || '#154cc2';
                 const txCount = transactions.filter(
                   (t) => t.category === catName && (t.type || 'expense') === catType
                 ).length;
@@ -282,7 +282,7 @@ export const CategoryModal: React.FC = () => {
                 return (
                   <div
                     key={`${catType}-${catName}`}
-                    className="px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-100/80 dark:hover:bg-[#141c2b] transition-colors"
+                    className="px-3.5 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-100/80 dark:hover:bg-[#141d33] transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                       <span
@@ -295,7 +295,7 @@ export const CategoryModal: React.FC = () => {
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium capitalize shrink-0 ${
                           catType === 'expense'
-                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                            ? 'bg-slate-200/70 dark:bg-[#142646] text-slate-700 dark:text-zinc-300'
                             : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                         }`}
                       >
@@ -357,11 +357,11 @@ export const CategoryModal: React.FC = () => {
         </div>
 
         {/* Clean Footer */}
-        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-end">
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#1b2540] flex items-center justify-end">
           <button
             type="button"
             onClick={handleClose}
-            className="h-9 px-4 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 dark:hover:bg-[#151d2c] border border-slate-200/80 dark:border-[#222d42] transition-colors cursor-pointer"
+            className="h-9 px-4 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-200/70 dark:hover:bg-[#141d33] border border-slate-200/80 dark:border-[#1e2946] transition-colors cursor-pointer"
           >
             Done
           </button>

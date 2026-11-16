@@ -639,11 +639,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* SECTION WRAPPER */}
-      <div className="rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] p-3 sm:p-5 space-y-3.5 sm:space-y-4 font-mono shadow-sm">
+      <div className="rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] p-3 sm:p-5 space-y-3.5 sm:space-y-4 font-mono shadow-sm">
         {/* HEADER */}
-        <div className="pb-2.5 sm:pb-3 border-b border-slate-200 dark:border-[#1b212e]">
+        <div className="pb-2.5 sm:pb-3 border-b border-slate-200 dark:border-[#1b2540]">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
               <LineChartIcon className="w-3.5 h-3.5" />
             </div>
             <h3 className="text-xs sm:text-base font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider leading-snug">
@@ -658,7 +658,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
         {/* 4-KPI SUMMARY METRICS CARDS */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 min-w-0">
           {/* Total Income */}
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-1 min-w-0">
             <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
               <span className="font-medium truncate">Income {selectedYear}</span>
               <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
@@ -672,12 +672,12 @@ export const IncomeInvestmentTracker: React.FC = () => {
           </div>
 
           {/* Total Expenses */}
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-1 min-w-0">
             <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
               <span className="font-medium truncate">Expenses {selectedYear}</span>
-              <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
             </div>
-            <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-rose-600 dark:text-rose-400 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-zinc-100 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(ytdStats.totalExpense, 'IDR', isPrivacyMode)}
             </p>
             <p className={`text-[10px] text-slate-400 dark:text-slate-500 tabular-nums truncate ${isPrivacyMode ? 'privacy-blur' : ''}`}>
@@ -686,7 +686,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
           </div>
 
           {/* Total Invested */}
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-1 min-w-0">
             <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
               <span className="font-medium truncate">Invested {selectedYear}</span>
               <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
@@ -700,7 +700,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
           </div>
 
           {/* Total Account Amount / Liquid Cash */}
-          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1 min-w-0">
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-1 min-w-0">
             <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
               <span className="font-medium truncate">Liquid Cash</span>
               <div className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
@@ -716,17 +716,17 @@ export const IncomeInvestmentTracker: React.FC = () => {
         </div>
 
         {/* UNIFIED FILTER & DISPLAY BAR (Mobile-optimized layout) */}
-        <div className="flex flex-col gap-2.5 p-2.5 sm:p-3.5 rounded-xl bg-slate-100 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col gap-2.5 p-2.5 sm:p-3.5 rounded-xl bg-slate-100 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] shadow-sm">
           {/* Top Row: Single Chart Mode Toggle (Monthly vs Yearly) & Year Selector */}
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800/80">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-[#1e2946]">
             <div className="flex items-center gap-1.5">
-              <div className="flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] sm:text-xs font-semibold">
+              <div className="flex p-0.5 bg-white dark:bg-[#0b1020] rounded-xl border border-slate-200 dark:border-[#1e2946] text-[11px] sm:text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setViewMode('month')}
                   className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                     viewMode === 'month'
-                      ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
@@ -757,7 +757,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="appearance-none bg-white dark:bg-slate-900 text-slate-900 dark:text-zinc-200 text-xs font-bold font-mono pl-2.5 pr-6 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm"
+                    className="appearance-none bg-white dark:bg-[#0b1020] text-slate-900 dark:text-zinc-200 text-xs font-bold font-mono pl-2.5 pr-6 py-1.5 rounded-xl border border-slate-200 dark:border-[#1e2946] focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
                   >
                     {availableYears.map((yr) => (
                       <option key={yr} value={yr}>
@@ -778,13 +778,13 @@ export const IncomeInvestmentTracker: React.FC = () => {
           {/* Bottom Row: Metric Filter, Chart Style & Table */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Metric Filter */}
-            <div className="grid grid-cols-5 sm:flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] sm:text-xs font-semibold w-full sm:w-auto">
+            <div className="grid grid-cols-5 sm:flex p-0.5 bg-white dark:bg-[#0b1020] rounded-xl border border-slate-200 dark:border-[#1e2946] text-[11px] sm:text-xs font-semibold w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setViewMetric('all')}
                 className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
                   viewMetric === 'all'
-                    ? 'bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm font-bold'
+                    ? 'bg-indigo-600 text-white shadow-sm font-bold'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
@@ -806,7 +806,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                 onClick={() => setViewMetric('expense')}
                 className={`px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-center truncate ${
                   viewMetric === 'expense'
-                    ? 'bg-rose-500 text-white font-bold shadow-sm'
+                    ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
               >
@@ -838,13 +838,13 @@ export const IncomeInvestmentTracker: React.FC = () => {
 
             {/* Right Group: Chart Style & Table */}
             <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
-              <div className="flex p-0.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+              <div className="flex p-0.5 bg-white dark:bg-[#0b1020] rounded-xl border border-slate-200 dark:border-[#1e2946] text-xs">
                 <button
                   type="button"
                   onClick={() => setChartType('line')}
                   className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                     chartType === 'line'
-                      ? 'bg-slate-900 text-emerald-400 dark:bg-slate-800 shadow-sm font-semibold'
+                      ? 'bg-indigo-600 text-white shadow-sm font-semibold'
                       : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                   }`}
                   title="Line Graph View"
@@ -857,7 +857,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   onClick={() => setChartType('bar')}
                   className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                     chartType === 'bar'
-                      ? 'bg-slate-900 text-indigo-400 dark:bg-slate-800 shadow-sm font-semibold'
+                      ? 'bg-indigo-600 text-white shadow-sm font-semibold'
                       : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                   }`}
                   title="Bar Chart View"
@@ -872,8 +872,8 @@ export const IncomeInvestmentTracker: React.FC = () => {
                 onClick={() => setShowTable(!showTable)}
                 className={`py-1.5 px-2.5 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   showTable
-                    ? 'bg-slate-900 text-white dark:bg-slate-800 border-slate-700'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white dark:bg-[#0b1020] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-[#1e2946] hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <TableIcon className="w-3.5 h-3.5" />
@@ -890,7 +890,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
           <div className="space-y-3 pt-1">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
+                <Calendar className="w-4 h-4 text-indigo-500 shrink-0" />
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                   Monthly Trajectory ({selectedYear})
                 </h4>
@@ -903,8 +903,8 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'expense') && (
-                  <span className="text-rose-500 flex items-center gap-1 font-semibold">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+                  <span className="text-amber-500 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
                     Expenses
                   </span>
                 )}
@@ -947,12 +947,12 @@ export const IncomeInvestmentTracker: React.FC = () => {
                       <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
                     </linearGradient>
                     <linearGradient id="month-expense-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
                     </linearGradient>
                     <linearGradient id="month-invest-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#1d64e8" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#1d64e8" stopOpacity="0.0" />
                     </linearGradient>
                     <linearGradient id="month-account-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.20" />
@@ -1038,7 +1038,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                         <path
                           d={generateLinearPath(monthScale.expenseCoords)}
                           fill="none"
-                          stroke="#f43f5e"
+                          stroke="#f59e0b"
                           strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1048,7 +1048,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                         <path
                           d={generateLinearPath(monthScale.investCoords)}
                           fill="none"
-                          stroke="#6366f1"
+                          stroke="#1d64e8"
                           strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1119,7 +1119,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 cx={expPt.x}
                                 cy={expPt.y}
                                 r={isActive ? activeDotR : idleDotR}
-                                className="fill-rose-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
+                                className="fill-amber-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
                                 strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
@@ -1167,7 +1167,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               fontSize={isMobile ? 9 : 11}
                               className={`font-mono fill-current pointer-events-none ${
                                 isActive
-                                  ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                                   : 'text-slate-400 dark:text-slate-500'
                               }`}
                             >
@@ -1245,7 +1245,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 width={barW}
                                 height={expH}
                                 rx="2"
-                                fill="#f43f5e"
+                                fill="#f59e0b"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
                               />
@@ -1257,7 +1257,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 width={barW}
                                 height={invH}
                                 rx="2"
-                                fill="#6366f1"
+                                fill="#1d64e8"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
                               />
@@ -1281,7 +1281,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                               fontSize={isMobile ? 9 : 11}
                               className={`font-mono fill-current pointer-events-none ${
                                 isActive
-                                  ? 'text-emerald-600 dark:text-emerald-400 font-bold'
+                                  ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                                   : 'text-slate-400 dark:text-slate-500'
                               }`}
                             >
@@ -1300,7 +1300,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
             <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#10141e] text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-[#1d2332] shadow-sm space-y-2 text-xs font-mono">
               <div className="flex items-center justify-between font-bold border-b border-slate-200 dark:border-[#1d2332] pb-1.5 font-sans">
                 <span className="text-xs text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                   <span>{activeMonthPoint.fullMonthName} {selectedYear}</span>
                 </span>
                 <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">
@@ -1318,11 +1318,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[10px] font-sans font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                     Expenses
                   </span>
-                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                  <strong className="text-slate-900 dark:text-zinc-100 font-bold text-xs sm:text-sm tabular-nums break-words">
                     {formatMasked(activeMonthPoint.expense, 'IDR', isPrivacyMode)}
                   </strong>
                 </div>
@@ -1359,7 +1359,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   onClick={() => setActiveMonthIdx(idx)}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer text-center ${
                     safeMonthIdx === idx
-                      ? 'bg-emerald-600 text-white shadow-sm'
+                      ? 'bg-indigo-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
                   }`}
                 >
@@ -1390,8 +1390,8 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   </span>
                 )}
                 {(viewMetric === 'all' || viewMetric === 'expense') && (
-                  <span className="text-rose-500 flex items-center gap-1 font-semibold">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+                  <span className="text-amber-500 flex items-center gap-1 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
                     Expenses
                   </span>
                 )}
@@ -1434,12 +1434,12 @@ export const IncomeInvestmentTracker: React.FC = () => {
                       <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
                     </linearGradient>
                     <linearGradient id="year-expense-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
                     </linearGradient>
                     <linearGradient id="year-invest-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#1d64e8" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#1d64e8" stopOpacity="0.0" />
                     </linearGradient>
                     <linearGradient id="year-account-grad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.20" />
@@ -1525,7 +1525,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                         <path
                           d={generateLinearPath(yearScale.expenseCoords)}
                           fill="none"
-                          stroke="#f43f5e"
+                          stroke="#f59e0b"
                           strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1535,7 +1535,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                         <path
                           d={generateLinearPath(yearScale.investCoords)}
                           fill="none"
-                          stroke="#6366f1"
+                          stroke="#1d64e8"
                           strokeWidth={lineStrokeWidth}
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1606,7 +1606,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 cx={expPt.x}
                                 cy={expPt.y}
                                 r={isActive ? activeDotR : idleDotR}
-                                className="fill-rose-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
+                                className="fill-amber-500 stroke-white dark:stroke-slate-900 transition-all pointer-events-none"
                                 strokeWidth={isMobile ? '1.5' : '2'}
                               />
                             )}
@@ -1732,7 +1732,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 width={barW}
                                 height={expH}
                                 rx="2.5"
-                                fill="#f43f5e"
+                                fill="#f59e0b"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
                               />
@@ -1744,7 +1744,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                                 width={barW}
                                 height={invH}
                                 rx="2.5"
-                                fill="#6366f1"
+                                fill="#1d64e8"
                                 opacity={isActive ? 1 : 0.85}
                                 className="pointer-events-none"
                               />
@@ -1805,11 +1805,11 @@ export const IncomeInvestmentTracker: React.FC = () => {
                   </strong>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 text-[10px] font-sans font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1 text-[10px] font-sans font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                     Expenses
                   </span>
-                  <strong className="text-rose-700 dark:text-rose-300 font-bold text-xs sm:text-sm tabular-nums break-words">
+                  <strong className="text-slate-900 dark:text-zinc-100 font-bold text-xs sm:text-sm tabular-nums break-words">
                     {formatMasked(activeYearPoint.expense, 'IDR', isPrivacyMode)}
                   </strong>
                 </div>
@@ -1894,7 +1894,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             <td className="py-2 px-4 text-right text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
                               {formatMasked(row.income, 'IDR', isPrivacyMode)}
                             </td>
-                            <td className="py-2 px-4 text-right text-rose-600 dark:text-rose-400 font-semibold whitespace-nowrap">
+                            <td className="py-2 px-4 text-right text-slate-800 dark:text-zinc-200 font-semibold whitespace-nowrap">
                               {formatMasked(row.expense, 'IDR', isPrivacyMode)}
                             </td>
                             <td className="py-2 px-4 text-right text-indigo-600 dark:text-indigo-400 font-semibold whitespace-nowrap">
@@ -1937,7 +1937,7 @@ export const IncomeInvestmentTracker: React.FC = () => {
                             <td className="py-2 px-4 text-right text-emerald-600 dark:text-emerald-400 font-semibold whitespace-nowrap">
                               {formatMasked(row.income, 'IDR', isPrivacyMode)}
                             </td>
-                            <td className="py-2 px-4 text-right text-rose-600 dark:text-rose-400 font-semibold whitespace-nowrap">
+                            <td className="py-2 px-4 text-right text-slate-800 dark:text-zinc-200 font-semibold whitespace-nowrap">
                               {formatMasked(row.expense, 'IDR', isPrivacyMode)}
                             </td>
                             <td className="py-2 px-4 text-right text-indigo-600 dark:text-indigo-400 font-semibold whitespace-nowrap">

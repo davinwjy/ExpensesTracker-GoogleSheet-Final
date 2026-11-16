@@ -224,14 +224,14 @@ export const AccountModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Handle */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
           <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
         {/* Clean Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#18223a] shrink-0">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
               {editingAccount ? 'Edit Account' : 'Add Account'}
@@ -249,7 +249,7 @@ export const AccountModal: React.FC = () => {
               onClick={resetFields}
               disabled={isSubmitting}
               title="Reset form"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -258,7 +258,7 @@ export const AccountModal: React.FC = () => {
               onClick={handleClose}
               disabled={isSubmitting}
               aria-label="Close modal"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -279,7 +279,7 @@ export const AccountModal: React.FC = () => {
           )}
 
           {/* Segmented Account Type Selector */}
-          <div className="grid grid-cols-4 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
+          <div className="grid grid-cols-4 p-1 bg-slate-100 dark:bg-[#0f1629] rounded-xl border border-slate-200/70 dark:border-[#1e2946]">
             {(
               [
                 { id: 'bank', label: 'Bank' },
@@ -295,7 +295,7 @@ export const AccountModal: React.FC = () => {
                 onClick={() => handleTypeChange(tab.id)}
                 className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 ${
                   type === tab.id
-                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                    ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a3960]'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -321,14 +321,14 @@ export const AccountModal: React.FC = () => {
                   ? 'e.g. GoPayLater, ShopeePayLater'
                   : 'e.g. BCA Main, Cash Wallet...'
               }
-              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
+              className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
               required
               autoFocus
             />
           </div>
 
           {/* Hero Balance / Debt Card */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2.5">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2.5">
             <div className="flex items-center justify-between text-xs">
               <label className="font-medium text-slate-700 dark:text-zinc-300">
                 {isCreditFacility ? 'Used Credit / Current Bill' : 'Current Balance'}
@@ -356,7 +356,7 @@ export const AccountModal: React.FC = () => {
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="0"
-                className="w-full bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
+                className="w-full bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
                 required
               />
             </div>
@@ -373,7 +373,7 @@ export const AccountModal: React.FC = () => {
 
           {/* Credit Card / PayLater Specific Fields */}
           {isCreditFacility && (
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-3">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
@@ -389,7 +389,7 @@ export const AccountModal: React.FC = () => {
                       value={creditLimit}
                       onChange={(e) => setCreditLimit(e.target.value)}
                       placeholder="20000000"
-                      className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-8 pr-3 text-xs font-bold text-slate-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none"
+                      className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-xs font-bold text-slate-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none"
                       required
                     />
                   </div>
@@ -403,7 +403,7 @@ export const AccountModal: React.FC = () => {
                     <select
                       value={cardNetwork}
                       onChange={(e) => setCardNetwork(e.target.value)}
-                      className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
+                      className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
                     >
                       {CARD_NETWORKS.map((net) => (
                         <option key={net} value={net}>
@@ -427,7 +427,7 @@ export const AccountModal: React.FC = () => {
                       value={last4Digits}
                       onChange={(e) => setLast4Digits(e.target.value)}
                       placeholder="4821"
-                      className="w-full h-9 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
+                      className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
                     />
                   </div>
                 )}
@@ -441,7 +441,7 @@ export const AccountModal: React.FC = () => {
                     max="31"
                     value={billingDate}
                     onChange={(e) => setBillingDate(e.target.value)}
-                    className="w-full h-9 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
+                    className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
@@ -454,7 +454,7 @@ export const AccountModal: React.FC = () => {
                     max="31"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full h-9 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
+                    className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
                   />
                 </div>
               </div>
@@ -473,7 +473,7 @@ export const AccountModal: React.FC = () => {
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 placeholder="e.g. 521098231 or •••• 4821"
-                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono"
+                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono"
               />
             </div>
           )}
@@ -492,7 +492,7 @@ export const AccountModal: React.FC = () => {
                   onClick={() => setColor(c)}
                   className={`w-7 h-7 rounded-lg border transition-transform cursor-pointer ${
                     color === c
-                      ? 'scale-110 border-slate-900 dark:border-white ring-2 ring-emerald-500/40'
+                      ? 'scale-110 border-slate-900 dark:border-white ring-2 ring-indigo-500/40'
                       : 'border-transparent opacity-75 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: c }}
@@ -503,7 +503,7 @@ export const AccountModal: React.FC = () => {
         </form>
 
         {/* Clean Footer */}
-        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-between gap-2">
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
           {editingAccount ? (
             confirmDelete ? (
               <div className="flex items-center gap-1.5">
@@ -542,7 +542,7 @@ export const AccountModal: React.FC = () => {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               Cancel
             </button>
@@ -550,7 +550,7 @@ export const AccountModal: React.FC = () => {
               type="submit"
               form="account-modal-form"
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
             >
               {isSubmitting ? (
                 <>

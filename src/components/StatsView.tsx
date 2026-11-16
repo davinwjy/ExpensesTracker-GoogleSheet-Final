@@ -114,11 +114,11 @@ export const StatsView: React.FC = () => {
       <IncomeInvestmentTracker />
 
       {/* ASSET ALLOCATION MATRIX */}
-      <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] space-y-3.5 shadow-sm min-w-0">
+      <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3.5 shadow-sm min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="min-w-0">
             <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-500 shrink-0" />
+              <Layers className="w-4 h-4 text-indigo-500 shrink-0" />
               <span>Asset Allocation Matrix</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -131,18 +131,18 @@ export const StatsView: React.FC = () => {
         </div>
 
         {/* Multi-segment Progress Bar */}
-        <div className="w-full h-2.5 rounded-sm bg-slate-100 dark:bg-[#121622] overflow-hidden flex border border-slate-200 dark:border-[#1b212e]">
+        <div className="w-full h-2.5 rounded-sm bg-slate-100 dark:bg-[#131d35] overflow-hidden flex border border-slate-200 dark:border-[#1e2946]">
           <div style={{ width: `${cashPercent}%` }} className="bg-sky-500 h-full transition-all" title={`Cash & Banks: ${cashPercent.toFixed(1)}%`} />
           <div style={{ width: `${sahamPercent}%` }} className="bg-blue-600 h-full transition-all" title={`Saham: ${sahamPercent.toFixed(1)}%`} />
           <div style={{ width: `${rdpuPercent}%` }} className="bg-teal-500 h-full transition-all" title={`RDPU: ${rdpuPercent.toFixed(1)}%`} />
           <div style={{ width: `${btcPercent}%` }} className="bg-amber-500 h-full transition-all" title={`Bitcoin: ${btcPercent.toFixed(1)}%`} />
-          <div style={{ width: `${etfPercent}%` }} className="bg-purple-500 h-full transition-all" title={`ETF USA: ${etfPercent.toFixed(1)}%`} />
+          <div style={{ width: `${etfPercent}%` }} className="bg-indigo-500 h-full transition-all" title={`ETF USA: ${etfPercent.toFixed(1)}%`} />
           <div style={{ width: `${usdPercent}%` }} className="bg-emerald-500 h-full transition-all" title={`USD Cash: ${usdPercent.toFixed(1)}%`} />
         </div>
 
         {/* Legend Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1">
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] min-w-0">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] text-sky-600 dark:text-sky-400 font-semibold mb-0.5">
               <div className="w-2 h-2 rounded-none bg-sky-500 shrink-0" />
               <span className="truncate">CASH & BANKS</span>
@@ -155,7 +155,7 @@ export const StatsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] min-w-0">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] text-blue-600 dark:text-blue-400 font-semibold mb-0.5">
               <div className="w-2 h-2 rounded-none bg-blue-600 shrink-0" />
               <span className="truncate">STOCKS (ID)</span>
@@ -168,7 +168,7 @@ export const StatsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] min-w-0">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] text-teal-600 dark:text-teal-400 font-semibold mb-0.5">
               <div className="w-2 h-2 rounded-none bg-teal-500 shrink-0" />
               <span className="truncate">RDPU (FUND)</span>
@@ -181,7 +181,7 @@ export const StatsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] min-w-0">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400 font-semibold mb-0.5">
               <div className="w-2 h-2 rounded-none bg-amber-500 shrink-0" />
               <span className="truncate">BITCOIN</span>
@@ -194,9 +194,9 @@ export const StatsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-purple-600 dark:text-purple-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-purple-500 shrink-0" />
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mb-0.5">
+              <div className="w-2 h-2 rounded-none bg-indigo-500 shrink-0" />
               <span className="truncate">ETF USA</span>
             </div>
             <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
@@ -207,7 +207,7 @@ export const StatsView: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] min-w-0">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
             <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mb-0.5">
               <div className="w-2 h-2 rounded-none bg-emerald-500 shrink-0" />
               <span className="truncate">USD CASH</span>
@@ -225,8 +225,8 @@ export const StatsView: React.FC = () => {
       {/* TWO COLUMNS: MONTHLY EXPENSE CATEGORIES & FUNDING SOURCE BREAKDOWN */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 min-w-0">
         {/* Category Breakdown (Toggleable between Expense & Income) */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] space-y-3 shadow-sm min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-[#1b212e]">
+        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3 shadow-sm min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-[#18223a]">
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">
                 {categoryTab === 'expense' ? 'Expense Distribution' : 'Income Source Breakdown'}
@@ -238,13 +238,13 @@ export const StatsView: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex p-0.5 bg-slate-100 dark:bg-[#080a0f] rounded-lg border border-slate-200 dark:border-[#1d2332] text-xs font-medium">
+              <div className="flex p-0.5 bg-slate-100 dark:bg-[#080d1a] rounded-lg border border-slate-200 dark:border-[#1e2946] text-xs font-medium">
                 <button
                   type="button"
                   onClick={() => setCategoryTab('expense')}
                   className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     categoryTab === 'expense'
-                      ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 font-semibold border border-rose-500/30'
+                      ? 'bg-indigo-600 text-white font-semibold'
                       : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                   }`}
                 >
@@ -265,7 +265,7 @@ export const StatsView: React.FC = () => {
 
               <span
                 className={`text-xs font-bold font-mono tabular-nums ${
-                  categoryTab === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
+                  categoryTab === 'expense' ? 'text-slate-900 dark:text-zinc-100' : 'text-emerald-600 dark:text-emerald-400'
                 }`}
               >
                 {formatIdr(
@@ -284,7 +284,7 @@ export const StatsView: React.FC = () => {
                   .sort((a, b) => b[1] - a[1])
                   .map(([category, amount]) => {
                     const pct = monthlyExpenses > 0 ? (amount / monthlyExpenses) * 100 : 0;
-                    const color = CATEGORY_COLORS[category] || '#f97316';
+                    const color = CATEGORY_COLORS[category] || '#1d64e8';
 
                     return (
                       <div key={category} className="space-y-1">
@@ -345,8 +345,8 @@ export const StatsView: React.FC = () => {
         </div>
 
         {/* Funding Source Breakdown */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] space-y-3 shadow-sm">
-          <div className="pb-2.5 border-b border-slate-100 dark:border-[#1b212e]">
+        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3 shadow-sm">
+          <div className="pb-2.5 border-b border-slate-100 dark:border-[#18223a]">
             <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">
               Spending by Account
             </h3>
@@ -375,7 +375,7 @@ export const StatsView: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#121622] overflow-hidden">
+                      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#131d35] overflow-hidden">
                         <div
                           className="h-full rounded-full bg-indigo-500 transition-all"
                           style={{ width: `${pct}%` }}
@@ -392,11 +392,11 @@ export const StatsView: React.FC = () => {
       {/* SYSTEM & EXCHANGE RATE SETTINGS */}
       <div className="max-w-xl">
         {/* USD / IDR Exchange Rate Setting */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] space-y-3.5 shadow-sm">
+        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3.5 shadow-sm">
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 text-slate-900 dark:text-zinc-100 font-semibold text-sm">
-                <SlidersHorizontal className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <SlidersHorizontal className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 <span>USD / IDR Exchange Rate</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -404,14 +404,14 @@ export const StatsView: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold shrink-0">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
               <span>{rateSource || 'Google Finance'}</span>
             </div>
           </div>
 
           {/* Rate Highlight Card */}
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] space-y-2.5">
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-2.5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">Benchmark Rate</span>
@@ -428,7 +428,7 @@ export const StatsView: React.FC = () => {
                 type="button"
                 onClick={handleFetchNow}
                 disabled={isRateFetching}
-                className="self-start sm:self-center flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#131722] hover:bg-slate-100 dark:hover:bg-[#1a2030] border border-slate-200 dark:border-[#21293a] text-emerald-700 dark:text-emerald-300 font-semibold text-xs transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="self-start sm:self-center flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] border border-slate-200 dark:border-[#243252] text-indigo-700 dark:text-indigo-300 font-semibold text-xs transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRateFetching ? 'animate-spin' : ''}`} />
                 <span>{isRateFetching ? 'Syncing...' : 'Sync Google Rate'}</span>
@@ -436,7 +436,7 @@ export const StatsView: React.FC = () => {
             </div>
 
             {/* Status & Timestamp */}
-            <div className="pt-2 border-t border-slate-200 dark:border-[#1b212e] flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-500 dark:text-zinc-500">
+            <div className="pt-2 border-t border-slate-200 dark:border-[#18223a] flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-500 dark:text-zinc-500">
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-slate-400 dark:text-zinc-500" />
                 <span>Last updated: <strong className="text-slate-700 dark:text-zinc-400 font-mono">{formatLastUpdated(rateLastUpdated)}</strong></span>
@@ -450,7 +450,7 @@ export const StatsView: React.FC = () => {
           </div>
 
           {/* Auto-Update Every 12 Hours Toggle */}
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] flex items-center justify-between gap-3">
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] flex items-center justify-between gap-3">
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-zinc-200">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
@@ -467,7 +467,7 @@ export const StatsView: React.FC = () => {
               role="switch"
               aria-checked={isRateAutoUpdate}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-150 focus:outline-none ${
-                isRateAutoUpdate ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-[#1b212e]'
+                isRateAutoUpdate ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-[#1e2946]'
               }`}
             >
               <span
@@ -490,13 +490,13 @@ export const StatsView: React.FC = () => {
                   type="number"
                   value={rateInput}
                   onChange={(e) => setRateInput(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] rounded-lg pl-24 pr-3 py-2 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-[#1e2946] rounded-lg pl-24 pr-3 py-2 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
               <button
                 type="submit"
-                className="px-3.5 py-2 bg-slate-100 dark:bg-[#131722] hover:bg-slate-200 dark:hover:bg-[#1a2030] text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-[#21293a] text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer transition-all shrink-0 whitespace-nowrap"
+                className="px-3.5 py-2 bg-slate-100 dark:bg-[#131d35] hover:bg-slate-200 dark:hover:bg-[#1a2645] text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer transition-all shrink-0 whitespace-nowrap"
               >
                 {rateSaved ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" /> : null}
                 <span>{rateSaved ? 'Saved' : 'Save Rate'}</span>

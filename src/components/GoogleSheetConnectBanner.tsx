@@ -75,14 +75,14 @@ export const GoogleSheetConnectBanner: React.FC = () => {
   };
 
   return (
-    <div className="relative mb-5 overflow-hidden rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-gradient-to-r from-emerald-50/90 via-white to-emerald-50/30 dark:from-emerald-950/30 dark:via-[#0d1017] dark:to-[#0d1017] p-4 sm:p-5 shadow-xs transition-all duration-300">
+    <div className="relative mb-5 overflow-hidden rounded-xl border border-indigo-300 dark:border-indigo-500/30 bg-gradient-to-r from-indigo-50/90 via-white to-indigo-50/30 dark:from-indigo-950/30 dark:via-[#0b1020] dark:to-[#0b1020] p-4 sm:p-5 shadow-xs transition-all duration-300">
       {/* Background Subtle Glow */}
-      <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-emerald-500/10 blur-2xl" />
+      <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-indigo-500/10 blur-2xl" />
 
       {/* Main Banner Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-inner">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 shadow-inner">
             <FileSpreadsheet className="h-5 w-5" />
           </div>
 
@@ -90,7 +90,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>Google Sheet Belum Terhubung ke Akun Anda</span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-300 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30">
                   Cloud Binding
                 </span>
               </h3>
@@ -105,7 +105,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
         <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 dark:text-slate-300 dark:border-slate-700/60 text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 dark:bg-[#11192e] dark:hover:bg-[#17223d] dark:text-slate-300 dark:border-[#222f4d] text-xs font-semibold transition-colors cursor-pointer shadow-xs"
           >
             <span>{isExpanded ? 'Tutup Panduan' : 'Lihat Langkah Cepat'}</span>
             {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -113,7 +113,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
 
           <button
             onClick={handleOpenSetupModal}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 text-xs font-bold shadow-xs transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
             <span>Hubungkan</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -122,7 +122,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
           <button
             onClick={handleDismiss}
             title="Sembunyikan banner"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#11192e] transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -131,9 +131,9 @@ export const GoogleSheetConnectBanner: React.FC = () => {
 
       {/* Expandable Step-by-Step Walkthrough */}
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800/80 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-[#1b2540] space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-zinc-200 pb-1">
-            <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+            <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
               <Sparkles className="h-3.5 w-3.5" />
               <span>3 Langkah Mudah Menghubungkan Google Sheet:</span>
             </span>
@@ -142,10 +142,10 @@ export const GoogleSheetConnectBanner: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* Step 1 */}
-            <div className="p-3.5 rounded-xl bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 space-y-2 flex flex-col justify-between shadow-xs">
+            <div className="p-3.5 rounded-xl bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-2 flex flex-col justify-between shadow-xs">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-xs font-bold">
                     1
                   </span>
                   <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Salin Script</span>
@@ -157,7 +157,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
 
               <button
                 onClick={handleCopyCode}
-                className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:border-emerald-500/30 dark:text-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 text-indigo-800 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/25 dark:border-indigo-500/30 dark:text-indigo-300 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 {isCopied ? <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                 <span>{isCopied ? 'Kode Script Tersalin!' : 'Salin Kode Apps Script'}</span>
@@ -165,9 +165,9 @@ export const GoogleSheetConnectBanner: React.FC = () => {
             </div>
 
             {/* Step 2 */}
-            <div className="p-3.5 rounded-xl bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 space-y-2 shadow-xs">
+            <div className="p-3.5 rounded-xl bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-2 shadow-xs">
               <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-xs font-bold">
                   2
                 </span>
                 <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Deploy Web App</span>
@@ -176,15 +176,15 @@ export const GoogleSheetConnectBanner: React.FC = () => {
                 <li>Klik <b>Deploy &rarr; New deployment</b></li>
                 <li>Pilih tipe: <b>Web app</b></li>
                 <li>Execute as: <b>Me</b></li>
-                <li>Who has access: <b className="text-emerald-700 dark:text-emerald-400">Anyone</b></li>
+                <li>Who has access: <b className="text-indigo-700 dark:text-indigo-400">Anyone</b></li>
               </ul>
             </div>
 
             {/* Step 3 */}
-            <div className="p-3.5 rounded-xl bg-white dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/90 space-y-2 flex flex-col justify-between shadow-xs">
+            <div className="p-3.5 rounded-xl bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-2 flex flex-col justify-between shadow-xs">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-xs font-bold">
                     3
                   </span>
                   <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Bind ke Akun</span>
@@ -196,7 +196,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
 
               <button
                 onClick={handleOpenSetupModal}
-                className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <span>Masukkan URL &rarr;</span>
               </button>
@@ -204,7 +204,7 @@ export const GoogleSheetConnectBanner: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-600 dark:text-zinc-400">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <ShieldCheck className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
             <span>Koneksi aman langsung antar browser/APK dan Google Sheet pribadi Anda tanpa server pihak ketiga.</span>
           </div>
         </div>

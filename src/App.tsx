@@ -147,12 +147,12 @@ const MainAppContent: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-pulse">
-          <Wallet className="w-6 h-6 text-slate-950 font-bold" />
+      <div className="min-h-screen bg-[#060913] flex flex-col items-center justify-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 animate-pulse">
+          <Wallet className="w-6 h-6 text-white font-bold" />
         </div>
         <div className="flex items-center gap-2 text-slate-400 text-xs">
-          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
           <span>Synchronizing WealthTrack session...</span>
         </div>
       </div>
@@ -164,7 +164,7 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-[#08090c] text-slate-900 dark:text-zinc-100 flex flex-col transition-colors duration-150">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6fb] dark:bg-[#060913] text-slate-900 dark:text-zinc-100 flex flex-col transition-colors duration-150">
       {/* Modern Desktop Left Sidebar & Contextual Header */}
       <div className="flex flex-row min-h-screen w-full min-w-0">
         <Sidebar

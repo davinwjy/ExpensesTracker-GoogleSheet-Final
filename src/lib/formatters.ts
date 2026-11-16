@@ -121,7 +121,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Shopping': '#ec4899', // pink
   'Entertainment': '#a855f7', // purple
   'Health & Fitness': '#06b6d4', // cyan
-  'Education': '#6366f1', // indigo
+  'Education': '#154cc2', // deep navy blue
   'Housing & Rent': '#64748b', // slate
   'Personal Care': '#f43f5e', // rose
   'Family & Kids': '#fb923c', // amber-orange
@@ -137,7 +137,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Selling Items': '#f59e0b', // amber
   'Selling Items / Jual Barang': '#f59e0b',
   'Reimbursement': '#06b6d4', // cyan
-  'Debt Repayment': '#6366f1', // indigo
+  'Debt Repayment': '#154cc2', // deep navy blue
   'Investment Return / Dividends': '#0ea5e9', // sky
   'Investment Return / Dividen': '#0ea5e9',
   'Business Profit': '#3b82f6', // blue

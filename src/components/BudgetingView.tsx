@@ -269,10 +269,10 @@ export const BudgetingView: React.FC = () => {
 
         {/* Month Navigation & Action */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-white dark:bg-[#131722] border border-slate-200 dark:border-[#21293a] rounded-lg p-1 shadow-sm">
+          <div className="flex items-center bg-white dark:bg-[#10172a] border border-slate-200 dark:border-[#1e2946] rounded-lg p-1 shadow-sm">
             <button
               onClick={handlePrevMonth}
-              className="p-1 rounded text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1a2030] transition-colors cursor-pointer"
+              className="p-1 rounded text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#161f38] transition-colors cursor-pointer"
               title="Previous month"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -284,7 +284,7 @@ export const BudgetingView: React.FC = () => {
 
             <button
               onClick={handleNextMonth}
-              className="p-1 rounded text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1a2030] transition-colors cursor-pointer"
+              className="p-1 rounded text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#161f38] transition-colors cursor-pointer"
               title="Next month"
             >
               <ChevronRight className="w-4 h-4" />
@@ -294,7 +294,7 @@ export const BudgetingView: React.FC = () => {
           {!isCurrentMonth && (
             <button
               onClick={handleResetCurrentMonth}
-              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#131722] hover:bg-slate-100 dark:hover:bg-[#1a2030] text-slate-600 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-[#21293a] cursor-pointer transition-colors shadow-sm whitespace-nowrap shrink-0"
+              className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#10172a] hover:bg-slate-100 dark:hover:bg-[#161f38] text-slate-600 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-[#1e2946] cursor-pointer transition-colors shadow-sm whitespace-nowrap shrink-0"
             >
               Current Month
             </button>
@@ -307,16 +307,16 @@ export const BudgetingView: React.FC = () => {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium text-xs border transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-sm disabled:opacity-60 ${
               justSavedToSheet
                 ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/35'
-                : 'bg-white dark:bg-[#131722] hover:bg-slate-50 dark:hover:bg-[#1a2030] text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-[#21293a]'
+                : 'bg-white dark:bg-[#10172a] hover:bg-slate-50 dark:hover:bg-[#161f38] text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-[#1e2946]'
             }`}
             title="Push all current budget targets to your connected Google Sheet"
           >
             {isBudgetSyncing ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-500" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-500" />
             ) : justSavedToSheet ? (
               <Check className="w-3.5 h-3.5 text-emerald-500" />
             ) : (
-              <Save className="w-3.5 h-3.5 text-emerald-500" />
+              <Save className="w-3.5 h-3.5 text-indigo-500" />
             )}
             <span>
               {isBudgetSyncing
@@ -332,7 +332,7 @@ export const BudgetingView: React.FC = () => {
               setEditingBudget(null);
               setIsBudgetModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Set Limit</span>
@@ -341,7 +341,7 @@ export const BudgetingView: React.FC = () => {
       </div>
 
       {/* OVERVIEW CARD (With Mobile Overflow Protection & MoM Comparison) */}
-      <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
+      <div className="bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#0d2247] dark:via-[#0a1936] dark:to-[#081329] border border-indigo-200/90 dark:border-[#1f3f77] rounded-xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
         {/* OVERALL MACRO CONSUMPTION BAR */}
         <div className="space-y-2.5 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
@@ -381,7 +381,7 @@ export const BudgetingView: React.FC = () => {
                     ? 'text-rose-600 dark:text-rose-400'
                     : overallPercent >= 75
                     ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-indigo-600 dark:text-indigo-400'
                 }`}
               >
                 {totalBudgeted > 0 ? `${overallPercent.toFixed(1)}% Used` : '0.0% Used'}
@@ -398,7 +398,7 @@ export const BudgetingView: React.FC = () => {
                   ? 'bg-rose-500'
                   : overallPercent >= 75
                   ? 'bg-amber-400'
-                  : 'bg-emerald-500'
+                  : 'bg-indigo-500'
               }`}
             />
           </div>
@@ -411,7 +411,7 @@ export const BudgetingView: React.FC = () => {
                   ? 'text-amber-600 dark:text-amber-400'
                   : isOverBudget
                   ? 'text-rose-600 dark:text-rose-400'
-                  : 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-indigo-600 dark:text-indigo-400'
               } ${isPrivacyMode ? 'privacy-blur' : ''}`}
             >
               {totalBudgeted === 0
@@ -446,8 +446,8 @@ export const BudgetingView: React.FC = () => {
         </div>
 
         {/* Macro Telemetry Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 dark:border-[#161d2b]">
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230] min-w-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 dark:border-[#18223a]">
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
               Monthly Ceiling
             </span>
@@ -455,15 +455,15 @@ export const BudgetingView: React.FC = () => {
               {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230] min-w-0">
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
               Spent ({monthDisplay.split(' ')[0]})
             </span>
-            <p className={`text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-100 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230] min-w-0">
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
               Last Month ({prevMonthDisplay.split(' ')[0]})
             </span>
@@ -471,7 +471,7 @@ export const BudgetingView: React.FC = () => {
               {formatMasked(totalPrevMonthSpent, 'IDR', isPrivacyMode)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230] min-w-0">
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
               {totalPrevMonthSpent > 0 ? 'vs Last Month' : 'Remaining Buffer'}
             </span>
@@ -503,11 +503,11 @@ export const BudgetingView: React.FC = () => {
 
       {/* SMART MONTHLY BUDGET ASSISTANT (Compare & Auto-Set from Last Month's Expenses) */}
       {prevMonthCategories.length > 0 && (
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] shadow-sm space-y-3.5 min-w-0">
+        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] shadow-sm space-y-3.5 min-w-0">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
                   Smart Monthly Budget from {prevMonthDisplay} Expenses
                 </h3>
@@ -524,7 +524,7 @@ export const BudgetingView: React.FC = () => {
                 type="button"
                 disabled={isApplyingSmart}
                 onClick={() => handleApplySmartPreset(0.9, 'Saver -10%')}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#131722] hover:bg-emerald-50 dark:hover:bg-emerald-500/15 text-slate-700 dark:text-zinc-200 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-[#21293a] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#10172a] hover:bg-emerald-50 dark:hover:bg-emerald-500/15 text-slate-700 dark:text-zinc-200 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-[#1e2946] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
               >
                 Saver Target (-10%)
               </button>
@@ -533,7 +533,7 @@ export const BudgetingView: React.FC = () => {
                 type="button"
                 disabled={isApplyingSmart}
                 onClick={() => handleApplySmartPreset(1.0, 'Match 100%')}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
               >
                 Match Last Month (100%)
               </button>
@@ -542,7 +542,7 @@ export const BudgetingView: React.FC = () => {
                 type="button"
                 disabled={isApplyingSmart}
                 onClick={() => handleApplySmartPreset(1.1, 'Buffered +10%')}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#131722] hover:bg-indigo-50 dark:hover:bg-indigo-500/15 text-slate-700 dark:text-zinc-200 hover:text-indigo-700 dark:hover:text-indigo-300 border border-slate-200 dark:border-[#21293a] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#10172a] hover:bg-indigo-50 dark:hover:bg-indigo-500/15 text-slate-700 dark:text-zinc-200 hover:text-indigo-700 dark:hover:text-indigo-300 border border-slate-200 dark:border-[#1e2946] text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50"
               >
                 Buffered (+10%)
               </button>
@@ -574,7 +574,7 @@ export const BudgetingView: React.FC = () => {
                   return (
                     <div
                       key={row.category}
-                      className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#1b2230] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0"
+                      className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0"
                     >
                       <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-2">
@@ -640,7 +640,7 @@ export const BudgetingView: React.FC = () => {
                           className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1 ${
                             isAlreadyMatched
                               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                              : 'bg-white dark:bg-[#131722] hover:bg-emerald-50 dark:hover:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-[#222e44]'
+                              : 'bg-white dark:bg-[#131d35] hover:bg-indigo-50 dark:hover:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-[#243252]'
                           }`}
                         >
                           {isAlreadyMatched ? (
@@ -663,7 +663,7 @@ export const BudgetingView: React.FC = () => {
       )}
 
       {/* 3. FILTER & SEARCH STRIP */}
-      <div className="p-3 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+      <div className="p-3 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-1.5 flex-wrap">
           {(
             [
@@ -678,8 +678,8 @@ export const BudgetingView: React.FC = () => {
               onClick={() => setFilterStatus(s.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 filterStatus === s.id
-                  ? 'bg-slate-900 text-white dark:bg-emerald-500/15 dark:text-emerald-400 border border-transparent dark:border-emerald-500/30'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#161c29]'
+                  ? 'bg-indigo-600 text-white dark:bg-indigo-500/20 dark:text-indigo-300 border border-transparent dark:border-indigo-500/35'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#131d35]'
               }`}
             >
               {s.label}
@@ -694,7 +694,7 @@ export const BudgetingView: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search categories..."
-            className="w-full bg-slate-50 dark:bg-[#080a0f] border border-slate-200 dark:border-[#1d2332] focus:border-emerald-500 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
+            className="w-full bg-slate-50 dark:bg-[#080d1a] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg pl-8 pr-7 py-1.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none"
           />
           {searchQuery && (
             <button
@@ -709,7 +709,7 @@ export const BudgetingView: React.FC = () => {
 
       {/* 4. CATEGORY BUDGET CARDS GRID */}
       {filteredItems.length === 0 ? (
-        <div className="p-8 sm:p-10 text-center rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] space-y-3 shadow-sm">
+        <div className="p-8 sm:p-10 text-center rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3 shadow-sm">
           <Target className="w-10 h-10 text-slate-400 dark:text-zinc-600 mx-auto" />
           <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
             {items.length === 0
@@ -728,7 +728,7 @@ export const BudgetingView: React.FC = () => {
               {prevMonthCategories.length > 0 && (
                 <button
                   onClick={() => handleApplySmartPreset(1.0, 'Match 100%')}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Auto-Set from {prevMonthDisplay} Expenses</span>
@@ -739,7 +739,7 @@ export const BudgetingView: React.FC = () => {
                   setEditingBudget(null);
                   setIsBudgetModalOpen(true);
                 }}
-                className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-[#131722] hover:bg-slate-200 dark:hover:bg-[#1a2233] text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-[#222e44] font-medium text-xs transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-[#10172a] hover:bg-slate-200 dark:hover:bg-[#16203a] text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] font-medium text-xs transition-colors cursor-pointer"
               >
                 Set Custom Limit
               </button>
@@ -758,12 +758,12 @@ export const BudgetingView: React.FC = () => {
             return (
               <div
                 key={item.category}
-                className={`p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border transition-all space-y-3.5 shadow-sm min-w-0 ${
+                className={`p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border transition-all space-y-3.5 shadow-sm min-w-0 ${
                   item.status === 'danger'
                     ? 'border-rose-300 dark:border-rose-500/40'
                     : item.status === 'warning'
                     ? 'border-amber-300 dark:border-amber-500/40'
-                    : 'border-slate-200 dark:border-[#1b212e] hover:border-slate-300 dark:hover:border-[#273248]'
+                    : 'border-slate-200 dark:border-[#1b2540] hover:border-slate-300 dark:hover:border-[#27365a]'
                 }`}
               >
                 {/* Card Header: Category & Status */}
@@ -778,7 +778,7 @@ export const BudgetingView: React.FC = () => {
                             ? '#f43f5e'
                             : item.status === 'warning'
                             ? '#f59e0b'
-                            : '#10b981'),
+                            : '#1d64e8'),
                       }}
                     />
                     <div className="min-w-0">
@@ -806,7 +806,7 @@ export const BudgetingView: React.FC = () => {
                           ? 'text-rose-600 dark:text-rose-400'
                           : item.status === 'warning'
                           ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-indigo-600 dark:text-indigo-400'
                       }`}
                     >
                       {item.percentUsed.toFixed(0)}% used
@@ -824,7 +824,7 @@ export const BudgetingView: React.FC = () => {
                           ? 'bg-rose-500'
                           : item.status === 'warning'
                           ? 'bg-amber-400'
-                          : 'bg-emerald-500'
+                          : 'bg-indigo-500'
                       }`}
                     />
                   </div>
@@ -849,7 +849,7 @@ export const BudgetingView: React.FC = () => {
                       className={`font-semibold tabular-nums ${
                         item.remaining < 0
                           ? 'text-rose-600 dark:text-rose-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-indigo-600 dark:text-indigo-400'
                       } ${isPrivacyMode ? 'privacy-blur' : ''}`}
                     >
                       {item.remaining < 0
@@ -921,7 +921,7 @@ export const BudgetingView: React.FC = () => {
                         setTransactionInitialType('expense');
                         setIsAddExpenseOpen(true);
                       }}
-                      className="px-2.5 py-1 rounded-md text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-2.5 py-1 rounded-md text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer whitespace-nowrap"
                     >
                       + Expense
                     </button>
@@ -954,7 +954,7 @@ export const BudgetingView: React.FC = () => {
 
                 {/* Expanded Transactions Drilldown */}
                 {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#182030] space-y-2 animate-in fade-in">
+                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#18223a] space-y-2 animate-in fade-in">
                     <div className="text-xs font-medium text-slate-500 dark:text-zinc-400">
                       {item.category} Transactions ({monthDisplay}):
                     </div>
@@ -967,7 +967,7 @@ export const BudgetingView: React.FC = () => {
                         {catTransactions.map((tx) => (
                           <div
                             key={tx.id}
-                            className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/60 dark:border-[#1b2230] text-xs"
+                            className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/60 dark:border-[#1e2946] text-xs"
                           >
                             <div className="flex items-center gap-2 truncate min-w-0">
                               <span className="text-[11px] text-slate-400 dark:text-zinc-500 shrink-0 tabular-nums">
@@ -977,7 +977,7 @@ export const BudgetingView: React.FC = () => {
                                 {tx.notes || tx.category}
                               </span>
                             </div>
-                            <span className="font-semibold text-rose-600 dark:text-rose-400 shrink-0 ml-2 tabular-nums">
+                            <span className="font-semibold text-slate-900 dark:text-zinc-200 shrink-0 ml-2 tabular-nums">
                               -{formatIdr(tx.amount)}
                             </span>
                           </div>
@@ -994,7 +994,7 @@ export const BudgetingView: React.FC = () => {
 
       {/* 5. UNBUDGETED SPENDING CATEGORIES SECTION */}
       {unbudgetedItems.length > 0 && (
-        <div className="mt-6 p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] space-y-3.5 shadow-sm min-w-0">
+        <div className="mt-6 p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3.5 shadow-sm min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -1013,7 +1013,7 @@ export const BudgetingView: React.FC = () => {
             {unbudgetedItems.map((unb) => (
               <div
                 key={unb.category}
-                className="p-3 rounded-lg bg-slate-50 dark:bg-[#090c12] border border-slate-200/70 dark:border-[#192233] flex items-center justify-between gap-2 min-w-0"
+                className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] flex items-center justify-between gap-2 min-w-0"
               >
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-slate-900 dark:text-zinc-200 truncate">
@@ -1021,7 +1021,7 @@ export const BudgetingView: React.FC = () => {
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-zinc-400 tabular-nums">
                     Now:{' '}
-                    <span className="text-rose-600 dark:text-rose-400 font-semibold">
+                    <span className="text-slate-900 dark:text-zinc-200 font-semibold">
                       {formatIdr(unb.actualSpent)}
                     </span>{' '}
                     ({unb.transactionCount} tx)
@@ -1036,7 +1036,7 @@ export const BudgetingView: React.FC = () => {
                   onClick={() =>
                     handleQuickAddUnbudgeted(unb.category, unb.suggestedSmartLimit)
                   }
-                  className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#131722] hover:bg-emerald-50 dark:hover:bg-emerald-500/15 border border-slate-200 dark:border-[#222e44] text-xs font-medium text-emerald-600 dark:text-emerald-400 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
+                  className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#131d35] hover:bg-indigo-50 dark:hover:bg-indigo-500/15 border border-slate-200 dark:border-[#243252] text-xs font-medium text-indigo-600 dark:text-indigo-400 transition-colors shrink-0 cursor-pointer whitespace-nowrap"
                   title={`Set smart limit to ${formatIdr(unb.suggestedSmartLimit)}`}
                 >
                   Set {formatIdr(unb.suggestedSmartLimit)}

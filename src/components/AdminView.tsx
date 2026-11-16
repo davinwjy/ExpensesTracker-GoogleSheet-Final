@@ -287,11 +287,11 @@ export const AdminView: React.FC = () => {
       </AnimatePresence>
 
       {/* Top Governance Header Card */}
-      <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5 sm:p-6 shadow-sm">
+      <div className="bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 Platform Governance Console
               </span>
@@ -311,14 +311,14 @@ export const AdminView: React.FC = () => {
             <button
               onClick={loadAdminData}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#151a24] dark:hover:bg-[#1c2230] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#232a3b] text-xs font-semibold transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#10172a] dark:hover:bg-[#16203a] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#243252] text-xs font-semibold transition-colors whitespace-nowrap"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-500' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-indigo-500' : ''}`} />
               Refresh Status
             </button>
             <button
               onClick={handleExportConfig}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors shadow-sm whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
               Export Config JSON
@@ -327,9 +327,9 @@ export const AdminView: React.FC = () => {
         </div>
 
         {/* Zero-Knowledge Financial Privacy Shield Banner */}
-        <div className="mt-5 pt-4 border-t border-slate-200/80 dark:border-[#1b212e] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="mt-5 pt-4 border-t border-slate-200/80 dark:border-[#18223a] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-start sm:items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
               <EyeOff className="w-4 h-4" />
             </div>
             <div>
@@ -337,7 +337,7 @@ export const AdminView: React.FC = () => {
                 <span className="text-xs font-bold text-slate-900 dark:text-white">
                   Zero-Knowledge Financial Privacy Enforced
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
                   STRICT
                 </span>
               </div>
@@ -354,7 +354,7 @@ export const AdminView: React.FC = () => {
       </div>
 
       {/* Animated Sub-Tab Bar */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl overflow-x-auto no-scrollbar">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = subTab === item.id;
@@ -372,17 +372,17 @@ export const AdminView: React.FC = () => {
                 <motion.div
                   layoutId="admin-subtab-pill"
                   transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                  className="absolute inset-0 rounded-lg bg-white dark:bg-[#171c28] border border-slate-200/80 dark:border-[#252d3d] shadow-xs"
+                  className="absolute inset-0 rounded-lg bg-white dark:bg-[#131d35] border border-slate-200/80 dark:border-[#243252] shadow-xs"
                 />
               )}
               <span className="relative z-10 flex items-center gap-2">
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : ''}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : ''}`} />
                 <span>{item.label}</span>
                 {item.badge !== undefined && (
                   <span
                     className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                       isActive
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                        ? 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400'
                         : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                   >
@@ -409,7 +409,7 @@ export const AdminView: React.FC = () => {
             <div className="space-y-6">
               {/* 3 Non-Financial Governance KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5">
+                <div className="bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-5">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                       Registered Users
@@ -426,12 +426,12 @@ export const AdminView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5">
+                <div className="bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-5">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                       Administrator Seats
                     </span>
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                   </div>
@@ -443,7 +443,7 @@ export const AdminView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5">
+                <div className="bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-5">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                       Broadcast &amp; Access Policy
@@ -463,10 +463,10 @@ export const AdminView: React.FC = () => {
 
               {/* System Architecture & Quick Governance Actions */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-6 space-y-5">
+                <div className="lg:col-span-2 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-6 space-y-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <Database className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">
                         System &amp; Privacy Architecture
                       </h3>
@@ -478,7 +478,7 @@ export const AdminView: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200/70 dark:border-[#1e2536]">
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946]">
                       <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
                         Storage Engine
                       </div>
@@ -487,16 +487,16 @@ export const AdminView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200/70 dark:border-[#1e2536]">
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946]">
                       <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
                         Financial Data Isolation
                       </div>
-                      <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      <div className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                         Zero-Knowledge (Wealth &amp; Expenses Hidden)
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200/70 dark:border-[#1e2536]">
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946]">
                       <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
                         Public User Registration
                       </div>
@@ -505,7 +505,7 @@ export const AdminView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200/70 dark:border-[#1e2536]">
+                    <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946]">
                       <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
                         Primary Super Administrator
                       </div>
@@ -517,7 +517,7 @@ export const AdminView: React.FC = () => {
                 </div>
 
                 {/* Quick Governance Actions */}
-                <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-6 flex flex-col justify-between space-y-4">
+                <div className="bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-6 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Quick Governance Actions
@@ -530,7 +530,7 @@ export const AdminView: React.FC = () => {
                   <div className="space-y-2.5">
                     <button
                       onClick={() => setSubTab('users')}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-[#141824] dark:hover:bg-[#1a2030] border border-slate-200 dark:border-[#22293a] text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-[#10172a] dark:hover:bg-[#16203a] border border-slate-200 dark:border-[#243252] text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
                     >
                       <span className="flex items-center gap-2.5">
                         <Users className="w-4 h-4 text-blue-500" />
@@ -541,13 +541,13 @@ export const AdminView: React.FC = () => {
 
                     <button
                       onClick={() => setSubTab('settings')}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-[#141824] dark:hover:bg-[#1a2030] border border-slate-200 dark:border-[#22293a] text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-[#10172a] dark:hover:bg-[#16203a] border border-slate-200 dark:border-[#243252] text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
                     >
                       <span className="flex items-center gap-2.5">
                         <Megaphone className="w-4 h-4 text-amber-500" />
                         Broadcast Banner &amp; Policies
                       </span>
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
                         {annEnabled ? 'Live' : 'Off'}
                       </span>
                     </button>
@@ -564,10 +564,10 @@ export const AdminView: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <form
                   onSubmit={handleAddAdminEmail}
-                  className="lg:col-span-5 bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5 space-y-4"
+                  className="lg:col-span-5 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-5 space-y-4"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                       <UserPlus className="w-4 h-4" />
                     </div>
                     <div>
@@ -588,19 +588,19 @@ export const AdminView: React.FC = () => {
                         value={newAdminEmail}
                         onChange={(e) => setNewAdminEmail(e.target.value)}
                         placeholder="colleague@company.com"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#131822] border border-slate-200 dark:border-[#22293a] rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#10172a] border border-slate-200 dark:border-[#243252] rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition-colors whitespace-nowrap"
                     >
                       Grant Admin
                     </button>
                   </div>
                 </form>
 
-                <div className="lg:col-span-7 bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-5 space-y-3">
+                <div className="lg:col-span-7 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       Whitelisted Administrators
@@ -618,14 +618,14 @@ export const AdminView: React.FC = () => {
                           key={email}
                           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono ${
                             isMaster
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-semibold'
-                              : 'bg-slate-50 dark:bg-[#141824] border-slate-200 dark:border-[#232a3b] text-slate-700 dark:text-slate-300'
+                              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-semibold'
+                              : 'bg-slate-50 dark:bg-[#10172a] border-slate-200 dark:border-[#243252] text-slate-700 dark:text-slate-300'
                           }`}
                         >
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
                           <span>{email}</span>
                           {isMaster ? (
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] font-sans font-bold">
+                            <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-[10px] font-sans font-bold">
                               Primary
                             </span>
                           ) : (
@@ -647,8 +647,8 @@ export const AdminView: React.FC = () => {
               </div>
 
               {/* User Directory Card (Zero Financial Columns) */}
-              <div className="bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl overflow-hidden">
-                <div className="p-5 border-b border-slate-200 dark:border-[#1b212e] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl overflow-hidden">
+                <div className="p-5 border-b border-slate-200 dark:border-[#18223a] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Registered User Directory
@@ -666,18 +666,18 @@ export const AdminView: React.FC = () => {
                         value={userSearch}
                         onChange={(e) => setUserSearch(e.target.value)}
                         placeholder="Search name or email..."
-                        className="pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-[#131822] border border-slate-200 dark:border-[#22293a] rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                        className="pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-[#10172a] border border-slate-200 dark:border-[#243252] rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                       />
                     </div>
 
-                    <div className="flex items-center bg-slate-100 dark:bg-[#131822] p-0.5 rounded-lg border border-slate-200 dark:border-[#22293a]">
+                    <div className="flex items-center bg-slate-100 dark:bg-[#10172a] p-0.5 rounded-lg border border-slate-200 dark:border-[#243252]">
                       {(['all', 'admin', 'user'] as const).map((r) => (
                         <button
                           key={r}
                           onClick={() => setRoleFilter(r)}
                           className={`px-2.5 py-1 rounded-md text-xs font-semibold capitalize transition-colors ${
                             roleFilter === r
-                              ? 'bg-white dark:bg-[#1f2637] text-slate-900 dark:text-white shadow-2xs'
+                              ? 'bg-white dark:bg-[#1b2645] text-slate-900 dark:text-white shadow-2xs'
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
@@ -856,9 +856,9 @@ export const AdminView: React.FC = () => {
           {/* TAB 3: SITE SETTINGS & BROADCAST */}
           {subTab === 'settings' && (
             <form onSubmit={handleSaveSystemSettings} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-7 bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-6 space-y-5">
+              <div className="lg:col-span-7 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-6 space-y-5">
                 <div className="flex items-center gap-2.5">
-                  <Megaphone className="w-4 h-4 text-emerald-500" />
+                  <Megaphone className="w-4 h-4 text-indigo-500" />
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Global Announcement Banner
@@ -870,7 +870,7 @@ export const AdminView: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200 dark:border-[#1e2536] cursor-pointer">
+                  <label className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] cursor-pointer">
                     <div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">
                         Enable Broadcast Banner
@@ -883,7 +883,7 @@ export const AdminView: React.FC = () => {
                       type="checkbox"
                       checked={annEnabled}
                       onChange={(e) => setAnnEnabled(e.target.checked)}
-                      className="w-4 h-4 accent-emerald-600 rounded"
+                      className="w-4 h-4 accent-indigo-600 rounded"
                     />
                   </label>
 
@@ -896,7 +896,7 @@ export const AdminView: React.FC = () => {
                       value={annMessage}
                       onChange={(e) => setAnnMessage(e.target.value)}
                       placeholder="e.g. Scheduled Google Sheets cloud sync maintenance this Sunday at 02:00 WIB."
-                      className="w-full p-3 bg-slate-50 dark:bg-[#131822] border border-slate-200 dark:border-[#22293a] rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                      className="w-full p-3 bg-slate-50 dark:bg-[#10172a] border border-slate-200 dark:border-[#243252] rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                     />
                   </div>
 
@@ -908,7 +908,7 @@ export const AdminView: React.FC = () => {
                       <select
                         value={annType}
                         onChange={(e) => setAnnType(e.target.value as any)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-[#131822] border border-slate-200 dark:border-[#22293a] rounded-lg text-xs text-slate-900 dark:text-white"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-[#10172a] border border-slate-200 dark:border-[#243252] rounded-lg text-xs text-slate-900 dark:text-white"
                       >
                         <option value="info">Info (Blue)</option>
                         <option value="success">Success (Emerald)</option>
@@ -925,23 +925,23 @@ export const AdminView: React.FC = () => {
                         type="number"
                         value={defaultUsdRate}
                         onChange={(e) => setDefaultUsdRate(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-[#131822] border border-slate-200 dark:border-[#22293a] rounded-lg text-xs font-mono text-slate-900 dark:text-white"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-[#10172a] border border-slate-200 dark:border-[#243252] rounded-lg text-xs font-mono text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="lg:col-span-5 bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-6 flex flex-col justify-between space-y-5">
+              <div className="lg:col-span-5 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-6 flex flex-col justify-between space-y-5">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5">
-                    <Globe className="w-4 h-4 text-emerald-500" />
+                    <Globe className="w-4 h-4 text-indigo-500" />
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Access &amp; Security Policies
                     </h3>
                   </div>
 
-                  <label className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200 dark:border-[#1e2536] cursor-pointer">
+                  <label className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] cursor-pointer">
                     <div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">
                         Allow Public User Registrations
@@ -954,11 +954,11 @@ export const AdminView: React.FC = () => {
                       type="checkbox"
                       checked={allowNewRegistrations}
                       onChange={(e) => setAllowNewRegistrations(e.target.checked)}
-                      className="w-4 h-4 accent-emerald-600 rounded"
+                      className="w-4 h-4 accent-indigo-600 rounded"
                     />
                   </label>
 
-                  <label className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 dark:bg-[#121620] border border-slate-200 dark:border-[#1e2536] cursor-pointer">
+                  <label className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] cursor-pointer">
                     <div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">
                         Maintenance Mode Indicator
@@ -971,7 +971,7 @@ export const AdminView: React.FC = () => {
                       type="checkbox"
                       checked={maintenanceMode}
                       onChange={(e) => setMaintenanceMode(e.target.checked)}
-                      className="w-4 h-4 accent-emerald-600 rounded"
+                      className="w-4 h-4 accent-indigo-600 rounded"
                     />
                   </label>
                 </div>
@@ -979,7 +979,7 @@ export const AdminView: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSavingSettings}
-                  className="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                  className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors shadow-sm"
                 >
                   {isSavingSettings ? 'Saving Policies...' : 'Save Governance Settings'}
                 </button>

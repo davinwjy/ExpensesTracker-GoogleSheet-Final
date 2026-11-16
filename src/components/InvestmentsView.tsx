@@ -121,7 +121,7 @@ export const InvestmentsView: React.FC = () => {
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
           <button
             onClick={() => setIsHoldingTypesModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-[#131722] hover:bg-slate-50 dark:hover:bg-[#1a2030] text-slate-700 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-[#252c40] transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-slate-700 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer whitespace-nowrap"
           >
             <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
             <span>Asset Types</span>
@@ -132,7 +132,7 @@ export const InvestmentsView: React.FC = () => {
               setTransferInitialMode('bank_to_investment');
               setIsTransferOpen(true);
             }}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs transition-colors cursor-pointer shadow-sm whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors cursor-pointer shadow-sm whitespace-nowrap"
           >
             <TrendingUp className="w-3.5 h-3.5 shrink-0" />
             <span>Fund Investment</span>
@@ -141,7 +141,7 @@ export const InvestmentsView: React.FC = () => {
       </div>
 
       {/* PORTFOLIO TOTAL SUMMARY LEDGER (3 DENSE CELLS) */}
-      <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] grid grid-cols-1 md:grid-cols-3 gap-4 shadow-sm min-w-0">
+      <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#0d2247] dark:via-[#0a1936] dark:to-[#081329] border border-indigo-200/90 dark:border-[#1f3f77] grid grid-cols-1 md:grid-cols-3 gap-4 shadow-sm min-w-0">
         <div className="min-w-0">
           <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block">
             Total Market Value
@@ -154,7 +154,7 @@ export const InvestmentsView: React.FC = () => {
           </span>
         </div>
 
-        <div className="min-w-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-[#161c29]">
+        <div className="min-w-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-[#182238]">
           <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block">
             Cost Basis (Deployed Capital)
           </span>
@@ -164,7 +164,7 @@ export const InvestmentsView: React.FC = () => {
           <span className="text-[11px] text-slate-500 dark:text-zinc-500">Aggregated acquisition cost</span>
         </div>
 
-        <div className="min-w-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-[#161c29]">
+        <div className="min-w-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-[#182238]">
           <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block">
             Unrealized Return (PnL)
           </span>
@@ -203,7 +203,7 @@ export const InvestmentsView: React.FC = () => {
           {activeCategoryFilter !== 'all' && (
             <button
               onClick={() => setActiveCategoryFilter('all')}
-              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
             >
               Show all assets
             </button>
@@ -214,10 +214,10 @@ export const InvestmentsView: React.FC = () => {
           {/* Saham */}
           <div
             onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'Saham' ? 'all' : 'Saham')}
-            className={`p-3 rounded-xl bg-white dark:bg-[#0d1017] border transition-all cursor-pointer shadow-sm min-w-0 ${
+            className={`p-3 rounded-xl bg-white dark:bg-[#0b1020] border transition-all cursor-pointer shadow-sm min-w-0 ${
               activeCategoryFilter === 'Saham'
                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-blue-500/10'
-                : 'border-slate-200 dark:border-[#1b212e] hover:border-blue-500/50'
+                : 'border-slate-200 dark:border-[#1b2540] hover:border-blue-500/50'
             }`}
           >
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-500 mb-1">
@@ -238,10 +238,10 @@ export const InvestmentsView: React.FC = () => {
           {/* RDPU */}
           <div
             onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'RDPU' ? 'all' : 'RDPU')}
-            className={`p-3 rounded-xl bg-white dark:bg-[#0d1017] border transition-all cursor-pointer shadow-sm min-w-0 ${
+            className={`p-3 rounded-xl bg-white dark:bg-[#0b1020] border transition-all cursor-pointer shadow-sm min-w-0 ${
               activeCategoryFilter === 'RDPU'
                 ? 'border-teal-500 bg-teal-50 dark:bg-teal-500/10 shadow-teal-500/10'
-                : 'border-slate-200 dark:border-[#1b212e] hover:border-teal-500/50'
+                : 'border-slate-200 dark:border-[#1b2540] hover:border-teal-500/50'
             }`}
           >
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-500 mb-1">
@@ -262,10 +262,10 @@ export const InvestmentsView: React.FC = () => {
           {/* Bitcoin */}
           <div
             onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'Bitcoin' ? 'all' : 'Bitcoin')}
-            className={`p-3 rounded-xl bg-white dark:bg-[#0d1017] border transition-all cursor-pointer shadow-sm min-w-0 ${
+            className={`p-3 rounded-xl bg-white dark:bg-[#0b1020] border transition-all cursor-pointer shadow-sm min-w-0 ${
               activeCategoryFilter === 'Bitcoin'
                 ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 shadow-amber-500/10'
-                : 'border-slate-200 dark:border-[#1b212e] hover:border-amber-500/50'
+                : 'border-slate-200 dark:border-[#1b2540] hover:border-amber-500/50'
             }`}
           >
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-500 mb-1">
@@ -286,10 +286,10 @@ export const InvestmentsView: React.FC = () => {
           {/* ETF USA */}
           <div
             onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'ETF USA' ? 'all' : 'ETF USA')}
-            className={`p-3 rounded-xl bg-white dark:bg-[#0d1017] border transition-all cursor-pointer shadow-sm min-w-0 ${
+            className={`p-3 rounded-xl bg-white dark:bg-[#0b1020] border transition-all cursor-pointer shadow-sm min-w-0 ${
               activeCategoryFilter === 'ETF USA'
                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/10 shadow-purple-500/10'
-                : 'border-slate-200 dark:border-[#1b212e] hover:border-purple-500/50'
+                : 'border-slate-200 dark:border-[#1b2540] hover:border-purple-500/50'
             }`}
           >
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-500 mb-1">
@@ -310,14 +310,14 @@ export const InvestmentsView: React.FC = () => {
           {/* USD */}
           <div
             onClick={() => setActiveCategoryFilter(activeCategoryFilter === 'USD' ? 'all' : 'USD')}
-            className={`p-3 rounded-xl bg-white dark:bg-[#0d1017] border transition-all cursor-pointer shadow-sm col-span-2 sm:col-span-1 min-w-0 ${
+            className={`p-3 rounded-xl bg-white dark:bg-[#0b1020] border transition-all cursor-pointer shadow-sm col-span-2 sm:col-span-1 min-w-0 ${
               activeCategoryFilter === 'USD'
-                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-emerald-500/10'
-                : 'border-slate-200 dark:border-[#1b212e] hover:border-emerald-500/50'
+                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 shadow-indigo-500/10'
+                : 'border-slate-200 dark:border-[#1b2540] hover:border-indigo-500/50'
             }`}
           >
             <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-zinc-500 mb-1">
-              <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              <span className="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
                 <DollarSign className="w-3 h-3 shrink-0" />
                 USD CASH
               </span>
@@ -334,7 +334,7 @@ export const InvestmentsView: React.FC = () => {
       </div>
 
       {/* CATEGORY FILTER TABS */}
-      <div className="flex flex-wrap gap-1.5 pb-1 border-b border-slate-200 dark:border-[#1b212e]">
+      <div className="flex flex-wrap gap-1.5 pb-1 border-b border-slate-200 dark:border-[#1b2540]">
         {categoryTabs.map((tab) => {
           const isActive = activeCategoryFilter === tab.id;
           return (
@@ -343,15 +343,15 @@ export const InvestmentsView: React.FC = () => {
               onClick={() => setActiveCategoryFilter(tab.id)}
               className={`relative px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                 isActive
-                  ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#10141e]'
+                  ? 'text-indigo-700 dark:text-indigo-300 font-semibold'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#0f1629]'
               }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="investment-category-filter-pill"
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  className="absolute inset-0 rounded-lg bg-emerald-50 dark:bg-[#151a26] border border-emerald-300 dark:border-[#232c40] pointer-events-none"
+                  className="absolute inset-0 rounded-lg bg-indigo-50 dark:bg-[#131d35] border border-indigo-300 dark:border-[#253559] pointer-events-none"
                 />
               )}
               <span className="relative z-10">{tab.label}</span>
@@ -363,7 +363,7 @@ export const InvestmentsView: React.FC = () => {
       {/* SPLIT MASTER-DETAIL WORKSPACE */}
       <div className="flex flex-col lg:flex-row gap-3.5 items-start min-w-0">
         {/* MASTER LIST / TABLE */}
-        <div className="flex-1 w-full min-w-0 rounded-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] shadow-sm overflow-hidden">
+        <div className="flex-1 w-full min-w-0 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] shadow-sm overflow-hidden">
           {filteredInvestments.length === 0 ? (
             <div className="p-10 text-center font-mono">
               <TrendingUp className="w-8 h-8 text-slate-400 dark:text-zinc-600 mx-auto mb-2" />
@@ -375,7 +375,7 @@ export const InvestmentsView: React.FC = () => {
           ) : (
             <>
               {/* MOBILE POSITION CARD STACK (< 768px) */}
-              <div className="md:hidden divide-y divide-slate-100 dark:divide-[#171b26]">
+              <div className="md:hidden divide-y divide-slate-100 dark:divide-[#162038]">
                 {filteredInvestments.map((inv) => {
                   const isUsd = inv.currency === 'USD';
                   const effectiveRate =
@@ -395,8 +395,8 @@ export const InvestmentsView: React.FC = () => {
                       onClick={() => setSelectedAsset(isSelected ? null : inv)}
                       className={`p-3.5 transition-colors cursor-pointer space-y-2.5 ${
                         isSelected
-                          ? 'bg-slate-50 dark:bg-[#141824]'
-                          : 'hover:bg-slate-50/70 dark:hover:bg-[#10141e]'
+                          ? 'bg-slate-50 dark:bg-[#131d35]'
+                          : 'hover:bg-slate-50/70 dark:hover:bg-[#0f1629]'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 min-w-0">
@@ -438,7 +438,7 @@ export const InvestmentsView: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-[#182030] text-[11px] font-mono">
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-[#182238] text-[11px] font-mono">
                         <div className="min-w-0">
                           <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase block">
                             Cost Basis
@@ -474,7 +474,7 @@ export const InvestmentsView: React.FC = () => {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-[#1b212e] bg-slate-50 dark:bg-[#090b10] text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-500 select-none">
+                    <tr className="border-b border-slate-200 dark:border-[#1b2540] bg-slate-50 dark:bg-[#080d1a] text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-500 select-none">
                       <th className="py-2.5 px-3 font-semibold">Asset / Ticker</th>
                       <th className="py-2.5 px-3 font-semibold">Class</th>
                       <th className="py-2.5 px-3 font-semibold">Broker / App</th>
@@ -485,7 +485,7 @@ export const InvestmentsView: React.FC = () => {
                       <th className="py-2.5 px-3 font-semibold text-center">Inspect</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-[#171b26]">
+                  <tbody className="divide-y divide-slate-100 dark:divide-[#162038]">
                     {filteredInvestments.map((inv) => {
                       const isUsd = inv.currency === 'USD';
                       const effectiveRate =
@@ -505,14 +505,14 @@ export const InvestmentsView: React.FC = () => {
                           onClick={() => setSelectedAsset(inv)}
                           className={`transition-colors cursor-pointer group ${
                             isSelected
-                              ? 'bg-slate-100 dark:bg-[#141824]'
-                              : 'hover:bg-slate-50 dark:hover:bg-[#10141e]'
+                              ? 'bg-slate-100 dark:bg-[#131d35]'
+                              : 'hover:bg-slate-50 dark:hover:bg-[#0f1629]'
                           }`}
                         >
                           {/* Asset Name */}
                           <td className="py-2.5 px-3">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                              <span className="font-semibold text-slate-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                 {inv.name}
                               </span>
                               <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500">
@@ -583,7 +583,7 @@ export const InvestmentsView: React.FC = () => {
 
                           {/* Actions */}
                           <td className="py-2.5 px-3 text-center">
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 inline transition-colors" />
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 inline transition-colors" />
                           </td>
                         </tr>
                       );
@@ -604,10 +604,10 @@ export const InvestmentsView: React.FC = () => {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 10, scale: 0.985 }}
               transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-              className="w-full lg:w-90 bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-xl p-4 space-y-4 shrink-0 shadow-md"
+              className="w-full lg:w-90 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-xl p-4 space-y-4 shrink-0 shadow-md"
             >
               {/* Drawer Header */}
-            <div className="flex items-start justify-between pb-2.5 border-b border-slate-100 dark:border-[#1b212e]">
+            <div className="flex items-start justify-between pb-2.5 border-b border-slate-100 dark:border-[#1b2540]">
               <div>
                 <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
                   Position Details
@@ -628,7 +628,7 @@ export const InvestmentsView: React.FC = () => {
 
               <button
                 onClick={() => setSelectedAsset(null)}
-                className="p-1 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white rounded hover:bg-slate-100 dark:hover:bg-[#161a25] cursor-pointer"
+                className="p-1 text-slate-400 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white rounded hover:bg-slate-100 dark:hover:bg-[#141d33] cursor-pointer"
                 title="Close drawer"
               >
                 <X className="w-4 h-4" />
@@ -637,7 +637,7 @@ export const InvestmentsView: React.FC = () => {
 
             {/* Financial Telemetry Table */}
             <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946]">
                 <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">Current Value</span>
                 <div className="text-right font-mono">
                   <span className="font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
@@ -656,14 +656,14 @@ export const InvestmentsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946]">
                 <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">Cost Basis</span>
                 <span className="font-semibold font-mono text-slate-700 dark:text-zinc-300 tabular-nums">
                   {formatMasked(selectedAsset.amountInvested || 0, selectedAsset.currency, isPrivacyMode)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332]">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946]">
                 <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">Unrealized Return</span>
                 {(() => {
                   const cost = selectedAsset.amountInvested || 0;
@@ -694,7 +694,7 @@ export const InvestmentsView: React.FC = () => {
               </div>
 
               {selectedAsset.units !== undefined && selectedAsset.units !== null && (
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332]">
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946]">
                   <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">Units / Lots</span>
                   <span className="font-semibold font-mono text-slate-800 dark:text-zinc-200 tabular-nums">
                     {selectedAsset.units}
@@ -703,7 +703,7 @@ export const InvestmentsView: React.FC = () => {
               )}
 
               {selectedAsset.notes && (
-                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#10141e] border border-slate-200 dark:border-[#1d2332] text-xs text-slate-600 dark:text-zinc-400">
+                <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] text-xs text-slate-600 dark:text-zinc-400">
                   <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mb-0.5">Notes</span>
                   <p className="italic">"{selectedAsset.notes}"</p>
                 </div>
@@ -711,7 +711,7 @@ export const InvestmentsView: React.FC = () => {
             </div>
 
             {/* Quick Actions inside Drawer */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-[#1b212e]">
+            <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-[#1b2540]">
               <button
                 onClick={() => {
                   setTransferInitialMode('bank_to_investment');
@@ -729,7 +729,7 @@ export const InvestmentsView: React.FC = () => {
                     setEditingInvestment(selectedAsset);
                     setIsAddInvestmentOpen(true);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-[#131722] hover:bg-slate-200 dark:hover:bg-[#1a2030] text-slate-800 dark:text-zinc-200 text-xs font-medium border border-slate-200 dark:border-[#21293a] transition-colors cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-[#11192e] hover:bg-slate-200 dark:hover:bg-[#17223d] text-slate-800 dark:text-zinc-200 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
                 >
                   <Edit2 className="w-3 h-3 text-slate-500 dark:text-zinc-400" />
                   <span>Edit Asset</span>
@@ -745,7 +745,7 @@ export const InvestmentsView: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => setDeletingId(selectedAsset.id)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-[#131722] hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-medium border border-slate-200 dark:border-[#21293a] transition-colors cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-[#11192e] hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3 h-3" />
                     <span>Delete</span>

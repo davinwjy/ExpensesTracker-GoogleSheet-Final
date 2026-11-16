@@ -129,10 +129,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const renderSidebarContent = (layoutScope: 'desktop' | 'mobile') => (
-    <div className="flex flex-col h-full bg-[#f8fafc] dark:bg-[#070a0f] border-r border-slate-200/80 dark:border-[#161e2e] text-slate-800 dark:text-zinc-200 select-none">
+    <div className="flex flex-col h-full bg-[#f4f6fb] dark:bg-[#070b16] border-r border-slate-200/80 dark:border-[#182238] text-slate-800 dark:text-zinc-200 select-none">
       {/* 1. CLEAN BRAND HEADER (Aligned with h-16 TopHeader) */}
       <div
-        className={`h-16 border-b border-slate-200/70 dark:border-[#141c2b] flex items-center justify-between shrink-0 ${
+        className={`h-16 border-b border-slate-200/70 dark:border-[#182238] flex items-center justify-between shrink-0 ${
           isCollapsed ? 'px-2.5 justify-center' : 'px-4'
         }`}
       >
@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center gap-2.5 text-left focus:outline-none cursor-pointer group min-w-0"
           title="WealthTrack Pro"
         >
-          <div className="w-8 h-8 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 flex items-center justify-center shadow-xs group-hover:opacity-90 transition-opacity shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center shadow-xs shadow-indigo-500/20 group-hover:opacity-90 transition-opacity shrink-0">
             <Wallet className="w-4 h-4 stroke-[2.2]" />
           </div>
           {!isCollapsed && (
@@ -156,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           type="button"
           onClick={onCloseMobile}
-          className="lg:hidden w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#141b28] transition-colors cursor-pointer shrink-0"
+          className="lg:hidden w-7 h-7 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#11192e] transition-colors cursor-pointer shrink-0"
           aria-label="Close sidebar"
         >
           <X className="w-4 h-4" />
@@ -167,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="hidden lg:flex w-7 h-7 items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#141b28] transition-colors cursor-pointer shrink-0"
+            className="hidden lg:flex w-7 h-7 items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#11192e] transition-colors cursor-pointer shrink-0"
             title="Collapse sidebar"
           >
             <PanelLeftClose className="w-4 h-4" />
@@ -181,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#141b28] transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-500 dark:hover:text-zinc-200 rounded-lg hover:bg-slate-200/60 dark:hover:bg-[#11192e] transition-colors cursor-pointer"
             title="Expand sidebar"
           >
             <PanelLeftOpen className="w-4 h-4" />
@@ -203,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={`relative w-full flex items-center gap-3 px-3 py-2.5 text-xs rounded-xl transition-colors cursor-pointer group ${
                 isActive
                   ? 'text-slate-900 dark:text-white font-semibold'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-[#111723]'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-200/50 dark:hover:bg-[#0e1526]'
               } ${isCollapsed ? 'justify-center px-0 h-10 w-10 mx-auto' : ''}`}
               title={isCollapsed ? item.label : undefined}
             >
@@ -211,14 +211,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <motion.div
                   layoutId={`sidebar-solid-pill-${layoutScope}`}
                   transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  className="absolute inset-0 rounded-xl bg-white dark:bg-[#141b29] border border-slate-200/80 dark:border-[#222e46] shadow-2xs pointer-events-none"
+                  className="absolute inset-0 rounded-xl bg-white dark:bg-[#11192e] border border-slate-200/80 dark:border-[#243252] shadow-2xs pointer-events-none"
                 />
               )}
 
               <Icon
                 className={`relative z-10 w-4 h-4 shrink-0 transition-colors ${
                   isActive
-                    ? 'text-emerald-600 dark:text-emerald-400 stroke-[2.2]'
+                    ? 'text-indigo-600 dark:text-indigo-400 stroke-[2.2]'
                     : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-700 dark:group-hover:text-zinc-300'
                 }`}
               />
@@ -232,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span
                       className={`relative z-10 text-[11px] font-mono tabular-nums whitespace-nowrap shrink-0 ${
                         isActive
-                          ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                          ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
                           : 'text-slate-400 dark:text-zinc-500 group-hover:text-slate-600 dark:group-hover:text-zinc-400'
                       }`}
                     >
@@ -248,7 +248,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 3. QUIET BOTTOM NET WORTH FOOTNOTE (Only when expanded) */}
       {!isCollapsed && (
-        <div className="px-4 py-3 border-t border-slate-200/70 dark:border-[#141c2b] shrink-0">
+        <div className="px-4 py-3 border-t border-slate-200/70 dark:border-[#182238] shrink-0">
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 mb-1">
             <span className="font-medium">Total Net Worth</span>
             <button
@@ -285,13 +285,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* 4. USER PROFILE FOOTER */}
       <div
-        className={`border-t border-slate-200/70 dark:border-[#141c2b] shrink-0 ${
+        className={`border-t border-slate-200/70 dark:border-[#182238] shrink-0 ${
           isCollapsed ? 'p-2.5 flex justify-center' : 'px-3.5 py-3'
         }`}
       >
         {isCollapsed ? (
           <div
-            className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center font-mono"
+            className="w-8 h-8 rounded-xl bg-indigo-500/15 dark:bg-indigo-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center font-mono"
             title={`${displayName}${user?.email ? ` (${user.email})` : ''}`}
           >
             {userInitials}
@@ -299,7 +299,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ) : (
           <div className="flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0 font-mono">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/15 dark:bg-indigo-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center justify-center shrink-0 font-mono">
                 {userInitials}
               </div>
               <div className="min-w-0 flex-1">

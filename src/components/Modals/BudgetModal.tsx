@@ -237,14 +237,14 @@ export const BudgetModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Handle */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
           <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
         {/* Clean Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#1b2540] shrink-0">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
               {editingBudget ? 'Edit Category Budget' : 'Set Category Budget'}
@@ -258,7 +258,7 @@ export const BudgetModal: React.FC = () => {
             onClick={handleClose}
             disabled={isSubmitting}
             aria-label="Close modal"
-            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#141d33] transition-colors cursor-pointer disabled:opacity-40"
           >
             <X className="w-4 h-4" />
           </button>
@@ -287,7 +287,7 @@ export const BudgetModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsCustomCategory(!isCustomCategory)}
-                className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                className="flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>{isCustomCategory ? 'Choose from list' : 'Custom category'}</span>
@@ -300,7 +300,7 @@ export const BudgetModal: React.FC = () => {
                 value={customCategory}
                 onChange={(e) => setCustomCategory(e.target.value)}
                 placeholder="e.g. Gym & Supplements, Subscriptions..."
-                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
+                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
                 required
                 autoFocus
               />
@@ -308,7 +308,7 @@ export const BudgetModal: React.FC = () => {
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors cursor-pointer"
+                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors cursor-pointer"
               >
                 {availableCategories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -320,14 +320,14 @@ export const BudgetModal: React.FC = () => {
           </div>
 
           {/* Hero Monthly Limit Input Card */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2.5">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2.5">
             <div className="flex items-center justify-between text-xs">
               <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5 text-slate-400" />
                 <span>Monthly Limit</span>
               </label>
               {currentLimitNumber > 0 && (
-                <span className="font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                <span className="font-mono font-semibold tabular-nums text-indigo-600 dark:text-indigo-400">
                   {formatIdr(currentLimitNumber)}
                 </span>
               )}
@@ -345,7 +345,7 @@ export const BudgetModal: React.FC = () => {
                   setLimit(val);
                 }}
                 placeholder="2000000"
-                className="w-full bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
+                className="w-full bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
                 required
               />
             </div>
@@ -359,8 +359,8 @@ export const BudgetModal: React.FC = () => {
                   onClick={() => handlePresetClick(p.value)}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer tabular-nums font-mono ${
                     currentLimitNumber === p.value
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold'
-                      : 'bg-white hover:bg-slate-100 dark:bg-[#151d2c] dark:hover:bg-[#1c263a] text-slate-600 dark:text-zinc-300 border-slate-200/80 dark:border-[#232f46]'
+                      ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-semibold'
+                      : 'bg-white hover:bg-slate-100 dark:bg-[#141d33] dark:hover:bg-[#1b2744] text-slate-600 dark:text-zinc-300 border-slate-200/80 dark:border-[#243252]'
                   }`}
                 >
                   {p.label}
@@ -370,7 +370,7 @@ export const BudgetModal: React.FC = () => {
           </div>
 
           {/* Last Month Benchmark Box */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-2">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-500 dark:text-zinc-400">
                 Last Month ({categoryBenchmark.prevMonthLabel}):
@@ -397,7 +397,7 @@ export const BudgetModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handlePresetClick(categoryBenchmark.matchLimit)}
-                  className="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer text-center"
+                  className="px-2 py-1.5 rounded-xl text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors cursor-pointer text-center"
                 >
                   Match 100%
                 </button>
@@ -419,13 +419,13 @@ export const BudgetModal: React.FC = () => {
               <span>Budget Period</span>
             </label>
 
-            <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
+            <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#0f1629] rounded-xl border border-slate-200/70 dark:border-[#1e2946]">
               <button
                 type="button"
                 onClick={() => setScope('recurring')}
                 className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   scope === 'recurring'
-                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                    ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a3b66]'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -437,7 +437,7 @@ export const BudgetModal: React.FC = () => {
                 onClick={() => setScope('specific')}
                 className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   scope === 'specific'
-                    ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a364f]'
+                    ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a3b66]'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -451,7 +451,7 @@ export const BudgetModal: React.FC = () => {
                   type="month"
                   value={specificMonth}
                   onChange={(e) => setSpecificMonth(e.target.value)}
-                  className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
+                  className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
                 />
               </div>
             )}
@@ -459,7 +459,7 @@ export const BudgetModal: React.FC = () => {
         </form>
 
         {/* Clean Footer */}
-        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-between gap-2">
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#1b2540] flex items-center justify-between gap-2">
           {editingBudget ? (
             confirmDelete ? (
               <div className="flex items-center gap-1.5">
@@ -498,7 +498,7 @@ export const BudgetModal: React.FC = () => {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#141d33] transition-colors cursor-pointer disabled:opacity-40"
             >
               Cancel
             </button>
@@ -506,7 +506,7 @@ export const BudgetModal: React.FC = () => {
               type="submit"
               form="budget-modal-form"
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white transition-all cursor-pointer disabled:opacity-50 shadow-xs"
             >
               {isSubmitting ? (
                 <>

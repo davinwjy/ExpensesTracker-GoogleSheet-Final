@@ -1,6 +1,21 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  /* Remap indigo scale to pure Deep Navy / Royal Blue (0% purple/violet cast) */
+  --color-indigo-50: #eff6ff;
+  --color-indigo-100: #dbeafe;
+  --color-indigo-200: #bfdbfe;
+  --color-indigo-300: #7cb8ff;
+  --color-indigo-400: #3b93ff;
+  --color-indigo-500: #1d64e8;
+  --color-indigo-600: #154cc2;
+  --color-indigo-700: #113c9e;
+  --color-indigo-800: #0d2e7a;
+  --color-indigo-900: #092159;
+  --color-indigo-950: #051336;
+}
+
 @layer base {
   html,
   body {
@@ -10,7 +25,7 @@
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     transition: background-color 0.15s ease, color 0.15s ease;
-    @apply bg-slate-100 text-slate-900 dark:bg-[#08090c] dark:text-zinc-100;
+    @apply bg-[#f2f6fc] text-slate-900 dark:bg-[#050c17] dark:text-zinc-100;
     letter-spacing: -0.01em;
   }
   
@@ -21,17 +36,55 @@
   }
 }
 
-/* Bloomberg Terminal Razor Styling Utilities */
+/* Pure Deep Navy Surface Utilities (Zero Violet/Purple Cast) */
 .terminal-grid-border {
-  border-color: #1a1f2c;
+  border-color: #162c52;
 }
 
 .terminal-surface {
-  background-color: #0d1017;
+  background-color: #091528;
 }
 
 .terminal-panel {
-  background-color: #121620;
+  background-color: #0d1e38;
+}
+
+/* Harmonize Dark Navy Surfaces Globally */
+html.dark .dark\:bg-\[\#060913\] {
+  background-color: #050c17 !important;
+}
+html.dark .dark\:bg-\[\#070b16\] {
+  background-color: #060f1d !important;
+}
+html.dark .dark\:bg-\[\#080d1a\] {
+  background-color: #071222 !important;
+}
+html.dark .dark\:bg-\[\#0b1020\],
+html.dark .dark\:bg-\[\#0c1222\] {
+  background-color: #091528 !important;
+}
+html.dark .dark\:bg-\[\#0f1629\],
+html.dark .dark\:bg-\[\#10172a\] {
+  background-color: #0d1e38 !important;
+}
+html.dark .dark\:bg-\[\#11192e\],
+html.dark .dark\:bg-\[\#131d35\],
+html.dark .dark\:bg-\[\#141d33\] {
+  background-color: #112647 !important;
+}
+html.dark .dark\:bg-\[\#18233e\],
+html.dark .dark\:bg-\[\#1b2744\] {
+  background-color: #16315c !important;
+}
+html.dark .dark\:border-\[\#182238\],
+html.dark .dark\:border-\[\#1b2540\],
+html.dark .dark\:border-\[\#1e2946\] {
+  border-color: #162c52 !important;
+}
+html.dark .dark\:border-\[\#222f4d\],
+html.dark .dark\:border-\[\#243252\],
+html.dark .dark\:border-\[\#2a3b66\] {
+  border-color: #1e3b6e !important;
 }
 
 /* Privacy Mode CSS Filter Blur Utility */
@@ -50,20 +103,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #08090c;
+  background: #050c17;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1b212e;
+  background: #162c52;
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #283145;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #214075;
 }
 
 /* Light mode scrollbar */

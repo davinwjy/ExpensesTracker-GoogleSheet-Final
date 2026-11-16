@@ -150,14 +150,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const PageIcon = currentMeta.icon;
 
   return (
-    <header className="sticky top-0 z-20 h-16 bg-white/90 dark:bg-[#0b0f17]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#1c2436] shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)] flex items-center px-3 sm:px-5 lg:px-6 transition-colors select-none">
+    <header className="sticky top-0 z-20 h-16 bg-white/90 dark:bg-[#080d1a]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-[#1b2540] shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.45)] flex items-center px-3 sm:px-5 lg:px-6 transition-colors select-none">
       <div className="flex items-center justify-between w-full gap-3">
         {/* Left: Mobile Menu Trigger + Page Icon Badge + Two-Line Contextual Title */}
         <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
           <button
             type="button"
             onClick={onOpenMobileMenu}
-            className="lg:hidden flex items-center justify-center w-8 h-8 text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] border border-slate-200/80 dark:border-[#222c40] active:scale-95 transition-all cursor-pointer shrink-0"
+            className="lg:hidden flex items-center justify-center w-8 h-8 text-slate-600 hover:text-slate-900 dark:text-zinc-300 dark:hover:text-white rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] border border-slate-200/80 dark:border-[#222f4d] active:scale-95 transition-all cursor-pointer shrink-0"
             aria-label="Open navigation menu"
           >
             <Menu className="w-4 h-4" />
@@ -173,7 +173,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               className="flex items-center gap-3 min-w-0"
             >
               {/* Active Page Icon Emblem */}
-              <div className="hidden sm:flex w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 dark:border-emerald-400/20 items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+              <div className="hidden sm:flex w-8 h-8 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 dark:border-indigo-400/25 items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                 <PageIcon className="w-4 h-4 stroke-[2]" />
               </div>
 
@@ -205,20 +205,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             }
             className={`h-8 px-2.5 rounded-lg flex items-center gap-2 text-xs font-medium transition-all active:scale-95 cursor-pointer whitespace-nowrap border ${
               isAppsScriptConnected || isSheetsConnected
-                ? 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] text-slate-700 dark:text-zinc-200 border-slate-200/80 dark:border-[#222c40]'
-                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-[#222c40]'
+                ? 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] text-slate-700 dark:text-zinc-200 border-slate-200/80 dark:border-[#222f4d]'
+                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-[#222f4d]'
             }`}
           >
             <span className="relative flex items-center justify-center">
               <FileSpreadsheet
                 className={`w-3.5 h-3.5 shrink-0 ${
                   isAppsScriptConnected || isSheetsConnected
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-indigo-600 dark:text-indigo-400'
                     : 'text-slate-400 dark:text-zinc-500'
                 }`}
               />
               {(isAppsScriptConnected || isSheetsConnected) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-[#131926]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-[#11192e]" />
               )}
             </span>
             <span className="hidden sm:inline">
@@ -238,7 +238,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-95 cursor-pointer border ${
               isPrivacyMode
                 ? 'bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border-amber-500/30 dark:border-amber-400/30'
-                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-[#222c40]'
+                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-[#222f4d]'
             }`}
             aria-label="Toggle Privacy Mode"
           >
@@ -254,7 +254,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             type="button"
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] border border-slate-200/80 dark:border-[#222c40] active:scale-95 transition-all cursor-pointer"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] border border-slate-200/80 dark:border-[#222f4d] active:scale-95 transition-all cursor-pointer"
             aria-label="Toggle Theme Mode"
           >
             {theme === 'dark' ? (
@@ -265,21 +265,21 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
 
           {/* Subtle Vertical Divider */}
-          <div className="hidden sm:block w-px h-4 bg-slate-200 dark:bg-[#1e2738] mx-0.5" />
+          <div className="hidden sm:block w-px h-4 bg-slate-200 dark:bg-[#1e2a45] mx-0.5" />
 
           {/* User Profile Menu Trigger */}
           <div className="relative" ref={userMenuRef}>
             <button
               type="button"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className={`h-8 flex items-center gap-1.5 pl-1 pr-2 rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#131926] dark:hover:bg-[#1a2234] border transition-all active:scale-95 cursor-pointer ${
+              className={`h-8 flex items-center gap-1.5 pl-1 pr-2 rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] border transition-all active:scale-95 cursor-pointer ${
                 isUserMenuOpen
-                  ? 'border-emerald-500/50 ring-2 ring-emerald-500/15'
-                  : 'border-slate-200/80 dark:border-[#222c40]'
+                  ? 'border-indigo-500/50 ring-2 ring-indigo-500/15'
+                  : 'border-slate-200/80 dark:border-[#222f4d]'
               }`}
               title="User Profile Menu"
             >
-              <div className="w-6 h-6 rounded-md bg-emerald-600 dark:bg-emerald-500 text-white dark:text-slate-950 font-bold flex items-center justify-center text-[10px] font-mono">
+              <div className="w-6 h-6 rounded-md bg-indigo-600 dark:bg-indigo-500 text-white font-bold flex items-center justify-center text-[10px] font-mono">
                 {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
               </div>
               <span className="hidden xl:inline-block text-xs font-medium text-slate-700 dark:text-zinc-200 max-w-[90px] truncate">
@@ -287,17 +287,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               </span>
               <ChevronDown
                 className={`w-3 h-3 text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
-                  isUserMenuOpen ? 'rotate-180 text-emerald-500 dark:text-emerald-400' : ''
+                  isUserMenuOpen ? 'rotate-180 text-indigo-500 dark:text-indigo-400' : ''
                 }`}
               />
             </button>
 
             {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 sm:w-72 p-2 bg-white dark:bg-[#0c1017] border border-slate-200/90 dark:border-[#1e2638] rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 space-y-1">
+              <div className="absolute right-0 mt-2 w-64 sm:w-72 p-2 bg-white dark:bg-[#0b1020] border border-slate-200/90 dark:border-[#1e2a45] rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 space-y-1">
                 {/* User Header Profile Card */}
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#111622] border border-slate-200/60 dark:border-[#1c2436] mb-1">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#10172a] border border-slate-200/60 dark:border-[#1e2a45] mb-1">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm shadow-emerald-500/20">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm shadow-indigo-500/20">
                       {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -306,7 +306,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                           {user?.name || 'User Account'}
                         </p>
                         {isUserAdmin(user) && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
                             Admin
                           </span>
                         )}
@@ -326,17 +326,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       setIsUserMenuOpen(false);
                       setIsGoogleSheetSetupOpen(true);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b29] rounded-xl cursor-pointer transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#131d35] rounded-xl cursor-pointer transition-colors"
                   >
                     <span className="flex items-center gap-2.5">
-                      <FileSpreadsheet className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                      <FileSpreadsheet className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
                       <span className="font-medium">Google Sheets</span>
                     </span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
                         isAppsScriptConnected || isSheetsConnected
                           ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                          : 'bg-slate-100 dark:bg-[#162038] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#243252]'
                       }`}
                     >
                       {isAppsScriptConnected || isSheetsConnected ? 'Connected' : 'Connect'}
@@ -347,12 +347,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   <button
                     onClick={handleMenuSync}
                     disabled={isSyncingActive}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#141b29] rounded-xl cursor-pointer transition-colors disabled:opacity-60"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#131d35] rounded-xl cursor-pointer transition-colors disabled:opacity-60"
                   >
                     <span className="flex items-center gap-2.5">
                       <RefreshCw
                         className={`w-4 h-4 text-slate-500 dark:text-zinc-400 shrink-0 ${
-                          isSyncingActive ? 'animate-spin text-emerald-500' : ''
+                          isSyncingActive ? 'animate-spin text-indigo-500' : ''
                         }`}
                       />
                       <span className="font-medium">Sync Data Now</span>
@@ -363,7 +363,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   </button>
                 </div>
 
-                <div className="border-t border-slate-100 dark:border-[#1a2233] my-1" />
+                <div className="border-t border-slate-100 dark:border-[#1b2540] my-1" />
 
                 {/* Logout Button */}
                 <button

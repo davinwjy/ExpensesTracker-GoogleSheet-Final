@@ -152,19 +152,19 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-[#08090c] text-slate-900 dark:text-zinc-100 relative overflow-hidden transition-colors duration-200">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-[#f4f6fb] dark:bg-[#060913] text-slate-900 dark:text-zinc-100 relative overflow-hidden transition-colors duration-200">
       {/* Subtle Ambient Glow & Architectural Grid */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#64748b0d_1px,transparent_1px),linear-gradient(to_bottom,#64748b0d_1px,transparent_1px)] bg-[size:32px_32px]" />
-      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[320px] bg-emerald-500/10 dark:bg-emerald-500/8 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#1d64e80d_1px,transparent_1px),linear-gradient(to_bottom,#1d64e80d_1px,transparent_1px)] bg-[size:32px_32px]" />
+      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[320px] bg-indigo-500/12 dark:bg-indigo-500/10 rounded-full blur-3xl" />
 
-      <div className="w-full max-w-[420px] bg-white dark:bg-[#0d1017] border border-slate-200/90 dark:border-[#1b212e] rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-2xl dark:shadow-black/60 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-[420px] bg-white dark:bg-[#0b1020] border border-slate-200/90 dark:border-[#1b2540] rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-2xl dark:shadow-black/60 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200">
         {/* Top Brand Header */}
         <div className="px-6 pt-8 pb-6 text-center">
-          <div className="inline-flex w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/25 items-center justify-center mb-4 shadow-xs">
+          <div className="inline-flex w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/25 items-center justify-center mb-4 shadow-xs">
             {mode === 'forgot_password' ? (
-              <KeyRound className="w-6 h-6 text-emerald-600 dark:text-emerald-400 stroke-[2.2]" />
+              <KeyRound className="w-6 h-6 text-indigo-600 dark:text-indigo-400 stroke-[2.2]" />
             ) : (
-              <Wallet className="w-6 h-6 text-emerald-600 dark:text-emerald-400 stroke-[2.2]" />
+              <Wallet className="w-6 h-6 text-indigo-600 dark:text-indigo-400 stroke-[2.2]" />
             )}
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
@@ -187,13 +187,13 @@ export const AuthModal: React.FC = () => {
         <div className="px-6 pb-7">
           {/* Segmented Mode Switcher (Only for Login / Register) */}
           {mode !== 'forgot_password' && (
-            <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#121620] rounded-xl border border-slate-200/80 dark:border-[#1d2332] text-xs font-semibold mb-6">
+            <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#10172a] rounded-xl border border-slate-200/80 dark:border-[#1e2a45] text-xs font-semibold mb-6">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
                 className={`py-2 rounded-lg transition-all cursor-pointer ${
                   mode === 'login'
-                    ? 'bg-white dark:bg-[#1d2434] text-slate-900 dark:text-emerald-400 shadow-xs font-bold'
+                    ? 'bg-white dark:bg-[#19233d] text-indigo-600 dark:text-indigo-400 shadow-xs font-bold'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -204,7 +204,7 @@ export const AuthModal: React.FC = () => {
                 onClick={() => switchMode('register')}
                 className={`py-2 rounded-lg transition-all cursor-pointer ${
                   mode === 'register'
-                    ? 'bg-white dark:bg-[#1d2434] text-slate-900 dark:text-emerald-400 shadow-xs font-bold'
+                    ? 'bg-white dark:bg-[#19233d] text-indigo-600 dark:text-indigo-400 shadow-xs font-bold'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                 }`}
               >
@@ -243,7 +243,7 @@ export const AuthModal: React.FC = () => {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Alex Morgan"
                     autoComplete="name"
-                    className="w-full bg-slate-50/80 dark:bg-[#121620] border border-slate-200 dark:border-[#1f2637] focus:bg-white dark:focus:bg-[#151a26] focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none transition-all"
+                    className="w-full bg-slate-50/80 dark:bg-[#10172a] border border-slate-200 dark:border-[#1e2a45] focus:bg-white dark:focus:bg-[#131c33] focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -262,7 +262,7 @@ export const AuthModal: React.FC = () => {
                   placeholder="name@example.com"
                   autoComplete="email"
                   autoFocus={mode === 'forgot_password'}
-                  className="w-full bg-slate-50/80 dark:bg-[#121620] border border-slate-200 dark:border-[#1f2637] focus:bg-white dark:focus:bg-[#151a26] focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-all"
+                  className="w-full bg-slate-50/80 dark:bg-[#10172a] border border-slate-200 dark:border-[#1e2a45] focus:bg-white dark:focus:bg-[#131c33] focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-all"
                   required
                 />
               </div>
@@ -283,7 +283,7 @@ export const AuthModal: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    className="w-full bg-slate-50/80 dark:bg-[#121620] border border-slate-200 dark:border-[#1f2637] focus:bg-white dark:focus:bg-[#151a26] focus:border-emerald-500 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none transition-all"
+                    className="w-full bg-slate-50/80 dark:bg-[#10172a] border border-slate-200 dark:border-[#1e2a45] focus:bg-white dark:focus:bg-[#131c33] focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none transition-all"
                     required
                   />
                   <button
@@ -306,7 +306,7 @@ export const AuthModal: React.FC = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-60 mt-2"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white shadow-sm shadow-indigo-600/25 transition-all cursor-pointer disabled:opacity-60 mt-2"
             >
               {isSubmitting ? (
                 <>
@@ -332,24 +332,24 @@ export const AuthModal: React.FC = () => {
 
           {/* Bottom Footer Links */}
           {mode === 'forgot_password' ? (
-            <div className="mt-6 pt-5 border-t border-slate-100 dark:border-[#191f2d] text-center">
+            <div className="mt-6 pt-5 border-t border-slate-100 dark:border-[#1b2540] text-center">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back to Sign In</span>
               </button>
             </div>
           ) : (
-            <div className="mt-6 pt-5 border-t border-slate-100 dark:border-[#191f2d] text-center space-y-2.5">
+            <div className="mt-6 pt-5 border-t border-slate-100 dark:border-[#1b2540] text-center space-y-2.5">
               {mode === 'login' && (
                 <div>
                   <button
                     type="button"
                     onClick={() => switchMode('forgot_password')}
-                    className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                   >
                     Forgot password?
                   </button>
@@ -361,7 +361,7 @@ export const AuthModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-                  className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer ml-1"
+                  className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer ml-1"
                 >
                   {mode === 'login' ? 'Create one' : 'Sign in'}
                 </button>
@@ -373,7 +373,7 @@ export const AuthModal: React.FC = () => {
                   type="button"
                   onClick={handleQuickDemo}
                   disabled={isSubmitting}
-                  className="font-medium text-slate-600 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 underline underline-offset-2 transition-colors cursor-pointer disabled:opacity-50"
+                  className="font-medium text-slate-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 underline underline-offset-2 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   Try Demo Account
                 </button>

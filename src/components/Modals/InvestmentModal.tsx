@@ -252,14 +252,14 @@ export const InvestmentModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0c1017] border-t sm:border border-slate-200/90 dark:border-[#1c2536] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Handle */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
           <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
         {/* Clean Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#161e2e] shrink-0">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#18223a] shrink-0">
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
               Edit Investment Holding
@@ -274,7 +274,7 @@ export const InvestmentModal: React.FC = () => {
               onClick={resetFields}
               disabled={isSubmitting}
               title="Reset form"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -283,7 +283,7 @@ export const InvestmentModal: React.FC = () => {
               onClick={handleClose}
               disabled={isSubmitting}
               aria-label="Close modal"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -313,14 +313,14 @@ export const InvestmentModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsHoldingTypesModalOpen(true)}
-                className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <Layers className="w-3 h-3" />
                 <span>Manage Classes</span>
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-[#111723] rounded-xl border border-slate-200/70 dark:border-[#1c2536]">
+            <div className="flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-[#0f1629] rounded-xl border border-slate-200/70 dark:border-[#1e2946]">
               {categoriesList.map((cat) => (
                 <button
                   key={cat.id}
@@ -328,7 +328,7 @@ export const InvestmentModal: React.FC = () => {
                   onClick={() => handleCategoryChange(cat.id)}
                   className={`py-1.5 px-2.5 rounded-lg text-center whitespace-nowrap transition-all cursor-pointer flex-1 min-w-[75px] ${
                     category === cat.id
-                      ? 'bg-white dark:bg-[#1b2436] text-slate-900 dark:text-white border border-slate-200/80 dark:border-[#2a364f] shadow-xs font-semibold'
+                      ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white border border-slate-200/80 dark:border-[#2a3960] shadow-xs font-semibold'
                       : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
                   }`}
                 >
@@ -352,14 +352,14 @@ export const InvestmentModal: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={selectedCategoryMeta.example}
-              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+              className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
               required
               autoFocus
             />
           </div>
 
           {/* Hero Principal & Market Valuation Card */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#101622] border border-slate-200/80 dark:border-[#1d273a] space-y-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
@@ -375,7 +375,7 @@ export const InvestmentModal: React.FC = () => {
                     value={amountInvested}
                     onChange={(e) => setAmountInvested(e.target.value)}
                     placeholder={isUsd ? '100.00' : '1,000,000'}
-                    className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                    className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                     required
                   />
                 </div>
@@ -395,7 +395,7 @@ export const InvestmentModal: React.FC = () => {
                     value={currentValue}
                     onChange={(e) => setCurrentValue(e.target.value)}
                     placeholder={amountInvested || (isUsd ? '100.00' : '1,000,000')}
-                    className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-emerald-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                    className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                   />
                 </div>
               </div>
@@ -403,7 +403,7 @@ export const InvestmentModal: React.FC = () => {
 
             {/* Live PnL Preview */}
             {invNumber > 0 && (
-              <div className="px-3 py-2 bg-white dark:bg-[#0b0f17] rounded-xl border border-slate-200/80 dark:border-[#222d42] flex flex-wrap items-center justify-between text-xs gap-2">
+              <div className="px-3 py-2 bg-white dark:bg-[#080d1a] rounded-xl border border-slate-200/80 dark:border-[#243252] flex flex-wrap items-center justify-between text-xs gap-2">
                 <div>
                   <span className="text-slate-500 dark:text-zinc-400">Unrealized Return: </span>
                   <span
@@ -469,7 +469,7 @@ export const InvestmentModal: React.FC = () => {
                 value={units}
                 onChange={(e) => setUnits(e.target.value)}
                 placeholder={category === 'Bitcoin' ? 'e.g. 0.015' : 'e.g. 10'}
-                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono tabular-nums"
+                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono tabular-nums"
               />
             </div>
             <div className="space-y-1.5">
@@ -481,7 +481,7 @@ export const InvestmentModal: React.FC = () => {
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
                 placeholder="e.g. GoTrade, Bibit, Stockbit..."
-                className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
               />
             </div>
           </div>
@@ -497,13 +497,13 @@ export const InvestmentModal: React.FC = () => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Monthly DCA, long-term hold..."
-              className="w-full h-10 bg-white dark:bg-[#101622] border border-slate-200 dark:border-[#1d273a] focus:border-emerald-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+              className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
             />
           </div>
         </form>
 
         {/* Clean Footer */}
-        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#090d14] border-t border-slate-100 dark:border-[#161e2e] flex items-center justify-between gap-2">
+        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
           {editingInvestment ? (
             confirmDelete ? (
               <div className="flex items-center gap-1.5">
@@ -542,7 +542,7 @@ export const InvestmentModal: React.FC = () => {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151d2c] transition-colors cursor-pointer disabled:opacity-40"
+              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               Cancel
             </button>
@@ -550,7 +550,7 @@ export const InvestmentModal: React.FC = () => {
               type="submit"
               form="investment-modal-form"
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
             >
               {isSubmitting ? (
                 <>
