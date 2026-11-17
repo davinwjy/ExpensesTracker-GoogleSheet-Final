@@ -489,6 +489,74 @@ export const firestoreService = {
     ]);
   },
 
+  async getUserPin(userId: string, email?: string): Promise<string> {
+    if (!firestoreDb || !userId) return '';
+    try {
+      // 1. Check users/{userId} doc first
+      const userSnap = await getDoc(doc(firestoreDb, 'users', userId));
+      if (userSnap.exists()) {
+        const uPin = String((userSnap.data() as any)?.appPin || '').trim();
+        if (/^\d{4}$/.test(uPin)) {
+          return uPin;
+        }
+      }
+
+      // 2. Check settings/{userId} doc
+      const settingsSnap = await getDoc(doc(firestoreDb, 'settings', userId));
+      if (settingsSnap.exists()) {
+        const sPin = String((settingsSnap.data() as any)?.appPin || '').trim();
+        if (/^\d{4}$/.test(sPin)) {
+          return sPin;
+        }
+      }
+
+      // 3. Fallback: query users collection by email if provided
+      if (email) {
+        const qEmail = query(collection(firestoreDb, 'users'), where('email', '==', email.trim()));
+        const emailSnap = await getDocs(qEmail);
+        for (const d of emailSnap.docs) {
+          const ePin = String((d.data() as any)?.appPin || '').trim();
+          if (/^\d{4}$/.test(ePin)) {
+            return ePin;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('getUserPin error:', err);
+    }
+    return '';
+  },
+
+  async saveUserPin(userId: string, pin: string, email?: string): Promise<void> {
+    if (!firestoreDb || !userId) return;
+    const cleanPin = String(pin || '').trim();
+    if (!/^\d{4}$/.test(cleanPin)) return;
+    const now = new Date().toISOString();
+    await Promise.allSettled([
+      setDoc(
+        doc(firestoreDb, 'users', userId),
+        sanitizeForFirestore({
+          id: userId,
+          ...(email ? { email: email.trim() } : {}),
+          appPin: cleanPin,
+          pinUpdatedAt: now,
+          updatedAt: now,
+        }),
+        { merge: true }
+      ),
+      setDoc(
+        doc(firestoreDb, 'settings', userId),
+        sanitizeForFirestore({
+          userId,
+          appPin: cleanPin,
+          pinUpdatedAt: now,
+          updatedAt: now,
+        }),
+        { merge: true }
+      ),
+    ]);
+  },
+
   // ---------------- MIGRATE LOCAL DATA TO FIRESTORE ----------------
   async uploadLocalDataToFirestore(userId: string): Promise<number> {
     if (!firestoreDb) throw new Error('Firestore not ready');

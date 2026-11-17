@@ -39,9 +39,6 @@ export const DashboardView: React.FC = () => {
     usdIdrRate,
     setActiveTab,
     setIsAddExpenseOpen,
-    setTransactionInitialType,
-    setIsTransferOpen,
-    setTransferInitialMode,
     setIsAddAccountOpen,
     setEditingTransaction,
     setIsBudgetModalOpen,
@@ -84,139 +81,88 @@ export const DashboardView: React.FC = () => {
       <GoogleSheetConnectBanner />
 
       {/* NET WORTH OVERVIEW */}
-      <div className="relative bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#0d2247] dark:via-[#0a1936] dark:to-[#081329] border border-indigo-200/90 dark:border-[#1f3f77] rounded-xl p-4 sm:p-6 shadow-sm overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5 min-w-0">
-          <div className="space-y-2 min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-zinc-400">
-              <span>Net Worth</span>
-              <button
-                onClick={togglePrivacyMode}
-                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[#131d35] text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                title={isPrivacyMode ? 'Reveal values' : 'Hide values'}
-              >
-                {isPrivacyMode ? (
-                  <EyeOff className="w-3.5 h-3.5 text-amber-500" />
-                ) : (
-                  <Eye className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
-
-            {/* Big Net Worth Nominal */}
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 min-w-0">
-              <h2 className={`text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-100 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-                {formatIdr(netWorthIdr)}
-              </h2>
-              <span className={`text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400 tabular-nums ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-                ≈ {formatUsd(netWorthUsd)}
-              </span>
-            </div>
-
-            {/* Metric Ledger Line */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-zinc-400 pt-1">
-              <span>
-                Liquid Cash:{' '}
-                <strong className={`text-slate-900 dark:text-zinc-200 tabular-nums font-semibold ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-                  {formatIdr(liquidCashIdr)}
-                </strong>
-              </span>
-              <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline" aria-hidden="true">·</span>
-              <span>
-                Investments:{' '}
-                <strong className={`text-slate-900 dark:text-zinc-200 tabular-nums font-semibold ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-                  {formatIdr(investmentValueIdr)}
-                </strong>
-              </span>
-              <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline" aria-hidden="true">·</span>
-              <span
-                className={`font-semibold tabular-nums ${
-                  unrealizedPnlIdr >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {unrealizedPnlIdr >= 0 ? '+' : ''}
-                {pnlPercent.toFixed(1)}% ROI
-              </span>
-            </div>
-
-            {/* Visual Allocation Weight Bar */}
-            {netWorthIdr > 0 && (
-              <div className="pt-2 space-y-1.5 max-w-md">
-                {(() => {
-                  const totalAssetsNominal = liquidCashIdr + investmentValueIdr;
-                  const liquidRatio =
-                    totalAssetsNominal > 0 ? Math.round((liquidCashIdr / totalAssetsNominal) * 100) : 50;
-                  const investedRatio = 100 - liquidRatio;
-                  return (
-                    <>
-                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 gap-2">
-                        <span>Cash {liquidRatio}%</span>
-                        <span>Investments {investedRatio}%</span>
-                      </div>
-                      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#151e34] overflow-hidden flex">
-                        <div
-                          style={{ width: `${liquidRatio}%` }}
-                          className="h-full bg-sky-500 transition-all duration-300"
-                        />
-                        <div
-                          style={{ width: `${investedRatio}%` }}
-                          className="h-full bg-indigo-500 transition-all duration-300"
-                        />
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Action Buttons - 2x2 grid on mobile, flex row on larger viewports */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-1 lg:pt-0 w-full lg:w-auto shrink-0">
+      <div className="relative bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#161b26] dark:via-[#12151d] dark:to-[#101218] border border-indigo-200/90 dark:border-[#2a3347] rounded-xl p-4 sm:p-6 shadow-sm overflow-hidden">
+        <div className="space-y-2 min-w-0">
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-zinc-400">
+            <span>Net Worth</span>
             <button
-              onClick={() => {
-                setEditingTransaction(null);
-                setTransactionInitialType('expense');
-                setIsAddExpenseOpen(true);
-              }}
-              className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-slate-800 dark:text-zinc-200 font-medium text-xs border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
+              onClick={togglePrivacyMode}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[#131d35] text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              title={isPrivacyMode ? 'Reveal values' : 'Hide values'}
             >
-              <Receipt className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              <span className="truncate">Add Expense</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setEditingTransaction(null);
-                setTransactionInitialType('income');
-                setIsAddExpenseOpen(true);
-              }}
-              className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-slate-800 dark:text-zinc-200 font-medium text-xs border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
-            >
-              <ArrowDownRight className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span className="truncate">Add Income</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setTransferInitialMode('bank_to_investment');
-                setIsTransferOpen(true);
-              }}
-              className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-slate-800 dark:text-zinc-200 font-medium text-xs border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              <span className="truncate">Invest</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setTransferInitialMode('account_to_account');
-                setIsTransferOpen(true);
-              }}
-              className="flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-slate-800 dark:text-zinc-200 font-medium text-xs border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span className="truncate">Transfer</span>
+              {isPrivacyMode ? (
+                <EyeOff className="w-3.5 h-3.5 text-amber-500" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
+
+          {/* Big Net Worth Nominal */}
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 min-w-0">
+            <h2 className={`text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-zinc-100 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+              {formatIdr(netWorthIdr)}
+            </h2>
+            <span className={`text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400 tabular-nums ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+              ≈ {formatUsd(netWorthUsd)}
+            </span>
+          </div>
+
+          {/* Metric Ledger Line */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-zinc-400 pt-1">
+            <span>
+              Liquid Cash:{' '}
+              <strong className={`text-slate-900 dark:text-zinc-200 tabular-nums font-semibold ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+                {formatIdr(liquidCashIdr)}
+              </strong>
+            </span>
+            <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline" aria-hidden="true">·</span>
+            <span>
+              Investments:{' '}
+              <strong className={`text-slate-900 dark:text-zinc-200 tabular-nums font-semibold ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+                {formatIdr(investmentValueIdr)}
+              </strong>
+            </span>
+            <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline" aria-hidden="true">·</span>
+            <span
+              className={`font-semibold tabular-nums ${
+                unrealizedPnlIdr >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              }`}
+            >
+              {unrealizedPnlIdr >= 0 ? '+' : ''}
+              {pnlPercent.toFixed(1)}% ROI
+            </span>
+          </div>
+
+          {/* Visual Allocation Weight Bar */}
+          {netWorthIdr > 0 && (
+            <div className="pt-2 space-y-1.5 max-w-md">
+              {(() => {
+                const totalAssetsNominal = liquidCashIdr + investmentValueIdr;
+                const liquidRatio =
+                  totalAssetsNominal > 0 ? Math.round((liquidCashIdr / totalAssetsNominal) * 100) : 50;
+                const investedRatio = 100 - liquidRatio;
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 gap-2">
+                      <span>Cash {liquidRatio}%</span>
+                      <span>Investments {investedRatio}%</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#1c212e] overflow-hidden flex">
+                      <div
+                        style={{ width: `${liquidRatio}%` }}
+                        className="h-full bg-sky-500 transition-all duration-300"
+                      />
+                      <div
+                        style={{ width: `${investedRatio}%` }}
+                        className="h-full bg-indigo-500 transition-all duration-300"
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
       </div>
 
@@ -227,9 +173,9 @@ export const DashboardView: React.FC = () => {
         <div className="p-4 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] shadow-sm min-w-0">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5 gap-2">
             <span className="truncate">Monthly Expenses</span>
-            <Receipt className="w-4 h-4 text-slate-400 dark:text-zinc-400 shrink-0" />
+            <Receipt className="w-4 h-4 text-amber-500/80 shrink-0" />
           </div>
-          <p className={`text-xl sm:text-2xl font-bold text-slate-900 dark:text-zinc-100 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+          <p className={`text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
             {formatIdr(monthlyExpenses)}
           </p>
           <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Deducted from bank & cash wallets</p>
@@ -248,12 +194,12 @@ export const DashboardView: React.FC = () => {
         </div>
 
         {/* Invested this month */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/60 via-white to-sky-50/30 dark:from-[#0c2044] dark:via-[#091834] dark:to-[#081329] border border-indigo-200/80 dark:border-[#1c3a6e] shadow-sm min-w-0">
-          <div className="flex items-center justify-between text-xs font-medium text-indigo-700/80 dark:text-indigo-300/90 mb-1.5 gap-2">
+        <div className="p-4 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] shadow-sm min-w-0">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-zinc-400 mb-1.5 gap-2">
             <span className="truncate">Invested This Month</span>
-            <TrendingUp className="w-4 h-4 text-indigo-500 shrink-0" />
+            <TrendingUp className="w-4 h-4 text-blue-500 shrink-0" />
           </div>
-          <p className={`text-xl sm:text-2xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+          <p className={`text-xl sm:text-2xl font-bold text-indigo-600 dark:text-blue-400 tabular-nums break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
             {formatIdr(monthlyTransfersToInv)}
           </p>
           <p className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Directly funded from bank accounts</p>
@@ -320,7 +266,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono gap-1.5">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-slate-500 dark:text-zinc-400 text-[11px] whitespace-nowrap">MONTHLY SPENT:</span>
-              <strong className={`text-slate-900 dark:text-zinc-100 font-bold tabular-nums whitespace-nowrap ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+              <strong className={`text-rose-600 dark:text-rose-400 font-bold tabular-nums whitespace-nowrap ${isPrivacyMode ? 'privacy-blur' : ''}`}>
                 {formatIdr(budgetSummary.totalSpent)}
               </strong>
               <span className={`text-slate-500 dark:text-zinc-400 tabular-nums whitespace-nowrap ${isPrivacyMode ? 'privacy-blur' : ''}`}>
@@ -647,7 +593,7 @@ export const DashboardView: React.FC = () => {
                           tx.type === 'cc_debt'
                             ? 'text-amber-600 dark:text-amber-400'
                             : tx.type === 'expense'
-                            ? 'text-slate-900 dark:text-zinc-100'
+                            ? 'text-rose-600 dark:text-rose-400'
                             : tx.type === 'income'
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : tx.type === 'bank_to_investment'

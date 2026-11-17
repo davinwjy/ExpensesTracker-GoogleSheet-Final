@@ -387,7 +387,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ children }) => {
             : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full shadow-xl backdrop-blur-md border text-xs font-medium tracking-tight bg-white/95 dark:bg-[#091528]/95 text-slate-800 dark:text-zinc-100 border-indigo-500/30 shadow-indigo-500/10">
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full shadow-xl backdrop-blur-md border text-xs font-medium tracking-tight bg-white/95 dark:bg-[#12151d]/95 text-slate-800 dark:text-zinc-100 border-blue-500/30 shadow-black/30">
           {syncStatus === 'refreshing' || isAppsScriptSyncing || isSheetsSyncing ? (
             <RefreshCw className="w-4 h-4 text-indigo-500 animate-spin flex-shrink-0" />
           ) : syncStatus === 'success' ? (

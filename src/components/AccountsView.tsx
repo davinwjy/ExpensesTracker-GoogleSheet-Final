@@ -64,21 +64,10 @@ export const AccountsView: React.FC = () => {
               setEditingAccount(null);
               setIsAddAccountOpen(true);
             }}
-            className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors cursor-pointer shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">Add Account</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setTransferInitialMode('bank_to_investment');
-              setIsTransferOpen(true);
-            }}
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-indigo-600 dark:text-indigo-300 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
           >
-            <TrendingUp className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-            <span className="truncate">Fund Investment</span>
+            <Plus className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="truncate">Add Account</span>
           </button>
 
           <button
@@ -86,9 +75,9 @@ export const AccountsView: React.FC = () => {
               setTransferInitialMode('account_to_account');
               setIsTransferOpen(true);
             }}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-blue-600 dark:text-blue-300 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors cursor-pointer shadow-xs"
           >
-            <ArrowRightLeft className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <ArrowRightLeft className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">Transfer</span>
           </button>
         </div>
@@ -96,22 +85,22 @@ export const AccountsView: React.FC = () => {
 
       {/* Overview Statistics by Account Group (3 Cells) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-        <div className="p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#0d2247] dark:via-[#0a1936] dark:to-[#081329] border border-indigo-200/90 dark:border-[#1f3f77] shadow-sm min-w-0">
-          <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-mono uppercase tracking-wider block">
+        <div className="p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#161b26] dark:via-[#12151d] dark:to-[#101218] border border-indigo-200/90 dark:border-[#2a3347] shadow-sm min-w-0">
+          <span className="text-[10px] text-indigo-700/80 dark:text-zinc-400 font-mono uppercase tracking-wider block">
             NET LIQUID CASH
           </span>
           <p className={`text-xl sm:text-2xl font-bold text-slate-900 dark:text-zinc-100 font-mono tabular-nums mt-0.5 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
             {formatMasked(totalLiquid, 'IDR', isPrivacyMode)}
           </p>
-          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">Assets minus debt liabilities</span>
+          <span className="text-[10px] text-slate-500 dark:text-zinc-500 font-mono">Assets minus debt liabilities</span>
         </div>
 
-        <div className="p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/50 via-white to-sky-50/30 dark:from-[#0c2044] dark:via-[#091834] dark:to-[#081329] border border-indigo-200/80 dark:border-[#1c3a6e] shadow-sm min-w-0">
-          <div className="flex items-center justify-between text-[10px] font-mono text-indigo-600 dark:text-indigo-400 uppercase tracking-wider gap-2">
+        <div className="p-3.5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] shadow-sm min-w-0">
+          <div className="flex items-center justify-between text-[10px] font-mono text-indigo-600 dark:text-blue-400 uppercase tracking-wider gap-2">
             <span className="truncate">BANKS & CASH</span>
             <Landmark className="w-3.5 h-3.5 shrink-0" />
           </div>
-          <p className={`text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400 font-mono tabular-nums mt-0.5 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+          <p className={`text-lg sm:text-xl font-bold text-indigo-600 dark:text-blue-400 font-mono tabular-nums mt-0.5 break-words ${isPrivacyMode ? 'privacy-blur' : ''}`}>
             {formatMasked(totalBankBalance + totalCashBalance, 'IDR', isPrivacyMode)}
           </p>
           <span className="text-[10px] text-slate-500 dark:text-zinc-500 font-mono">{bankAccounts.length + cashAccounts.length} accounts</span>

@@ -124,7 +124,7 @@ export const InvestmentsView: React.FC = () => {
             className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-[#11192e] hover:bg-slate-50 dark:hover:bg-[#17223d] text-slate-700 dark:text-zinc-300 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer whitespace-nowrap"
           >
             <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-            <span>Asset Types</span>
+            <span>Add Asset Types</span>
           </button>
 
           <button
@@ -141,7 +141,7 @@ export const InvestmentsView: React.FC = () => {
       </div>
 
       {/* PORTFOLIO TOTAL SUMMARY LEDGER (3 DENSE CELLS) */}
-      <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#0d2247] dark:via-[#0a1936] dark:to-[#081329] border border-indigo-200/90 dark:border-[#1f3f77] grid grid-cols-1 md:grid-cols-3 gap-4 shadow-sm min-w-0">
+      <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#161b26] dark:via-[#12151d] dark:to-[#101218] border border-indigo-200/90 dark:border-[#2a3347] grid grid-cols-1 md:grid-cols-3 gap-4 shadow-sm min-w-0">
         <div className="min-w-0">
           <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 block">
             Total Market Value

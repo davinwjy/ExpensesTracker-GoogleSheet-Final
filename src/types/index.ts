@@ -19,6 +19,8 @@ export interface User {
   name: string;
   role?: 'admin' | 'user';
   appsScriptUrl?: string;
+  appPin?: string;
+  pinUpdatedAt?: string;
   createdAt?: string;
 }
 
@@ -136,6 +138,8 @@ export interface UserSettings {
   privacyModeDefault: boolean;
   theme: 'dark' | 'light';
   appsScriptUrl?: string;
+  appPin?: string;
+  pinUpdatedAt?: string;
   customCategories?: CustomTransactionCategory[];
 }
 

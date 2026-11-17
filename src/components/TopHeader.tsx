@@ -24,6 +24,8 @@ import {
   WalletCards,
   PieChart,
   Shield,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -36,7 +38,7 @@ interface TopHeaderProps {
 export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenMobileMenu,
 }) => {
-  const { user, logout, isFirebase } = useAuth();
+  const { user, logout, isFirebase, lockApp, openChangePin } = useAuth();
   const {
     activeTab,
     setActiveTab,
@@ -64,7 +66,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     isSheetsConnected,
     syncGoogleSheetsNow,
     isSheetsSyncing,
-    spreadsheetId,
     setIsMobileAppModalOpen,
     setIsHoldingTypesModalOpen,
   } = useFinance();
@@ -192,40 +193,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         {/* Right Action Suite: Clean Uniform Fintech Toolbar */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Google Sheets Sync Action Button */}
-          <button
-            type="button"
-            onClick={() => setIsGoogleSheetSetupOpen(true)}
-            title={
-              isAppsScriptConnected
-                ? 'Connected to Google Sheets via Apps Script'
-                : isSheetsConnected
-                ? `Connected to Sheet ID: ${spreadsheetId}`
-                : 'Connect Google Sheets via Apps Script'
-            }
-            className={`h-8 px-2.5 rounded-lg flex items-center gap-2 text-xs font-medium transition-all active:scale-95 cursor-pointer whitespace-nowrap border ${
-              isAppsScriptConnected || isSheetsConnected
-                ? 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] text-slate-700 dark:text-zinc-200 border-slate-200/80 dark:border-[#222f4d]'
-                : 'bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] text-slate-500 dark:text-zinc-400 border-slate-200/80 dark:border-[#222f4d]'
-            }`}
-          >
-            <span className="relative flex items-center justify-center">
-              <FileSpreadsheet
-                className={`w-3.5 h-3.5 shrink-0 ${
-                  isAppsScriptConnected || isSheetsConnected
-                    ? 'text-indigo-600 dark:text-indigo-400'
-                    : 'text-slate-400 dark:text-zinc-500'
-                }`}
-              />
-              {(isAppsScriptConnected || isSheetsConnected) && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 absolute -top-0.5 -right-0.5 ring-2 ring-white dark:ring-[#11192e]" />
-              )}
-            </span>
-            <span className="hidden sm:inline">
-              {isAppsScriptConnected || isSheetsConnected ? 'Sheets' : 'Connect'}
-            </span>
-          </button>
-
           {/* Privacy Mode Icon Toggle */}
           <button
             type="button"
@@ -264,6 +231,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             )}
           </button>
 
+          {/* Quick Lock App Button */}
+          <button
+            type="button"
+            onClick={lockApp}
+            title="Lock App"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] border border-slate-200/80 dark:border-[#222f4d] active:scale-95 transition-all cursor-pointer"
+            aria-label="Lock App"
+          >
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+          </button>
+
           {/* Subtle Vertical Divider */}
           <div className="hidden sm:block w-px h-4 bg-slate-200 dark:bg-[#1e2a45] mx-0.5" />
 
@@ -274,12 +252,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className={`h-8 flex items-center gap-1.5 pl-1 pr-2 rounded-lg bg-slate-100/80 hover:bg-slate-200/70 dark:bg-[#11192e] dark:hover:bg-[#17223d] border transition-all active:scale-95 cursor-pointer ${
                 isUserMenuOpen
-                  ? 'border-indigo-500/50 ring-2 ring-indigo-500/15'
+                  ? 'border-blue-500/50 ring-2 ring-blue-500/15'
                   : 'border-slate-200/80 dark:border-[#222f4d]'
               }`}
               title="User Profile Menu"
             >
-              <div className="w-6 h-6 rounded-md bg-indigo-600 dark:bg-indigo-500 text-white font-bold flex items-center justify-center text-[10px] font-mono">
+              <div className="w-6 h-6 rounded-md bg-blue-600 dark:bg-blue-500 text-white font-bold flex items-center justify-center text-[10px] font-mono">
                 {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
               </div>
               <span className="hidden xl:inline-block text-xs font-medium text-slate-700 dark:text-zinc-200 max-w-[90px] truncate">
@@ -287,17 +265,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               </span>
               <ChevronDown
                 className={`w-3 h-3 text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
-                  isUserMenuOpen ? 'rotate-180 text-indigo-500 dark:text-indigo-400' : ''
+                  isUserMenuOpen ? 'rotate-180 text-blue-500 dark:text-blue-400' : ''
                 }`}
               />
             </button>
 
             {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 sm:w-72 p-2 bg-white dark:bg-[#0b1020] border border-slate-200/90 dark:border-[#1e2a45] rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 space-y-1">
+              <div className="absolute right-0 mt-2 w-64 sm:w-72 p-2 bg-white dark:bg-[#12151d] border border-slate-200/90 dark:border-[#262c3a] rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 space-y-1">
                 {/* User Header Profile Card */}
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#10172a] border border-slate-200/60 dark:border-[#1e2a45] mb-1">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200/60 dark:border-[#242a38] mb-1">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm shadow-indigo-500/20">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-sm shadow-blue-500/20">
                       {user?.name ? user.name.slice(0, 2).toUpperCase() : 'WT'}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -306,7 +284,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                           {user?.name || 'User Account'}
                         </p>
                         {isUserAdmin(user) && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30">
                             Admin
                           </span>
                         )}
@@ -326,17 +304,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       setIsUserMenuOpen(false);
                       setIsGoogleSheetSetupOpen(true);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#131d35] rounded-xl cursor-pointer transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1c212e] rounded-xl cursor-pointer transition-colors"
                   >
                     <span className="flex items-center gap-2.5">
-                      <FileSpreadsheet className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
                       <span className="font-medium">Google Sheets</span>
                     </span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${
                         isAppsScriptConnected || isSheetsConnected
                           ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                          : 'bg-slate-100 dark:bg-[#162038] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#243252]'
+                          : 'bg-slate-100 dark:bg-[#1c212e] text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-[#2b3242]'
                       }`}
                     >
                       {isAppsScriptConnected || isSheetsConnected ? 'Connected' : 'Connect'}
@@ -347,12 +325,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   <button
                     onClick={handleMenuSync}
                     disabled={isSyncingActive}
-                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#131d35] rounded-xl cursor-pointer transition-colors disabled:opacity-60"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1c212e] rounded-xl cursor-pointer transition-colors disabled:opacity-60"
                   >
                     <span className="flex items-center gap-2.5">
                       <RefreshCw
                         className={`w-4 h-4 text-slate-500 dark:text-zinc-400 shrink-0 ${
-                          isSyncingActive ? 'animate-spin text-indigo-500' : ''
+                          isSyncingActive ? 'animate-spin text-blue-500' : ''
                         }`}
                       />
                       <span className="font-medium">Sync Data Now</span>
@@ -361,9 +339,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                       {isSyncingActive ? 'Syncing...' : 'Cloud & Sheet'}
                     </span>
                   </button>
+
+                  {/* Change 4-Digit PIN */}
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      openChangePin();
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1c212e] rounded-xl cursor-pointer transition-colors"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <KeyRound className="w-4 h-4 text-blue-500 dark:text-blue-400 shrink-0" />
+                      <span className="font-medium">Change 4-Digit PIN</span>
+                    </span>
+                  </button>
                 </div>
 
-                <div className="border-t border-slate-100 dark:border-[#1b2540] my-1" />
+                <div className="border-t border-slate-100 dark:border-[#202532] my-1" />
 
                 {/* Logout Button */}
                 <button

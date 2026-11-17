@@ -15,6 +15,7 @@ import {
   Shield,
   Target,
   LogOut,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -34,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, lockApp } = useAuth();
   const {
     activeTab,
     setActiveTab,
@@ -314,14 +315,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={logout}
-              title="Sign Out"
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  onCloseMobile();
+                  lockApp();
+                }}
+                title="Lock App"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 dark:text-zinc-500 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer shrink-0"
+              >
+                <Lock className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                title="Sign Out"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 dark:text-zinc-500 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </div>

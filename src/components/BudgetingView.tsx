@@ -341,7 +341,7 @@ export const BudgetingView: React.FC = () => {
       </div>
 
       {/* OVERVIEW CARD (With Mobile Overflow Protection & MoM Comparison) */}
-      <div className="bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#0d2247] dark:via-[#0a1936] dark:to-[#081329] border border-indigo-200/90 dark:border-[#1f3f77] rounded-xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
+      <div className="bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#161b26] dark:via-[#12151d] dark:to-[#101218] border border-indigo-200/90 dark:border-[#2a3347] rounded-xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
         {/* OVERALL MACRO CONSUMPTION BAR */}
         <div className="space-y-2.5 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
@@ -350,7 +350,7 @@ export const BudgetingView: React.FC = () => {
                 Spent This Month ({monthDisplay})
               </span>
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <strong className="text-lg sm:text-xl text-slate-900 dark:text-zinc-100 font-bold tabular-nums whitespace-nowrap">
+                <strong className="text-lg sm:text-xl text-rose-600 dark:text-rose-400 font-bold tabular-nums whitespace-nowrap">
                   {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
                 </strong>
                 <span className="text-xs text-slate-400 dark:text-zinc-500 tabular-nums whitespace-nowrap">
@@ -459,7 +459,7 @@ export const BudgetingView: React.FC = () => {
             <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
               Spent ({monthDisplay.split(' ')[0]})
             </span>
-            <p className={`text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-100 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
             </p>
           </div>

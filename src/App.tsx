@@ -28,6 +28,7 @@ import { BudgetModal } from './components/Modals/BudgetModal';
 import { FirebaseSetupModal } from './components/Modals/FirebaseSetupModal';
 import { GoogleSheetSetupModal } from './components/Modals/GoogleSheetSetupModal';
 import { MobileAppModal } from './components/Modals/MobileAppModal';
+import { PinLockScreen } from './components/PinLockScreen';
 import { Wallet, Loader2 } from 'lucide-react';
 
 const TAB_ORDER = [
@@ -70,7 +71,14 @@ const tabTransitionVariants = {
 };
 
 const MainAppContent: React.FC = () => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading: authLoading,
+    isPinChecking,
+    isPinLocked,
+    hasPin,
+    isChangePinOpen,
+  } = useAuth();
   const {
     activeTab,
     isFirebaseSetupOpen,
@@ -145,14 +153,20 @@ const MainAppContent: React.FC = () => {
     return () => cancelAnimationFrame(rafId);
   }, [activeTab]);
 
-  if (authLoading) {
+  if (authLoading || (isAuthenticated && isPinChecking)) {
     return (
-      <div className="min-h-screen bg-[#060913] flex flex-col items-center justify-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 animate-pulse">
+      <div className="min-h-screen bg-[#090b10] flex flex-col items-center justify-center gap-3">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg animate-pulse"
+          style={{
+            background: 'linear-gradient(135deg, #154cc2 0%, #2563eb 100%)',
+            boxShadow: '0 10px 26px -4px rgba(37, 99, 235, 0.4)',
+          }}
+        >
           <Wallet className="w-6 h-6 text-white font-bold" />
         </div>
-        <div className="flex items-center gap-2 text-slate-400 text-xs">
-          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+        <div className="flex items-center gap-2 text-zinc-400 text-xs">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
           <span>Synchronizing WealthTrack session...</span>
         </div>
       </div>
@@ -163,10 +177,16 @@ const MainAppContent: React.FC = () => {
     return <AuthModal />;
   }
 
+  const isPinGateActive = isPinLocked || !hasPin || isChangePinOpen;
+
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6fb] dark:bg-[#060913] text-slate-900 dark:text-zinc-100 flex flex-col transition-colors duration-150">
+    <div className="min-h-screen w-full overflow-x-hidden bg-[#f4f6fb] dark:bg-[#090b10] text-slate-900 dark:text-zinc-100 flex flex-col transition-colors duration-150">
       {/* Modern Desktop Left Sidebar & Contextual Header */}
-      <div className="flex flex-row min-h-screen w-full min-w-0">
+      <div
+        className={`flex flex-row min-h-screen w-full min-w-0 transition-all duration-200 ${
+          isPinLocked || !hasPin ? 'blur-[6px] pointer-events-none select-none opacity-60' : ''
+        }`}
+      >
         <Sidebar
           isMobileOpen={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
@@ -208,7 +228,7 @@ const MainAppContent: React.FC = () => {
       </div>
 
       {/* Mobile Floating Bottom Dock */}
-      <MobileNav />
+      {!(isPinLocked || !hasPin) && <MobileNav />}
 
       {/* Global Modals */}
       <AddExpenseModal />
@@ -231,6 +251,11 @@ const MainAppContent: React.FC = () => {
         isOpen={isMobileAppModalOpen}
         onClose={() => setIsMobileAppModalOpen(false)}
       />
+
+      {/* Minimalist Compact PIN Dialog Overlay */}
+      <AnimatePresence>
+        {isPinGateActive && <PinLockScreen />}
+      </AnimatePresence>
 
       {/* Global Success & Toast Popup Notification */}
       <GlobalNotificationPopup />

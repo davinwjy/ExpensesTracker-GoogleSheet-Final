@@ -63,14 +63,14 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
       <div onClick={onClose} className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#091528] border-t sm:border border-slate-200 dark:border-[#162c52] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 font-mono text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#12151d] border-t sm:border border-slate-200 dark:border-[#262c3a] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 font-mono text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Indicator */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0 bg-slate-100 dark:bg-[#050c17]">
+        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0 bg-slate-100 dark:bg-[#090b10]">
           <div className="w-8 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
         {/* Header */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-[#162c52] bg-slate-50 dark:bg-[#050c17] flex items-center justify-between shrink-0">
+        <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-[#202532] bg-slate-50 dark:bg-[#0e1118] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shrink-0">
               <Smartphone className="w-4 h-4 text-indigo-600 dark:text-indigo-400 stroke-[2.2]" />
@@ -87,7 +87,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-[#112445] transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-[#1c212e] transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             <X className="w-4 h-4" />
@@ -95,7 +95,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Sync Status Banner */}
-        <div className="px-3.5 sm:px-4 py-2 bg-slate-100 dark:bg-[#071122] border-b border-slate-200 dark:border-[#162c52] flex items-center justify-between gap-2 text-[11px] text-indigo-600 dark:text-indigo-400 shrink-0">
+        <div className="px-3.5 sm:px-4 py-2 bg-slate-100 dark:bg-[#0e1118] border-b border-slate-200 dark:border-[#162c52] flex items-center justify-between gap-2 text-[11px] text-indigo-600 dark:text-indigo-400 shrink-0">
           <div className="flex items-center gap-2 truncate">
             <Flame className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
             <div className="truncate">
@@ -118,7 +118,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
         {/* Scrollable Content Body */}
         <div className="p-4 space-y-3.5 overflow-y-auto flex-1 min-h-0">
           {/* Tabs: PWA 1-Click vs Direct APK */}
-          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#050c17] border border-slate-200 dark:border-[#162c52] rounded-xl text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#090b10] border border-slate-200 dark:border-[#162c52] rounded-xl text-xs font-semibold">
             <button
               onClick={() => setActiveTab('pwa')}
               className={`py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
@@ -145,7 +145,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
 
           {activeTab === 'pwa' ? (
             <div className="space-y-3.5">
-              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#050c17]/90 border border-slate-200 dark:border-[#162c52] space-y-3">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#162c52] space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
                     <CheckCircle2 className="w-4 h-4" />
@@ -153,7 +153,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
                   <div className="text-xs space-y-1">
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm">Direct 1-Click Installation</h4>
                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                      The easiest path for Android & iPhone. Installed directly onto your home screen with full Navy Blue icon support, fullscreen view, and instant live UI updates.
+                      The easiest path for Android & iPhone. Installed directly onto your home screen with full app icon support, fullscreen view, and instant live UI updates.
                     </p>
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
             </div>
           ) : (
             <div className="space-y-3.5">
-              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#050c17]/90 border border-slate-200 dark:border-[#162c52] space-y-3">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#162c52] space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
                     <Download className="w-4 h-4" />
@@ -225,7 +225,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded-lg bg-white dark:bg-[#091528] border border-slate-200 dark:border-[#162c52] space-y-1.5 text-xs">
+                <div className="p-2.5 rounded-lg bg-white dark:bg-[#12151d] border border-slate-200 dark:border-[#202532] space-y-1.5 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 dark:text-slate-400">File Name:</span>
                     <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">WealthTrack-Pro.apk</span>
@@ -254,14 +254,14 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
                   </a>
 
                   {/* APK URL Section */}
-                  <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-[#091528] border border-slate-200 dark:border-[#162c52] space-y-2">
+                  <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-[#12151d] border border-slate-200 dark:border-[#202532] space-y-2">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-slate-500 dark:text-zinc-400 font-mono text-[10px] uppercase font-bold tracking-wider">
                         APK Direct Link:
                       </span>
                     </div>
 
-                    <div className="p-2 rounded bg-white dark:bg-[#050c17] border border-slate-300 dark:border-[#162c52] text-[10px] font-mono text-indigo-600 dark:text-indigo-400 break-all select-all">
+                    <div className="p-2 rounded bg-white dark:bg-[#090b10] border border-slate-300 dark:border-[#162c52] text-[10px] font-mono text-indigo-600 dark:text-indigo-400 break-all select-all">
                       {apkDownloadUrl}
                     </div>
 
@@ -284,7 +284,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
           )}
 
           {/* Sync Guarantee Card */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#050c17]/70 border border-slate-200 dark:border-[#162c52] flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#162c52] flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300">
             <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
             <span className="text-[11px]">
               <strong>100% Automatic Sync:</strong> Ledger balances, transactions, and investments reflect instantly across all your devices.
@@ -293,7 +293,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-[#162c52] bg-slate-50 dark:bg-[#050c17] flex items-center justify-between gap-2 shrink-0">
+        <div className="p-4 border-t border-slate-200 dark:border-[#162c52] bg-slate-50 dark:bg-[#090b10] flex items-center justify-between gap-2 shrink-0">
           <button
             type="button"
             onClick={handleForceRefreshUi}
@@ -305,7 +305,7 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-200 hover:bg-slate-300 dark:bg-[#112445] dark:hover:bg-[#162c52] rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-200 hover:bg-slate-300 dark:bg-[#1c212e] dark:hover:bg-[#232939] rounded-xl transition-colors cursor-pointer"
           >
             Close
           </button>

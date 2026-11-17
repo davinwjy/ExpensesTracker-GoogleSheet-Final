@@ -179,13 +179,13 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
   return (
     <div 
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-150"
     >
-      <div className="relative w-full max-w-xl bg-white dark:bg-[#0d1017] border border-slate-200 dark:border-[#1b212e] rounded-2xl shadow-2xl overflow-hidden text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#12151d] border border-slate-200 dark:border-[#262c3a] rounded-2xl shadow-2xl overflow-hidden text-slate-900 dark:text-zinc-100">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-[#1b212e] bg-slate-50/80 dark:bg-[#080a0f]">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-[#202532] bg-slate-50/80 dark:bg-[#0e1118]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
@@ -195,19 +195,19 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-[#1c212e] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Connection Status Banner */}
           <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
             isAppsScriptConnected 
-              ? 'bg-emerald-50/90 border-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-500/30 text-emerald-950 dark:text-emerald-200'
-              : 'bg-amber-50/90 border-amber-300 dark:bg-amber-950/40 dark:border-amber-500/30 text-amber-950 dark:text-amber-200'
+              ? 'bg-slate-50 border-slate-200 dark:bg-[#171b26] dark:border-[#2b3242]'
+              : 'bg-amber-50/80 border-amber-200 dark:bg-[#171b26] dark:border-amber-500/30'
           }`}>
             <div className="flex items-start gap-3">
               {isAppsScriptConnected ? (
@@ -219,14 +219,15 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
                 <p className="font-bold text-sm text-slate-900 dark:text-zinc-100">
                   {isAppsScriptConnected ? 'Google Apps Script Connected & Active' : 'Apps Script Not Connected'}
                 </p>
-                <p className="text-slate-700 dark:text-zinc-300 font-mono break-all text-[11px] sm:text-xs">
+                <p className="text-slate-600 dark:text-zinc-400 font-mono break-all text-[11px] sm:text-xs">
                   {isAppsScriptConnected
                     ? `Web App URL: ${appsScriptUrl.slice(0, 42)}...`
                     : 'Follow the 3 simple steps below to connect your Google Sheet via Apps Script.'}
                 </p>
                 {isAppsScriptConnected && user?.email && (
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold pt-0.5 flex items-center gap-1">
-                    <span>✓ Linked to account: <strong>{user.email}</strong> (automatically synced across devices)</span>
+                  <p className="text-[11px] text-slate-600 dark:text-zinc-300 font-medium pt-0.5 flex items-center gap-1">
+                    <span className="text-emerald-600 dark:text-emerald-400">✓</span>
+                    <span>Linked to account: <strong className="text-slate-900 dark:text-zinc-100">{user.email}</strong> (automatically synced)</span>
                   </p>
                 )}
               </div>
@@ -235,7 +236,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
             {isAppsScriptConnected && (
               <button
                 onClick={handleDisconnect}
-                className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 dark:text-rose-300 dark:border-rose-800/60 text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30 text-xs font-semibold transition-colors cursor-pointer shrink-0"
               >
                 Disconnect
               </button>
@@ -249,24 +250,24 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
                 ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-300 font-medium'
                 : statusMessage.type === 'error'
                 ? 'bg-rose-50 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-300 font-medium'
-                : 'bg-blue-50 dark:bg-blue-500/10 border border-blue-300 dark:border-blue-500/30 text-blue-900 dark:text-blue-300 font-medium'
+                : 'bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-300 dark:border-indigo-500/30 text-indigo-900 dark:text-indigo-300 font-medium'
             }`}>
               <span>{statusMessage.text}</span>
             </div>
           )}
 
           {/* Step 1: Copy Apps Script Code */}
-          <div className="space-y-3 p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80">
-            <div className="flex items-center justify-between">
+          <div className="space-y-3 p-4 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#202532]">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-zinc-100">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-center font-bold">1</span>
+                <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs flex items-center justify-center font-bold shrink-0">1</span>
                 <span>Copy Google Apps Script Code</span>
               </div>
               <button
                 onClick={handleCopyCode}
-                className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-slate-950 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="py-1.5 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 dark:bg-[#1c212e] dark:hover:bg-[#232939] dark:text-zinc-200 dark:border-[#2b3242] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs shrink-0"
               >
-                {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
                 <span>{isCopied ? 'Copied!' : 'Copy Script Code'}</span>
               </button>
             </div>
@@ -276,23 +277,23 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           </div>
 
           {/* Step 2: Deployment Instructions */}
-          <div className="space-y-2 p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80 text-xs">
+          <div className="space-y-2 p-4 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#202532] text-xs">
             <div className="flex items-center gap-2 font-bold text-slate-900 dark:text-zinc-100 text-sm mb-1">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
+              <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs flex items-center justify-center font-bold shrink-0">2</span>
               <span>Deploy as Web App</span>
             </div>
             <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-zinc-400 pl-1">
               <li>Click <b>Deploy &rarr; New deployment</b> in Apps Script.</li>
               <li>Select deployment type: <b>Web app</b>.</li>
-              <li>Set <i>Execute as</i>: <b>Me</b>, and <i>Who has access</i>: <b className="text-emerald-700 dark:text-emerald-400">Anyone</b>.</li>
+              <li>Set <i>Execute as</i>: <b>Me</b>, and <i>Who has access</i>: <b className="text-indigo-600 dark:text-indigo-400">Anyone</b>.</li>
               <li>Click <b>Deploy</b> and copy the <b>Web App URL</b>.</li>
             </ol>
           </div>
 
           {/* Step 3: Input Web App URL */}
-          <div className="space-y-3 p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80">
+          <div className="space-y-3 p-4 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#202532]">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-zinc-100">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs flex items-center justify-center font-bold">3</span>
+              <span className="w-5 h-5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs flex items-center justify-center font-bold shrink-0">3</span>
               <span>Enter Web App URL</span>
             </div>
 
@@ -302,11 +303,11 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
                 placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
-                className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 rounded-xl text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono shadow-xs"
+                className="w-full px-3.5 py-2.5 bg-white dark:bg-[#090b10] border border-slate-300 dark:border-[#262c3a] rounded-xl text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono shadow-xs"
               />
 
               {user?.email?.toLowerCase() === 'davinwijaya16@gmail.com' && (
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium pt-0.5">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-zinc-300 font-medium pt-0.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Account davinwijaya16@gmail.com is linked to auto pre-filled Web App URL configuration.</span>
                 </div>
@@ -315,7 +316,7 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
               <button
                 onClick={handleSaveAndTest}
                 disabled={isTesting || !inputUrl.trim()}
-                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 text-white dark:text-slate-950 font-bold text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
               >
                 {isTesting ? (
                   <>
@@ -333,10 +334,10 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
           </div>
 
           {/* Migration / Push Firebase Data to Google Sheet */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#131722] border border-slate-200 dark:border-slate-800/80 space-y-2">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200 dark:border-[#202532] space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Push Firebase / Local Data to Google Sheet</span>
-              <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono font-semibold">Auto Export</span>
+              <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-semibold">Auto Export</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-zinc-400">
               Transfer or copy all existing transactions, accounts, investments & budgets from Firebase / local storage to your newly connected Google Sheet.
@@ -344,16 +345,16 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
             <button
               onClick={handlePushFirebaseData}
               disabled={isPushing || (!isAppsScriptConnected && !inputUrl.trim())}
-              className="w-full py-2.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 dark:border-emerald-500/40 dark:text-emerald-300 font-bold text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
+              className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-indigo-700 border border-slate-300 dark:bg-[#1c212e] dark:hover:bg-[#232939] dark:border-[#2b3242] dark:text-indigo-400 font-bold text-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
             >
               {isPushing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400" />
+                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
                   <span>Pushing Firebase Data to Google Sheet...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <Send className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   <span>Push All Firebase Data to Google Sheet</span>
                 </>
               )}
@@ -362,14 +363,14 @@ export const GoogleSheetSetupModal: React.FC<GoogleSheetSetupModalProps> = ({ is
 
           {/* Manual Sync Trigger */}
           {isAppsScriptConnected && (
-            <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-[#202532]">
               <span className="text-xs text-slate-500 dark:text-zinc-400">Apps Script Connection Active</span>
               <button
                 onClick={handleManualSync}
                 disabled={isAppsScriptSyncing}
-                className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 dark:border-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-[#1c212e] dark:hover:bg-[#232939] dark:text-zinc-200 dark:border-[#2b3242] text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isAppsScriptSyncing ? 'animate-spin text-emerald-600 dark:text-emerald-400' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${isAppsScriptSyncing ? 'animate-spin text-indigo-600 dark:text-indigo-400' : ''}`} />
                 <span>Sync Data Now</span>
               </button>
             </div>

@@ -535,7 +535,7 @@ export const ExpensesView: React.FC = () => {
           <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 min-w-0">
             <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-1.5">
               <span className="text-[10px] text-slate-500 dark:text-zinc-500 uppercase">EXPENSES:</span>
-              <span className={`font-bold text-slate-900 dark:text-zinc-100 tabular-nums ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+              <span className={`font-bold text-rose-600 dark:text-rose-400 tabular-nums ${isPrivacyMode ? 'privacy-blur' : ''}`}>
                 {formatIdr(totalFilteredExpense)}
               </span>
             </div>
@@ -658,7 +658,7 @@ export const ExpensesView: React.FC = () => {
                             tx.type === 'cc_debt'
                               ? 'text-amber-600 dark:text-amber-400'
                               : tx.type === 'expense'
-                              ? 'text-slate-900 dark:text-zinc-100'
+                              ? 'text-rose-600 dark:text-rose-400'
                               : tx.type === 'income'
                               ? 'text-emerald-600 dark:text-emerald-400'
                               : tx.type === 'bank_to_investment'
@@ -833,7 +833,7 @@ export const ExpensesView: React.FC = () => {
                               tx.type === 'cc_debt'
                                 ? 'text-amber-600 dark:text-amber-400'
                                 : tx.type === 'expense'
-                                ? 'text-slate-900 dark:text-zinc-100'
+                                ? 'text-rose-600 dark:text-rose-400'
                                 : tx.type === 'income'
                                 ? 'text-emerald-600 dark:text-emerald-400'
                                 : tx.type === 'bank_to_investment'

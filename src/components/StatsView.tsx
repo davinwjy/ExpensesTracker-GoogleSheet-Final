@@ -265,7 +265,7 @@ export const StatsView: React.FC = () => {
 
               <span
                 className={`text-xs font-bold font-mono tabular-nums ${
-                  categoryTab === 'expense' ? 'text-slate-900 dark:text-zinc-100' : 'text-emerald-600 dark:text-emerald-400'
+                  categoryTab === 'expense' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                 }`}
               >
                 {formatIdr(

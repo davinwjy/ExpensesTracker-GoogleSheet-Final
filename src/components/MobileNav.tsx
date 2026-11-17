@@ -61,9 +61,9 @@ export const MobileNav: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            className="fixed bottom-20 inset-x-4 z-50 p-4 bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] rounded-2xl shadow-2xl space-y-2.5 max-w-sm mx-auto"
+            className="fixed bottom-20 inset-x-4 z-50 p-4 bg-white/75 dark:bg-[#12151d]/75 backdrop-blur-2xl backdrop-saturate-150 border border-white/70 dark:border-white/15 rounded-2xl shadow-[0_20px_50px_-10px_rgba(15,23,42,0.25),inset_0_1px_0_rgba(255,255,255,0.75)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.08)] space-y-2.5 max-w-sm mx-auto"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-[#1b2540]">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-white/10">
               <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">Quick Actions</span>
               <button
                 onClick={() => setIsQuickMenuOpen(false)}
@@ -184,7 +184,7 @@ export const MobileNav: React.FC = () => {
       {/* Floating Glassmorphic Bottom Dock (Visible on Mobile & Tablet < 1024px) */}
       <nav
         aria-label="Mobile Navigation"
-        className="lg:hidden fixed bottom-2.5 inset-x-3 sm:inset-x-6 z-30 max-w-md mx-auto rounded-2xl bg-white/95 dark:bg-[#0b1020]/95 backdrop-blur-2xl border border-slate-200/90 dark:border-[#1e2946] shadow-[0_12px_32px_-4px_rgba(15,23,42,0.14)] dark:shadow-[0_16px_40px_-4px_rgba(0,0,0,0.7)] px-2 py-1.5 transition-all select-none"
+        className="lg:hidden fixed bottom-2.5 inset-x-3 sm:inset-x-6 z-30 max-w-md mx-auto rounded-2xl bg-white/55 dark:bg-[#12151d]/60 backdrop-blur-2xl backdrop-saturate-150 border border-white/70 dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(15,23,42,0.18),inset_0_1px_0_rgba(255,255,255,0.85)] dark:shadow-[0_16px_44px_-6px_rgba(0,0,0,0.78),inset_0_1px_0_rgba(255,255,255,0.1)] px-2 py-1.5 transition-all select-none"
       >
         <div className="grid grid-cols-5 items-center w-full">
           {leftNavTabs.map((tab) => {
@@ -200,12 +200,12 @@ export const MobileNav: React.FC = () => {
                 }}
                 className="group relative w-full min-h-[48px] flex flex-col items-center justify-center py-1 px-1 rounded-xl cursor-pointer active:scale-95 transition-all duration-150 focus:outline-none"
               >
-                {/* Active Soft Capsule Background */}
+                {/* Active Soft Frosted Glass Capsule */}
                 {isActive && (
                   <motion.div
                     layoutId="mobile-dock-active-pill"
                     transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-gradient-to-b from-indigo-500/15 to-indigo-500/5 dark:from-indigo-400/20 dark:to-indigo-500/5 border border-indigo-500/25 dark:border-indigo-400/25 pointer-events-none"
+                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-gradient-to-b from-indigo-500/20 to-sky-500/10 dark:from-indigo-400/22 dark:to-sky-400/10 border border-indigo-400/35 dark:border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] pointer-events-none"
                   />
                 )}
 
@@ -248,10 +248,10 @@ export const MobileNav: React.FC = () => {
               onClick={() => setIsQuickMenuOpen(!isQuickMenuOpen)}
               aria-label="Quick Actions"
               aria-expanded={isQuickMenuOpen}
-              className={`relative -mt-6 flex items-center justify-center w-12 h-12 rounded-full ring-4 ring-[#f2f6fc] dark:ring-[#050c17] transition-all duration-200 active:scale-90 cursor-pointer focus:outline-none ${
+              className={`relative -mt-6 flex items-center justify-center w-12 h-12 rounded-full ring-4 ring-white/65 dark:ring-[#12151d]/75 backdrop-blur-md transition-all duration-200 active:scale-90 cursor-pointer focus:outline-none ${
                 isQuickMenuOpen
-                  ? 'bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-950 shadow-xl'
-                  : 'bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-500 text-white shadow-[0_8px_20px_-2px_rgba(21,76,194,0.55)] hover:brightness-105'
+                  ? 'bg-slate-900/90 dark:bg-zinc-100/95 text-white dark:text-slate-950 shadow-xl'
+                  : 'mobile-fab-white bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-500 text-white shadow-[0_8px_22px_-2px_rgba(21,76,194,0.55),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:brightness-105'
               }`}
             >
               <Plus
@@ -278,12 +278,12 @@ export const MobileNav: React.FC = () => {
                 }}
                 className="group relative w-full min-h-[48px] flex flex-col items-center justify-center py-1 px-1 rounded-xl cursor-pointer active:scale-95 transition-all duration-150 focus:outline-none"
               >
-                {/* Active Soft Capsule Background */}
+                {/* Active Soft Frosted Glass Capsule */}
                 {isActive && (
                   <motion.div
                     layoutId="mobile-dock-active-pill"
                     transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-gradient-to-b from-indigo-500/15 to-indigo-500/5 dark:from-indigo-400/20 dark:to-indigo-500/5 border border-indigo-500/25 dark:border-indigo-400/25 pointer-events-none"
+                    className="absolute inset-x-1 inset-y-0.5 rounded-xl bg-gradient-to-b from-indigo-500/20 to-sky-500/10 dark:from-indigo-400/22 dark:to-sky-400/10 border border-indigo-400/35 dark:border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] pointer-events-none"
                   />
                 )}
 

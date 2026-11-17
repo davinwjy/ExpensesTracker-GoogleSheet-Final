@@ -25,7 +25,7 @@
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     transition: background-color 0.15s ease, color 0.15s ease;
-    @apply bg-[#f2f6fc] text-slate-900 dark:bg-[#050c17] dark:text-zinc-100;
+    @apply bg-[#f2f6fc] text-slate-900 dark:bg-[#090b10] dark:text-zinc-100;
     letter-spacing: -0.01em;
   }
   
@@ -36,55 +36,71 @@
   }
 }
 
-/* Pure Deep Navy Surface Utilities (Zero Violet/Purple Cast) */
+/* Crisp Obsidian & Graphite Dark Surfaces (Balanced 60-30-10 Contrast, Zero Mono-Blue Wash) */
 .terminal-grid-border {
-  border-color: #162c52;
+  border-color: #202532;
 }
 
 .terminal-surface {
-  background-color: #091528;
+  background-color: #12151d;
 }
 
 .terminal-panel {
-  background-color: #0d1e38;
+  background-color: #171b26;
 }
 
-/* Harmonize Dark Navy Surfaces Globally */
-html.dark .dark\:bg-\[\#060913\] {
-  background-color: #050c17 !important;
+/* Harmonize Dark Surfaces Globally: Neutral Charcoal Canvas + Layered Graphite Cards */
+html.dark .dark\:bg-\[\#060913\],
+html.dark .dark\:bg-\[\#050c17\] {
+  background-color: #090b10 !important;
 }
 html.dark .dark\:bg-\[\#070b16\] {
-  background-color: #060f1d !important;
+  background-color: #0c0e14 !important;
 }
 html.dark .dark\:bg-\[\#080d1a\] {
-  background-color: #071222 !important;
+  background-color: #0e1118 !important;
 }
 html.dark .dark\:bg-\[\#0b1020\],
-html.dark .dark\:bg-\[\#0c1222\] {
-  background-color: #091528 !important;
+html.dark .dark\:bg-\[\#0c1222\],
+html.dark .dark\:bg-\[\#091528\] {
+  background-color: #12151d !important;
 }
 html.dark .dark\:bg-\[\#0f1629\],
-html.dark .dark\:bg-\[\#10172a\] {
-  background-color: #0d1e38 !important;
+html.dark .dark\:bg-\[\#10172a\],
+html.dark .dark\:bg-\[\#141a27\] {
+  background-color: #171b26 !important;
 }
 html.dark .dark\:bg-\[\#11192e\],
 html.dark .dark\:bg-\[\#131d35\],
-html.dark .dark\:bg-\[\#141d33\] {
-  background-color: #112647 !important;
+html.dark .dark\:bg-\[\#141d33\],
+html.dark .dark\:bg-\[\#151e34\] {
+  background-color: #1c212e !important;
 }
 html.dark .dark\:bg-\[\#18233e\],
-html.dark .dark\:bg-\[\#1b2744\] {
-  background-color: #16315c !important;
+html.dark .dark\:bg-\[\#1b2744\],
+html.dark .dark\:bg-\[\#142646\] {
+  background-color: #232939 !important;
+}
+html.dark .dark\:hover\:bg-\[\#17223d\]:hover,
+html.dark .dark\:hover\:bg-\[\#1a2645\]:hover,
+html.dark .dark\:hover\:bg-\[\#1a2336\]:hover {
+  background-color: #252b3b !important;
 }
 html.dark .dark\:border-\[\#182238\],
 html.dark .dark\:border-\[\#1b2540\],
-html.dark .dark\:border-\[\#1e2946\] {
-  border-color: #162c52 !important;
+html.dark .dark\:border-\[\#1e2946\],
+html.dark .dark\:border-\[\#162c52\],
+html.dark .dark\:border-\[\#212a40\] {
+  border-color: #202532 !important;
 }
 html.dark .dark\:border-\[\#222f4d\],
 html.dark .dark\:border-\[\#243252\],
-html.dark .dark\:border-\[\#2a3b66\] {
-  border-color: #1e3b6e !important;
+html.dark .dark\:border-\[\#2a3b66\],
+html.dark .dark\:border-\[\#223c6b\] {
+  border-color: #2b3242 !important;
+}
+html.dark .dark\:hover\:border-\[\#2b3b63\]:hover {
+  border-color: #363f54 !important;
 }
 
 /* Privacy Mode CSS Filter Blur Utility */
@@ -103,16 +119,16 @@ html.dark .dark\:border-\[\#2a3b66\] {
 }
 
 ::-webkit-scrollbar-track {
-  background: #050c17;
+  background: #090b10;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #162c52;
+  background: #232938;
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #214075;
+  background: #323a4f;
 }
 
 /* Light mode scrollbar */
@@ -458,5 +474,56 @@ html.light .fixed.inset-0.bg-black\/60,
 html[data-theme="light"] .fixed.inset-0.bg-black\/75 {
   background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(4px);
+}
+
+/* High-contrast PIN Keypad & Modal guarantees for Dark & Light Mode */
+.pin-modal-card {
+  background-color: #12151d !important;
+  border-color: #272d3d !important;
+  color: #ffffff !important;
+}
+
+.pin-modal-title {
+  color: #ffffff !important;
+}
+
+.pin-key-btn {
+  background-color: #1d2230 !important;
+  border-color: #2e364a !important;
+  color: #ffffff !important;
+}
+
+.pin-key-btn:hover {
+  background-color: #262d3f !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.pin-key-btn span,
+.pin-key-btn svg {
+  color: #ffffff !important;
+}
+
+.pin-key-action-btn {
+  background-color: #151923 !important;
+  border-color: #252b3b !important;
+  color: #cbd5e1 !important;
+}
+
+.pin-key-action-btn:hover {
+  background-color: #1f2534 !important;
+  color: #ffffff !important;
+}
+
+.pin-key-action-btn svg {
+  color: currentColor !important;
+}
+
+/* Preserve white icon on Mobile Bottom Nav gradient action orb in Light Mode */
+html.light .mobile-fab-white,
+html.light .mobile-fab-white svg,
+html[data-theme="light"] .mobile-fab-white,
+html[data-theme="light"] .mobile-fab-white svg {
+  color: #ffffff !important;
 }
 
