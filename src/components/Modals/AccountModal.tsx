@@ -224,32 +224,32 @@ export const AccountModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[86vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Handle */}
-        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
-          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+        <div className="sm:hidden flex justify-center pt-1.5 pb-0.5 shrink-0">
+          <div className="w-8 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
-        {/* Clean Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#18223a] shrink-0">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-[#18223a] shrink-0">
+          <div className="min-w-0">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight truncate">
               {editingAccount ? 'Edit Account' : 'Add Account'}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
               {editingAccount
-                ? 'Update account details, balance, or credit limit'
-                : 'Add a bank account, credit card, PayLater, or cash wallet'}
+                ? 'Update details, balance, or credit limit'
+                : 'Bank, credit card, PayLater, or cash wallet'}
             </p>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={resetFields}
               disabled={isSubmitting}
               title="Reset form"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -258,7 +258,7 @@ export const AccountModal: React.FC = () => {
               onClick={handleClose}
               disabled={isSubmitting}
               aria-label="Close modal"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -269,17 +269,17 @@ export const AccountModal: React.FC = () => {
         <form
           id="account-modal-form"
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain"
+          className="flex-1 overflow-y-auto p-3.5 space-y-2.5 overscroll-contain"
         >
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-[11px]">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Segmented Account Type Selector */}
-          <div className="grid grid-cols-4 p-1 bg-slate-100 dark:bg-[#0f1629] rounded-xl border border-slate-200/70 dark:border-[#1e2946]">
+          <div className="grid grid-cols-4 p-0.5 bg-slate-100 dark:bg-[#0f1629] rounded-lg border border-slate-200/70 dark:border-[#1e2946]">
             {(
               [
                 { id: 'bank', label: 'Bank' },
@@ -293,7 +293,7 @@ export const AccountModal: React.FC = () => {
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => handleTypeChange(tab.id)}
-                className={`py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 ${
+                className={`py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 ${
                   type === tab.id
                     ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a3960]'
                     : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -305,9 +305,9 @@ export const AccountModal: React.FC = () => {
           </div>
 
           {/* Account Name */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5 text-slate-400" />
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+              <Wallet className="w-3 h-3 text-slate-400" />
               <span>{isCreditFacility ? 'Card / Provider Name' : 'Account Name'}</span>
             </label>
             <input
@@ -321,15 +321,15 @@ export const AccountModal: React.FC = () => {
                   ? 'e.g. GoPayLater, ShopeePayLater'
                   : 'e.g. BCA Main, Cash Wallet...'
               }
-              className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
+              className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none transition-colors"
               required
               autoFocus
             />
           </div>
 
           {/* Hero Balance / Debt Card */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2.5">
-            <div className="flex items-center justify-between text-xs">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
               <label className="font-medium text-slate-700 dark:text-zinc-300">
                 {isCreditFacility ? 'Used Credit / Current Bill' : 'Current Balance'}
               </label>
@@ -347,7 +347,7 @@ export const AccountModal: React.FC = () => {
             </div>
 
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 dark:text-zinc-500 select-none">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500 select-none">
                 Rp
               </span>
               <input
@@ -356,14 +356,14 @@ export const AccountModal: React.FC = () => {
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="0"
-                className="w-full bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-10 pr-3.5 py-2.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
+                className="w-full bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg pl-8.5 pr-3 py-1.5 text-base font-bold tracking-tight text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none tabular-nums font-mono transition-colors"
                 required
               />
             </div>
 
             {isCreditFacility && (
-              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 pt-0.5">
-                <span>Available Credit Limit:</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
+                <span>Available Limit:</span>
                 <strong className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                   {formatIdr(Math.max(0, Number(creditLimit || 0) - Number(balance || 0)))}
                 </strong>
@@ -373,14 +373,14 @@ export const AccountModal: React.FC = () => {
 
           {/* Credit Card / PayLater Specific Fields */}
           {isCreditFacility && (
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2">
+              <div className={`grid ${type === 'credit_card' ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
-                    Total Credit Limit (IDR)
+                  <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                    Credit Limit (IDR)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
                       Rp
                     </span>
                     <input
@@ -389,7 +389,7 @@ export const AccountModal: React.FC = () => {
                       value={creditLimit}
                       onChange={(e) => setCreditLimit(e.target.value)}
                       placeholder="20000000"
-                      className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-xs font-bold text-slate-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none"
+                      className="w-full h-8.5 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg pl-7.5 pr-2 text-xs font-bold text-slate-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none"
                       required
                     />
                   </div>
@@ -397,13 +397,13 @@ export const AccountModal: React.FC = () => {
 
                 {type === 'credit_card' && (
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                    <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
                       Card Network
                     </label>
                     <select
                       value={cardNetwork}
                       onChange={(e) => setCardNetwork(e.target.value)}
-                      className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
+                      className="w-full h-8.5 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg px-2 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none"
                     >
                       {CARD_NETWORKS.map((net) => (
                         <option key={net} value={net}>
@@ -415,11 +415,11 @@ export const AccountModal: React.FC = () => {
                 )}
               </div>
 
-              <div className={`grid ${type === 'credit_card' ? 'grid-cols-3' : 'grid-cols-2'} gap-2.5`}>
+              <div className={`grid ${type === 'credit_card' ? 'grid-cols-3' : 'grid-cols-2'} gap-2`}>
                 {type === 'credit_card' && (
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
-                      Last 4 Digits
+                    <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                      Last 4
                     </label>
                     <input
                       type="text"
@@ -427,12 +427,12 @@ export const AccountModal: React.FC = () => {
                       value={last4Digits}
                       onChange={(e) => setLast4Digits(e.target.value)}
                       placeholder="4821"
-                      className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
+                      className="w-full h-8 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
                     />
                   </div>
                 )}
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                  <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
                     Billing Day
                   </label>
                   <input
@@ -441,11 +441,11 @@ export const AccountModal: React.FC = () => {
                     max="31"
                     value={billingDate}
                     onChange={(e) => setBillingDate(e.target.value)}
-                    className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
+                    className="w-full h-8 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                  <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
                     Due Day
                   </label>
                   <input
@@ -454,7 +454,7 @@ export const AccountModal: React.FC = () => {
                     max="31"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
+                    className="w-full h-8 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 font-mono focus:outline-none"
                   />
                 </div>
               </div>
@@ -463,9 +463,9 @@ export const AccountModal: React.FC = () => {
 
           {/* Account Number (Optional) */}
           {!isCreditFacility && type !== 'cash' && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Hash className="w-3.5 h-3.5 text-slate-400" />
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                <Hash className="w-3 h-3 text-slate-400" />
                 <span>Account Number (Optional)</span>
               </label>
               <input
@@ -473,24 +473,24 @@ export const AccountModal: React.FC = () => {
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
                 placeholder="e.g. 521098231 or •••• 4821"
-                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono"
+                className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono"
               />
             </div>
           )}
 
           {/* Color Tag */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-slate-400" />
-              <span>Color Accent</span>
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1 shrink-0">
+              <Palette className="w-3 h-3 text-slate-400" />
+              <span>Color</span>
             </label>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {PRESET_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`w-7 h-7 rounded-lg border transition-transform cursor-pointer ${
+                  className={`w-6 h-6 rounded-md border transition-transform cursor-pointer ${
                     color === c
                       ? 'scale-110 border-slate-900 dark:border-white ring-2 ring-indigo-500/40'
                       : 'border-transparent opacity-75 hover:opacity-100'
@@ -502,23 +502,23 @@ export const AccountModal: React.FC = () => {
           </div>
         </form>
 
-        {/* Clean Footer */}
-        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
+        {/* Compact Footer */}
+        <div className="shrink-0 px-4 py-2.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
           {editingAccount ? (
             confirmDelete ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={isSubmitting}
-                  className="h-9 px-3 rounded-xl bg-rose-600 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
+                  className="h-8 px-2.5 rounded-lg bg-rose-600 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
                 >
                   Confirm Delete
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="h-9 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
+                  className="h-8 px-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -527,7 +527,7 @@ export const AccountModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="h-9 px-3 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-colors"
+                className="h-8 px-2.5 flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete</span>
@@ -542,7 +542,7 @@ export const AccountModal: React.FC = () => {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
+              className="h-8 px-3 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               Cancel
             </button>
@@ -550,7 +550,7 @@ export const AccountModal: React.FC = () => {
               type="submit"
               form="account-modal-form"
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+              className="h-8 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
             >
               {isSubmitting ? (
                 <>

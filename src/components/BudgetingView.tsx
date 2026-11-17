@@ -255,15 +255,15 @@ export const BudgetingView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 animate-in fade-in pb-12 min-w-0">
+    <div className="space-y-3 sm:space-y-3.5 animate-in fade-in pb-12 min-w-0">
       {/* Header & Main CTAs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
-            Budgeting & Spending Limits
+          <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+            Budgeting & Limits
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-            Compare monthly spending against {prevMonthDisplay} and set smart category ceilings.
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
+            Compare against {prevMonthDisplay} and manage category limits
           </p>
         </div>
 
@@ -340,13 +340,13 @@ export const BudgetingView: React.FC = () => {
         </div>
       </div>
 
-      {/* OVERVIEW CARD (With Mobile Overflow Protection & MoM Comparison) */}
-      <div className="bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#161b26] dark:via-[#12151d] dark:to-[#101218] border border-indigo-200/90 dark:border-[#2a3347] rounded-xl p-4 sm:p-6 shadow-sm space-y-4 min-w-0">
+      {/* OVERVIEW CARD (Compact Strip + MoM Comparison) */}
+      <div className="bg-gradient-to-br from-indigo-50/70 via-white to-sky-50/40 dark:from-[#161b26] dark:via-[#12151d] dark:to-[#101218] border border-indigo-200/90 dark:border-[#2a3347] rounded-xl p-3 sm:p-4 shadow-sm space-y-2.5 min-w-0">
         {/* OVERALL MACRO CONSUMPTION BAR */}
-        <div className="space-y-2.5 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+        <div className="space-y-2 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1.5">
             <div className="min-w-0">
-              <span className="block text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium mb-0.5">
+              <span className="block text-[11px] text-slate-500 dark:text-zinc-400 font-medium">
                 Spent This Month ({monthDisplay})
               </span>
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -359,7 +359,7 @@ export const BudgetingView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+            <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
               {totalPrevMonthSpent > 0 && (
                 <span
                   className={`text-xs font-medium tabular-nums whitespace-nowrap ${
@@ -390,7 +390,7 @@ export const BudgetingView: React.FC = () => {
           </div>
 
           {/* Master visual indicator bar */}
-          <div className="relative w-full h-2.5 rounded-full bg-slate-100 dark:bg-[#141a27] border border-slate-200/80 dark:border-[#212a40] overflow-hidden">
+          <div className="relative w-full h-2 rounded-full bg-slate-100 dark:bg-[#141a27] border border-slate-200/80 dark:border-[#212a40] overflow-hidden">
             <div
               style={{ width: `${Math.min(100, overallPercent)}%` }}
               className={`h-full transition-all duration-300 ${
@@ -403,10 +403,10 @@ export const BudgetingView: React.FC = () => {
             />
           </div>
 
-          {/* Mobile-safe stacked status & Total Limit footer */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-slate-500 dark:text-zinc-400 pt-0.5">
+          {/* Compact Status Line */}
+          <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-500 dark:text-zinc-400">
             <span
-              className={`font-medium tabular-nums break-words ${
+              className={`font-medium tabular-nums ${
                 totalBudgeted === 0
                   ? 'text-amber-600 dark:text-amber-400'
                   : isOverBudget
@@ -416,68 +416,57 @@ export const BudgetingView: React.FC = () => {
             >
               {totalBudgeted === 0
                 ? totalSpent > 0
-                  ? `${formatIdr(totalSpent)} spent without a budget limit set`
+                  ? `${formatIdr(totalSpent)} spent without a budget limit`
                   : 'No monthly budget limit set yet'
                 : isOverBudget
-                ? `Over budget by ${formatIdr(totalSpent - totalBudgeted)}`
-                : `${formatIdr(totalRemaining)} remaining buffer`}
+                ? `Over by ${formatIdr(totalSpent - totalBudgeted)}`
+                : `${formatIdr(totalRemaining)} remaining`}
             </span>
 
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums">
-              {totalPrevMonthSpent > 0 && (
-                <>
-                  <span className="text-slate-400 dark:text-zinc-500 whitespace-nowrap">
-                    {prevMonthDisplay}:{' '}
-                    <strong className={`font-semibold text-slate-600 dark:text-zinc-300 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-                      {formatMasked(totalPrevMonthSpent, 'IDR', isPrivacyMode)}
-                    </strong>
-                  </span>
-                  <span aria-hidden="true" className="text-slate-300 dark:text-zinc-700">·</span>
-                </>
-              )}
-              <span className="whitespace-nowrap">
-                Total Limit:{' '}
-                <strong className={`font-semibold text-slate-700 dark:text-zinc-300 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
-                  {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)}
+            {totalPrevMonthSpent > 0 && (
+              <span className="text-slate-400 dark:text-zinc-500 whitespace-nowrap tabular-nums">
+                {prevMonthDisplay}:{' '}
+                <strong className={`font-semibold text-slate-600 dark:text-zinc-300 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+                  {formatMasked(totalPrevMonthSpent, 'IDR', isPrivacyMode)}
                 </strong>
               </span>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Macro Telemetry Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 dark:border-[#18223a]">
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
-              Monthly Ceiling
+        {/* Macro Telemetry Strip */}
+        <div className="rounded-lg bg-slate-50/90 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-200/80 dark:divide-[#1e2946] overflow-hidden">
+          <div className="p-2 sm:p-2.5 min-w-0">
+            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium block truncate">
+              Ceiling
             </span>
-            <p className={`text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-200 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-sm font-semibold text-slate-900 dark:text-zinc-200 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalBudgeted, 'IDR', isPrivacyMode)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
+          <div className="p-2 sm:p-2.5 min-w-0">
+            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium block truncate">
               Spent ({monthDisplay.split(' ')[0]})
             </span>
-            <p className={`text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalSpent, 'IDR', isPrivacyMode)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
+          <div className="p-2 sm:p-2.5 min-w-0">
+            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium block truncate">
               Last Month ({prevMonthDisplay.split(' ')[0]})
             </span>
-            <p className={`text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-xs sm:text-sm font-semibold text-slate-800 dark:text-zinc-200 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(totalPrevMonthSpent, 'IDR', isPrivacyMode)}
             </p>
           </div>
-          <div className="p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200/70 dark:border-[#1e2946] min-w-0">
-            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-zinc-400 font-medium block truncate">
-              {totalPrevMonthSpent > 0 ? 'vs Last Month' : 'Remaining Buffer'}
+          <div className="p-2 sm:p-2.5 min-w-0">
+            <span className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium block truncate">
+              {totalPrevMonthSpent > 0 ? 'vs Last Month' : 'Remaining'}
             </span>
             {totalPrevMonthSpent > 0 ? (
               <p
-                className={`text-xs sm:text-sm font-semibold tabular-nums break-words mt-0.5 ${
+                className={`text-xs sm:text-sm font-semibold tabular-nums truncate mt-0.5 ${
                   totalMomDeltaAmount <= 0
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-rose-600 dark:text-rose-400'
@@ -488,7 +477,7 @@ export const BudgetingView: React.FC = () => {
               </p>
             ) : (
               <p
-                className={`text-xs sm:text-sm font-semibold tabular-nums break-words mt-0.5 ${
+                className={`text-xs sm:text-sm font-semibold tabular-nums truncate mt-0.5 ${
                   isOverBudget ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                 } ${isPrivacyMode ? 'privacy-blur' : ''}`}
               >
@@ -747,7 +736,7 @@ export const BudgetingView: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 sm:gap-3">
           {filteredItems.map((item) => {
             const isExpanded = expandedCategory === item.category;
             const catTransactions = isExpanded ? getCategoryTransactions(item.category) : [];
@@ -758,7 +747,7 @@ export const BudgetingView: React.FC = () => {
             return (
               <div
                 key={item.category}
-                className={`p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border transition-all space-y-3.5 shadow-sm min-w-0 ${
+                className={`p-3 sm:p-3.5 rounded-xl bg-white dark:bg-[#0b1020] border transition-all space-y-2.5 shadow-sm min-w-0 ${
                   item.status === 'danger'
                     ? 'border-rose-300 dark:border-rose-500/40'
                     : item.status === 'warning'

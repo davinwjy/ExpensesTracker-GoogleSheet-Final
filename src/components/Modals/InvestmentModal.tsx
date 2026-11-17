@@ -252,29 +252,29 @@ export const InvestmentModal: React.FC = () => {
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
+      <div className="relative w-full max-w-md bg-white dark:bg-[#0b1020] border-t sm:border border-slate-200/90 dark:border-[#1b2540] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[86vh] z-10 overflow-hidden animate-in slide-in-from-bottom-5 sm:slide-in-from-bottom-0 sm:fade-in sm:zoom-in-95 text-slate-900 dark:text-zinc-100">
         {/* Mobile Drag Handle */}
-        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
-          <div className="w-9 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+        <div className="sm:hidden flex justify-center pt-1.5 pb-0.5 shrink-0">
+          <div className="w-8 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
         </div>
 
-        {/* Clean Header */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-[#18223a] shrink-0">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between px-4 pt-2.5 pb-2 border-b border-slate-100 dark:border-[#18223a] shrink-0">
+          <div className="min-w-0">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm tracking-tight truncate">
               Edit Investment Holding
             </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-              Update market valuation, principal cost, and broker details
+            <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+              Update valuation, cost basis, and broker details
             </p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 shrink-0">
             <button
               type="button"
               onClick={resetFields}
               disabled={isSubmitting}
               title="Reset form"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -283,7 +283,7 @@ export const InvestmentModal: React.FC = () => {
               onClick={handleClose}
               disabled={isSubmitting}
               aria-label="Close modal"
-              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
+              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               <X className="w-4 h-4" />
             </button>
@@ -294,46 +294,46 @@ export const InvestmentModal: React.FC = () => {
         <form
           id="investment-modal-form"
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain"
+          className="flex-1 overflow-y-auto p-3.5 space-y-2.5 overscroll-contain"
         >
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-300 text-[11px]">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Category Selector */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-slate-400" />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-[11px]">
+              <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                <Layers className="w-3 h-3 text-slate-400" />
                 <span>Asset Class</span>
               </label>
               <button
                 type="button"
                 onClick={() => setIsHoldingTypesModalOpen(true)}
-                className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <Layers className="w-3 h-3" />
-                <span>Manage Classes</span>
+                <span>Manage</span>
               </button>
             </div>
 
-            <div className="flex flex-wrap gap-1 p-1 bg-slate-100 dark:bg-[#0f1629] rounded-xl border border-slate-200/70 dark:border-[#1e2946]">
+            <div className="flex flex-wrap gap-1 p-0.5 bg-slate-100 dark:bg-[#0f1629] rounded-lg border border-slate-200/70 dark:border-[#1e2946]">
               {categoriesList.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`py-1.5 px-2.5 rounded-lg text-center whitespace-nowrap transition-all cursor-pointer flex-1 min-w-[75px] ${
+                  className={`py-1 px-2 rounded-md text-center whitespace-nowrap transition-all cursor-pointer flex-1 min-w-[68px] ${
                     category === cat.id
                       ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white border border-slate-200/80 dark:border-[#2a3960] shadow-xs font-semibold'
                       : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 border border-transparent'
                   }`}
                 >
-                  <span className="block text-xs">{cat.id}</span>
-                  <span className="block text-[10px] opacity-70 font-mono">
+                  <span className="block text-[11px] leading-tight">{cat.id}</span>
+                  <span className="block text-[9px] opacity-70 font-mono leading-tight">
                     {cat.defaultCurrency}
                   </span>
                 </button>
@@ -342,9 +342,9 @@ export const InvestmentModal: React.FC = () => {
           </div>
 
           {/* Asset Name / Ticker */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+              <TrendingUp className="w-3 h-3 text-slate-400" />
               <span>Asset Name / Ticker</span>
             </label>
             <input
@@ -352,21 +352,21 @@ export const InvestmentModal: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={selectedCategoryMeta.example}
-              className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+              className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs font-medium text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
               required
               autoFocus
             />
           </div>
 
           {/* Hero Principal & Market Valuation Card */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
-                  Principal Cost ({isUsd ? 'USD' : 'IDR'})
+                <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                  Cost Basis ({isUsd ? 'USD' : 'IDR'})
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
                     {isUsd ? '$' : 'Rp'}
                   </span>
                   <input
@@ -375,18 +375,18 @@ export const InvestmentModal: React.FC = () => {
                     value={amountInvested}
                     onChange={(e) => setAmountInvested(e.target.value)}
                     placeholder={isUsd ? '100.00' : '1,000,000'}
-                    className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                    className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg pl-7.5 pr-2 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
-                  Current Value ({isUsd ? 'USD' : 'IDR'})
+                <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                  Market Value ({isUsd ? 'USD' : 'IDR'})
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
                     {isUsd ? '$' : 'Rp'}
                   </span>
                   <input
@@ -395,7 +395,7 @@ export const InvestmentModal: React.FC = () => {
                     value={currentValue}
                     onChange={(e) => setCurrentValue(e.target.value)}
                     placeholder={amountInvested || (isUsd ? '100.00' : '1,000,000')}
-                    className="w-full h-10 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-sm font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                    className="w-full h-9 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#243252] focus:border-indigo-500 rounded-lg pl-7.5 pr-2 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                   />
                 </div>
               </div>
@@ -403,9 +403,9 @@ export const InvestmentModal: React.FC = () => {
 
             {/* Live PnL Preview */}
             {invNumber > 0 && (
-              <div className="px-3 py-2 bg-white dark:bg-[#080d1a] rounded-xl border border-slate-200/80 dark:border-[#243252] flex flex-wrap items-center justify-between text-xs gap-2">
+              <div className="px-2.5 py-1.5 bg-white dark:bg-[#080d1a] rounded-lg border border-slate-200/80 dark:border-[#243252] flex flex-wrap items-center justify-between text-[11px] gap-1.5">
                 <div>
-                  <span className="text-slate-500 dark:text-zinc-400">Unrealized Return: </span>
+                  <span className="text-slate-500 dark:text-zinc-400">PnL: </span>
                   <span
                     className={`font-bold font-mono tabular-nums ${
                       pnl >= 0
@@ -419,8 +419,8 @@ export const InvestmentModal: React.FC = () => {
                   </span>
                 </div>
                 {isUsd && (
-                  <div className="text-slate-500 dark:text-zinc-400 text-[11px]">
-                    IDR Value:{' '}
+                  <div className="text-slate-500 dark:text-zinc-400">
+                    IDR:{' '}
                     <strong className="text-slate-900 dark:text-zinc-200 font-mono tabular-nums">
                       {formatIdr(curNumber * effectiveRate)}
                     </strong>
@@ -432,17 +432,17 @@ export const InvestmentModal: React.FC = () => {
 
           {/* Custom Broker Exchange Rate (Only shown when currency is USD) */}
           {isUsd && (
-            <div className="p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-[#101622] border border-indigo-200/80 dark:border-indigo-500/30 space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
+            <div className="p-2.5 rounded-xl bg-indigo-50/50 dark:bg-[#101622] border border-indigo-200/80 dark:border-indigo-500/30 space-y-1">
+              <div className="flex items-center justify-between text-[11px]">
                 <label className="font-medium text-indigo-800 dark:text-indigo-300">
-                  Broker Exchange Rate (IDR per USD)
+                  Broker FX Rate (IDR/USD)
                 </label>
-                <span className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
                   Spot: {formatIdr(usdIdrRate)}
                 </span>
               </div>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-zinc-500">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
                   Rp
                 </span>
                 <input
@@ -451,45 +451,45 @@ export const InvestmentModal: React.FC = () => {
                   value={customExchangeRate}
                   onChange={(e) => setCustomExchangeRate(e.target.value)}
                   placeholder={usdIdrRate.toString()}
-                  className="w-full h-10 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-indigo-500 rounded-xl pl-8 pr-3 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
+                  className="w-full h-8.5 bg-white dark:bg-[#0b0f17] border border-slate-200 dark:border-[#222d42] focus:border-indigo-500 rounded-lg pl-7.5 pr-2.5 text-xs font-bold text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:outline-none font-mono tabular-nums"
                 />
               </div>
             </div>
           )}
 
           {/* Units & Platform */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
-                Quantity / Units (Optional)
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                Units (Optional)
               </label>
               <input
                 type="number"
                 step="any"
                 value={units}
                 onChange={(e) => setUnits(e.target.value)}
-                placeholder={category === 'Bitcoin' ? 'e.g. 0.015' : 'e.g. 10'}
-                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono tabular-nums"
+                placeholder={category === 'Bitcoin' ? '0.015' : '10'}
+                className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none font-mono tabular-nums"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700 dark:text-zinc-300">
-                Platform / Broker (Optional)
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300">
+                Platform (Optional)
               </label>
               <input
                 type="text"
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
-                placeholder="e.g. GoTrade, Bibit, Stockbit..."
-                className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+                placeholder="GoTrade, Bibit..."
+                className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Notes */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
+          <div className="space-y-1">
+            <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+              <FileText className="w-3 h-3 text-slate-400" />
               <span>Note (Optional)</span>
             </label>
             <input
@@ -497,28 +497,28 @@ export const InvestmentModal: React.FC = () => {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Monthly DCA, long-term hold..."
-              className="w-full h-10 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-xl px-3 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
+              className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none"
             />
           </div>
         </form>
 
-        {/* Clean Footer */}
-        <div className="shrink-0 px-5 py-3.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
+        {/* Compact Footer */}
+        <div className="shrink-0 px-4 py-2.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
           {editingInvestment ? (
             confirmDelete ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={isSubmitting}
-                  className="h-9 px-3 rounded-xl bg-rose-600 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
+                  className="h-8 px-2.5 rounded-lg bg-rose-600 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
                 >
                   Confirm Delete
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="h-9 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
+                  className="h-8 px-2 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -527,7 +527,7 @@ export const InvestmentModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="h-9 px-3 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-colors"
+                className="h-8 px-2.5 flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete</span>
@@ -542,7 +542,7 @@ export const InvestmentModal: React.FC = () => {
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
+              className="h-8 px-3 rounded-lg text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#151f38] transition-colors cursor-pointer disabled:opacity-40"
             >
               Cancel
             </button>
@@ -550,7 +550,7 @@ export const InvestmentModal: React.FC = () => {
               type="submit"
               form="investment-modal-form"
               disabled={isSubmitting}
-              className="h-9 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
+              className="h-8 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white cursor-pointer disabled:opacity-50 transition-all shadow-xs"
             >
               {isSubmitting ? (
                 <>

@@ -99,14 +99,14 @@ export const StatsView: React.FC = () => {
   const usdPercent = netWorth > 0 ? ((categoryAllocations['USD']?.idrValue || 0) / netWorth) * 100 : 0;
 
   return (
-    <div className="space-y-4 animate-in fade-in pb-12 min-w-0">
+    <div className="space-y-3 sm:space-y-3.5 animate-in fade-in pb-12 min-w-0">
       {/* Header */}
       <div className="min-w-0">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
+        <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
           Analytics & Reports
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-          Asset allocation weights, income vs investment timelines, and FX conversion rates
+        <p className="text-xs text-slate-500 dark:text-zinc-400">
+          Asset allocation, cashflow timelines, and FX conversion rates
         </p>
       </div>
 
@@ -114,24 +114,21 @@ export const StatsView: React.FC = () => {
       <IncomeInvestmentTracker />
 
       {/* ASSET ALLOCATION MATRIX */}
-      <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3.5 shadow-sm min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-500 shrink-0" />
-              <span>Asset Allocation Matrix</span>
+      <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-2.5 shadow-sm min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm truncate">
+              Asset Allocation
             </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Distribution of aggregate net worth across liquid and invested assets
-            </p>
           </div>
-          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 tabular-nums whitespace-nowrap">
+          <span className="text-xs font-semibold text-slate-800 dark:text-zinc-200 tabular-nums whitespace-nowrap shrink-0">
             Total: <span className={isPrivacyMode ? 'privacy-blur' : ''}>{formatMasked(netWorth, 'IDR', isPrivacyMode)}</span>
           </span>
         </div>
 
         {/* Multi-segment Progress Bar */}
-        <div className="w-full h-2.5 rounded-sm bg-slate-100 dark:bg-[#131d35] overflow-hidden flex border border-slate-200 dark:border-[#1e2946]">
+        <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-[#131d35] overflow-hidden flex border border-slate-200 dark:border-[#1e2946]">
           <div style={{ width: `${cashPercent}%` }} className="bg-sky-500 h-full transition-all" title={`Cash & Banks: ${cashPercent.toFixed(1)}%`} />
           <div style={{ width: `${sahamPercent}%` }} className="bg-blue-600 h-full transition-all" title={`Saham: ${sahamPercent.toFixed(1)}%`} />
           <div style={{ width: `${rdpuPercent}%` }} className="bg-teal-500 h-full transition-all" title={`RDPU: ${rdpuPercent.toFixed(1)}%`} />
@@ -141,81 +138,81 @@ export const StatsView: React.FC = () => {
         </div>
 
         {/* Legend Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1">
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-sky-600 dark:text-sky-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-sky-500 shrink-0" />
-              <span className="truncate">CASH & BANKS</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[10px] text-sky-600 dark:text-sky-400 font-semibold">
+              <span className="flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+                <span className="truncate">CASH</span>
+              </span>
+              <span className="text-slate-900 dark:text-zinc-100 tabular-nums shrink-0">{cashPercent.toFixed(1)}%</span>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
-              {cashPercent.toFixed(1)}%
-            </p>
-            <p className={`text-[10px] text-slate-500 dark:text-zinc-500 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(liquidCash, 'IDR', isPrivacyMode)}
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-blue-600 dark:text-blue-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-blue-600 shrink-0" />
-              <span className="truncate">STOCKS (ID)</span>
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
+              <span className="flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                <span className="truncate">STOCKS</span>
+              </span>
+              <span className="text-slate-900 dark:text-zinc-100 tabular-nums shrink-0">{sahamPercent.toFixed(1)}%</span>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
-              {sahamPercent.toFixed(1)}%
-            </p>
-            <p className={`text-[10px] text-slate-500 dark:text-zinc-500 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(categoryAllocations['Saham']?.idrValue || 0, 'IDR', isPrivacyMode)}
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-teal-600 dark:text-teal-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-teal-500 shrink-0" />
-              <span className="truncate">RDPU (FUND)</span>
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
+              <span className="flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />
+                <span className="truncate">RDPU</span>
+              </span>
+              <span className="text-slate-900 dark:text-zinc-100 tabular-nums shrink-0">{rdpuPercent.toFixed(1)}%</span>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
-              {rdpuPercent.toFixed(1)}%
-            </p>
-            <p className={`text-[10px] text-slate-500 dark:text-zinc-500 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(categoryAllocations['RDPU']?.idrValue || 0, 'IDR', isPrivacyMode)}
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-amber-500 shrink-0" />
-              <span className="truncate">BITCOIN</span>
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+              <span className="flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                <span className="truncate">BITCOIN</span>
+              </span>
+              <span className="text-slate-900 dark:text-zinc-100 tabular-nums shrink-0">{btcPercent.toFixed(1)}%</span>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
-              {btcPercent.toFixed(1)}%
-            </p>
-            <p className={`text-[10px] text-slate-500 dark:text-zinc-500 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(categoryAllocations['Bitcoin']?.idrValue || 0, 'IDR', isPrivacyMode)}
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-indigo-500 shrink-0" />
-              <span className="truncate">ETF USA</span>
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+              <span className="flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                <span className="truncate">ETF USA</span>
+              </span>
+              <span className="text-slate-900 dark:text-zinc-100 tabular-nums shrink-0">{etfPercent.toFixed(1)}%</span>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
-              {etfPercent.toFixed(1)}%
-            </p>
-            <p className={`text-[10px] text-slate-500 dark:text-zinc-500 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(categoryAllocations['ETF USA']?.idrValue || 0, 'IDR', isPrivacyMode)}
             </p>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
-            <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mb-0.5">
-              <div className="w-2 h-2 rounded-none bg-emerald-500 shrink-0" />
-              <span className="truncate">USD CASH</span>
+          <div className="p-2 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] min-w-0">
+            <div className="flex items-center justify-between gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span className="flex items-center gap-1 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="truncate">USD</span>
+              </span>
+              <span className="text-slate-900 dark:text-zinc-100 tabular-nums shrink-0">{usdPercent.toFixed(1)}%</span>
             </div>
-            <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
-              {usdPercent.toFixed(1)}%
-            </p>
-            <p className={`text-[10px] text-slate-500 dark:text-zinc-500 tabular-nums break-words mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
+            <p className={`text-[11px] font-semibold text-slate-700 dark:text-zinc-300 tabular-nums truncate mt-0.5 ${isPrivacyMode ? 'privacy-blur' : ''}`}>
               {formatMasked(categoryAllocations['USD']?.idrValue || 0, 'IDR', isPrivacyMode)}
             </p>
           </div>
@@ -223,26 +220,19 @@ export const StatsView: React.FC = () => {
       </div>
 
       {/* TWO COLUMNS: MONTHLY EXPENSE CATEGORIES & FUNDING SOURCE BREAKDOWN */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 min-w-0">
         {/* Category Breakdown (Toggleable between Expense & Income) */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3 shadow-sm min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-[#18223a]">
-            <div>
-              <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">
-                {categoryTab === 'expense' ? 'Expense Distribution' : 'Income Source Breakdown'}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                {categoryTab === 'expense'
-                  ? 'Monthly outflow allocation across spending categories'
-                  : 'Monthly revenue and earnings deposit sources'}
-              </p>
-            </div>
+        <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-2.5 shadow-sm min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-[#18223a]">
+            <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm">
+              {categoryTab === 'expense' ? 'Expense Distribution' : 'Income Sources'}
+            </h3>
             <div className="flex items-center gap-2">
-              <div className="flex p-0.5 bg-slate-100 dark:bg-[#080d1a] rounded-lg border border-slate-200 dark:border-[#1e2946] text-xs font-medium">
+              <div className="flex p-0.5 bg-slate-100 dark:bg-[#080d1a] rounded-lg border border-slate-200 dark:border-[#1e2946] text-[11px] font-medium">
                 <button
                   type="button"
                   onClick={() => setCategoryTab('expense')}
-                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                     categoryTab === 'expense'
                       ? 'bg-indigo-600 text-white font-semibold'
                       : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -253,7 +243,7 @@ export const StatsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setCategoryTab('income')}
-                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
                     categoryTab === 'income'
                       ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-500/30'
                       : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -277,9 +267,9 @@ export const StatsView: React.FC = () => {
 
           {categoryTab === 'expense' ? (
             Object.keys(expenseByCategory).length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-zinc-500 py-6 text-center">No expenses recorded this month.</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-500 py-4 text-center">No expenses recorded this month.</p>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {Object.entries(expenseByCategory)
                   .sort((a, b) => b[1] - a[1])
                   .map(([category, amount]) => {
@@ -310,9 +300,9 @@ export const StatsView: React.FC = () => {
             )
           ) : (
             Object.keys(incomeByCategory).length === 0 ? (
-              <p className="text-xs text-slate-500 dark:text-zinc-500 py-6 text-center">No income recorded this month.</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-500 py-4 text-center">No income recorded this month.</p>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {Object.entries(incomeByCategory)
                   .sort((a, b) => b[1] - a[1])
                   .map(([category, amount]) => {
@@ -345,18 +335,18 @@ export const StatsView: React.FC = () => {
         </div>
 
         {/* Funding Source Breakdown */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3 shadow-sm">
-          <div className="pb-2.5 border-b border-slate-100 dark:border-[#18223a]">
-            <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-sm">
+        <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-2.5 shadow-sm">
+          <div className="pb-2 border-b border-slate-100 dark:border-[#18223a] flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900 dark:text-zinc-100 text-xs sm:text-sm">
               Spending by Account
             </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">Accounts funding primary monthly outflows</p>
+            <span className="text-[11px] text-slate-400 dark:text-zinc-500">This month</span>
           </div>
 
           {Object.keys(expenseByAccount).length === 0 ? (
-            <p className="text-xs text-slate-500 dark:text-zinc-500 py-6 text-center">No expenses recorded this month.</p>
+            <p className="text-xs text-slate-500 dark:text-zinc-500 py-4 text-center">No expenses recorded this month.</p>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {Object.entries(expenseByAccount)
                 .sort((a, b) => b[1].amount - a[1].amount)
                 .map(([accId, item]) => {
@@ -392,34 +382,29 @@ export const StatsView: React.FC = () => {
       {/* SYSTEM & EXCHANGE RATE SETTINGS */}
       <div className="max-w-xl">
         {/* USD / IDR Exchange Rate Setting */}
-        <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-3.5 shadow-sm">
-          <div className="flex items-start justify-between gap-2">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2 text-slate-900 dark:text-zinc-100 font-semibold text-sm">
-                <SlidersHorizontal className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                <span>USD / IDR Exchange Rate</span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Used to value US ETF and USD balances in IDR equivalents
-              </p>
+        <div className="p-3 sm:p-4 rounded-xl bg-white dark:bg-[#0b1020] border border-slate-200 dark:border-[#1b2540] space-y-2.5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-slate-900 dark:text-zinc-100 font-semibold text-xs sm:text-sm min-w-0">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="truncate">USD / IDR Exchange Rate</span>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold shrink-0">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
               <span>{rateSource || 'Google Finance'}</span>
             </div>
           </div>
 
           {/* Rate Highlight Card */}
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-2.5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="p-2.5 sm:p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] space-y-2">
+            <div className="flex items-center justify-between gap-2">
               <div>
-                <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">Benchmark Rate</span>
-                <div className="flex items-baseline gap-1.5 mt-0.5">
-                  <span className="text-xl font-bold font-mono tabular-nums text-slate-900 dark:text-zinc-100">
+                <span className="text-[10px] font-medium text-slate-500 dark:text-zinc-400">Benchmark Rate</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-zinc-100">
                     Rp {Math.round(usdIdrRate).toLocaleString('id-ID')}
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-zinc-500 font-mono">/ 1 USD</span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-500 font-mono">/ USD</span>
                 </div>
               </div>
 
@@ -428,18 +413,18 @@ export const StatsView: React.FC = () => {
                 type="button"
                 onClick={handleFetchNow}
                 disabled={isRateFetching}
-                className="self-start sm:self-center flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] border border-slate-200 dark:border-[#243252] text-indigo-700 dark:text-indigo-300 font-semibold text-xs transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] border border-slate-200 dark:border-[#243252] text-indigo-700 dark:text-indigo-300 font-semibold text-xs transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap shrink-0"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRateFetching ? 'animate-spin' : ''}`} />
-                <span>{isRateFetching ? 'Syncing...' : 'Sync Google Rate'}</span>
+                <RefreshCw className={`w-3 h-3 ${isRateFetching ? 'animate-spin' : ''}`} />
+                <span>{isRateFetching ? 'Syncing...' : 'Sync Rate'}</span>
               </button>
             </div>
 
             {/* Status & Timestamp */}
-            <div className="pt-2 border-t border-slate-200 dark:border-[#18223a] flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-500 dark:text-zinc-500">
+            <div className="pt-1.5 border-t border-slate-200 dark:border-[#18223a] flex flex-wrap items-center justify-between gap-1 text-[10px] text-slate-500 dark:text-zinc-500">
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3 text-slate-400 dark:text-zinc-500" />
-                <span>Last updated: <strong className="text-slate-700 dark:text-zinc-400 font-mono">{formatLastUpdated(rateLastUpdated)}</strong></span>
+                <span>Updated: <strong className="text-slate-700 dark:text-zinc-400 font-mono">{formatLastUpdated(rateLastUpdated)}</strong></span>
               </div>
               {fetchToast && (
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium animate-in fade-in">
@@ -450,15 +435,12 @@ export const StatsView: React.FC = () => {
           </div>
 
           {/* Auto-Update Every 12 Hours Toggle */}
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] flex items-center justify-between gap-3">
-            <div className="space-y-0.5">
+          <div className="p-2.5 sm:p-3 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] flex items-center justify-between gap-3">
+            <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-zinc-200">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                <span>Automatic 12-hour background sync</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
+                <span className="truncate">Auto 12h spot sync</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                Synchronizes latest spot rates from Google every 12 hours
-              </p>
             </div>
 
             <button
