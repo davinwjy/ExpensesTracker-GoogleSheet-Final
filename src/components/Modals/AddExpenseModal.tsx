@@ -72,6 +72,7 @@ export const AddExpenseModal: React.FC = () => {
   const [scanPreviewUrl, setScanPreviewUrl] = useState<string>('');
   const [scanError, setScanError] = useState<string>('');
   const [scanConfidence, setScanConfidence] = useState<'high' | 'medium' | 'low' | null>(null);
+  const [scanSource, setScanSource] = useState<'ai' | 'ocr' | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [showReceiptPreviewModal, setShowReceiptPreviewModal] = useState(false);
   const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
@@ -146,6 +147,7 @@ export const AddExpenseModal: React.FC = () => {
     setScanPreviewUrl('');
     setScanError('');
     setScanConfidence(null);
+    setScanSource(null);
     setIsDragOver(false);
     setShowReceiptPreviewModal(false);
     setIsPasteBoxOpen(false);
@@ -237,6 +239,7 @@ export const AddExpenseModal: React.FC = () => {
           todayDate: getLocalDateString(),
           userEmail: user?.email,
           userId: user?.id,
+          previewDataUrl: compressed.previewDataUrl,
         });
 
         if (requestGen !== scanGenerationRef.current) return;
@@ -262,6 +265,7 @@ export const AddExpenseModal: React.FC = () => {
         }
 
         setScanConfidence(result.confidence || 'medium');
+        setScanSource(result.source || 'ai');
         setScanStatus('success');
       } catch (err: any) {
         if (requestGen !== scanGenerationRef.current) return;
@@ -1057,8 +1061,12 @@ export const AddExpenseModal: React.FC = () => {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
                       <Sparkles className="w-3 h-3 shrink-0" />
-                      <span>AI Filled — Review & Save</span>
-                      {scanConfidence === 'low' && (
+                      <span>
+                        {scanSource === 'ocr'
+                          ? 'On-Device Scan — Review & Save'
+                          : 'AI Filled — Review & Save'}
+                      </span>
+                      {(scanConfidence === 'low' || scanSource === 'ocr') && (
                         <span className="text-[10px] font-normal text-amber-600 dark:text-amber-400">
                           (Verify digits)
                         </span>

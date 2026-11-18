@@ -17,6 +17,7 @@ import {
 import { localDb } from './localDb';
 import { firebaseAuth } from './firebase';
 import { saveAdminEmails } from './admin';
+import { scanReceiptLocally } from './localReceiptOcr';
 
 const TOKEN_KEY = 'wealthtrack_auth_token';
 
@@ -82,6 +83,13 @@ function isCapacitorOrStaticHost(): boolean {
   return false;
 }
 
+class NonJsonApiError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NonJsonApiError';
+  }
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const fbUser = firebaseAuth?.currentUser;
@@ -116,16 +124,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       (rawBody.includes('<div id="root"') && rawBody.includes('<!doctype html'));
 
     if (looksLikeAppShell || isCapacitorOrStaticHost()) {
-      throw new Error(
-        'AI Bill Scanner requires the live WealthTrack web server and is unavailable inside the offline/static Android APK. Open WealthTrack in your Android browser via the live web URL to scan bills.'
+      throw new NonJsonApiError(
+        'Static/APK host detected — live Express API server not present on this origin.'
       );
     }
 
     if (response.redirected || rawBody.includes('accounts.google.com') || response.status === 401 || response.status === 403) {
-      throw new Error('Server session expired or blocked by proxy login. Reload the page and sign in again.');
+      throw new NonJsonApiError('Proxy auth redirect or expired session.');
     }
 
-    throw new Error(`Non-JSON response from server (HTTP ${response.status}). Please refresh and try again.`);
+    throw new NonJsonApiError(`Non-JSON response from server (HTTP ${response.status}).`);
   }
 
   const data = await response.json();
@@ -827,7 +835,7 @@ export const api = {
     return localDb.exportDatabase();
   },
 
-  // AI Receipt & Payment Proof Scanner
+  // AI Receipt & Payment Proof Scanner (Server Gemini primary, automatic On-Device OCR fallback for Android APK / GitHub Pages / Offline)
   async scanReceiptImage(data: {
     imageBase64: string;
     mimeType: string;
@@ -835,15 +843,53 @@ export const api = {
     todayDate: string;
     userEmail?: string;
     userId?: string;
+    previewDataUrl?: string;
   }): Promise<{ result: ScannedReceiptResult }> {
-    const { userEmail, userId, ...payload } = data;
+    const { userEmail, userId, previewDataUrl, ...payload } = data;
+    const localDataUrl =
+      previewDataUrl || `data:${payload.mimeType || 'image/jpeg'};base64,${payload.imageBase64}`;
+
+    // Inside standalone Capacitor Android APK (https://localhost) or GitHub Pages without a configured API backend,
+    // immediately run on-device receipt OCR without wasting a round-trip to a non-existent /api endpoint.
+    if (!CONFIGURED_API_BASE && isCapacitorOrStaticHost()) {
+      return await scanReceiptLocally({
+        imageDataUrl: localDataUrl,
+        categories: payload.categories,
+        todayDate: payload.todayDate,
+      });
+    }
+
     const extraHeaders: Record<string, string> = {};
     if (userEmail) extraHeaders['X-User-Email'] = userEmail;
     if (userId) extraHeaders['X-User-Id'] = userId;
-    return await request<{ result: ScannedReceiptResult }>('/api/ai/scan-receipt', {
-      method: 'POST',
-      headers: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
-      body: JSON.stringify(payload),
-    });
+
+    try {
+      const serverRes = await request<{ result: ScannedReceiptResult }>('/api/ai/scan-receipt', {
+        method: 'POST',
+        headers: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
+        body: JSON.stringify(payload),
+      });
+      return {
+        result: {
+          ...serverRes.result,
+          source: 'ai',
+        },
+      };
+    } catch (err: any) {
+      const isNetworkOrStaticError =
+        err instanceof NonJsonApiError ||
+        err?.name === 'TypeError' ||
+        /failed to fetch|networkerror|load failed|non-json/i.test(String(err?.message || ''));
+
+      if (isNetworkOrStaticError) {
+        return await scanReceiptLocally({
+          imageDataUrl: localDataUrl,
+          categories: payload.categories,
+          todayDate: payload.todayDate,
+        });
+      }
+
+      throw err;
+    }
   },
 };

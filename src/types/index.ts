@@ -211,4 +211,5 @@ export interface ScannedReceiptResult {
   notes: string;
   confidence: 'high' | 'medium' | 'low';
   rejectionReason?: string;
+  source?: 'ai' | 'ocr';
 }
