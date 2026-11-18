@@ -26,6 +26,7 @@ import {
   Shield,
   Lock,
   KeyRound,
+  ScanLine,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -54,6 +55,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     isLoading,
     setIsAddExpenseOpen,
     setTransactionInitialType,
+    setTransactionInitialScanOpen,
     setIsTransferOpen,
     setTransferInitialMode,
     setIsAddAccountOpen,
@@ -241,6 +243,119 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           >
             <Lock className="w-3.5 h-3.5 shrink-0" />
           </button>
+
+          {/* Quick Action Dropdown (Desktop & Tablet) */}
+          <div className="relative hidden lg:block" ref={newMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsNewMenuOpen(!isNewMenuOpen)}
+              className="h-8 flex items-center gap-1.5 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-xs active:scale-95 transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.4]" />
+              <span>Quick Action</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${isNewMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isNewMenuOpen && (
+              <div className="absolute right-0 mt-2 w-64 p-1.5 bg-white dark:bg-[#12151d] border border-slate-200/90 dark:border-[#262c3a] rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewMenuOpen(false);
+                    setEditingTransaction(null);
+                    setTransactionInitialType('expense');
+                    setTransactionInitialScanOpen(true);
+                    setIsAddExpenseOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left bg-indigo-50/80 hover:bg-indigo-100/80 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 border border-indigo-200/70 dark:border-indigo-500/30 transition-colors cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-md bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                    <ScanLine className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-slate-900 dark:text-white">Scan Bill / Payment</div>
+                    <div className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 truncate">Camera, upload, or paste screenshot</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewMenuOpen(false);
+                    setEditingTransaction(null);
+                    setTransactionInitialType('expense');
+                    setTransactionInitialScanOpen(false);
+                    setIsAddExpenseOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#1c212e] transition-colors cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    <Receipt className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100">Record Expense</div>
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">Deduct from bank or cash</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewMenuOpen(false);
+                    setEditingTransaction(null);
+                    setTransactionInitialType('income');
+                    setTransactionInitialScanOpen(false);
+                    setIsAddExpenseOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#1c212e] transition-colors cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <ArrowDownRight className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100">Record Income</div>
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">Salary, bonus, freelance deposit</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewMenuOpen(false);
+                    setTransferInitialMode('bank_to_investment');
+                    setIsTransferOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#1c212e] transition-colors cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100">Bank to Investment</div>
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">Top-up stocks, crypto, USD</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewMenuOpen(false);
+                    setTransferInitialMode('account_to_account');
+                    setIsTransferOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left hover:bg-slate-100 dark:hover:bg-[#1c212e] transition-colors cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100">Account Transfer</div>
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">Transfer between accounts</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Subtle Vertical Divider */}
           <div className="hidden sm:block w-px h-4 bg-slate-200 dark:bg-[#1e2a45] mx-0.5" />

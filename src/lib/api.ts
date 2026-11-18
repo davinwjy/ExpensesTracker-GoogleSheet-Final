@@ -12,6 +12,7 @@ import {
   HoldingType,
   InvestmentCategory,
   CategoryBudget,
+  ScannedReceiptResult,
 } from '../types';
 import { localDb } from './localDb';
 import { firebaseAuth } from './firebase';
@@ -64,10 +65,13 @@ async function checkServer(): Promise<boolean> {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
-  const fbEmail = firebaseAuth?.currentUser?.email || '';
+  const fbUser = firebaseAuth?.currentUser;
+  const fbEmail = fbUser?.email || '';
+  const fbUid = fbUser?.uid || '';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(fbEmail ? { 'X-Admin-Email': fbEmail } : {}),
+    ...(fbEmail ? { 'X-Admin-Email': fbEmail, 'X-User-Email': fbEmail } : {}),
+    ...(fbUid ? { 'X-Firebase-Uid': fbUid } : {}),
     ...(options.headers as Record<string, string>),
   };
 
@@ -782,5 +786,21 @@ export const api = {
       }
     }
     return localDb.exportDatabase();
+  },
+
+  // AI Receipt & Payment Proof Scanner
+  async scanReceiptImage(data: {
+    imageBase64: string;
+    mimeType: string;
+    categories: string[];
+    todayDate: string;
+    userEmail?: string;
+  }): Promise<{ result: ScannedReceiptResult }> {
+    const { userEmail, ...payload } = data;
+    return await request<{ result: ScannedReceiptResult }>('/api/ai/scan-receipt', {
+      method: 'POST',
+      headers: userEmail ? { 'X-User-Email': userEmail } : undefined,
+      body: JSON.stringify(payload),
+    });
   },
 };

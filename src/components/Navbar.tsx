@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Flame,
   Layers,
+  ScanLine,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useFinance } from '../context/FinanceContext';
@@ -29,6 +30,7 @@ export const Navbar: React.FC = () => {
     isLoading,
     setIsAddExpenseOpen,
     setTransactionInitialType,
+    setTransactionInitialScanOpen,
     setIsTransferOpen,
     setTransferInitialMode,
     setIsAddAccountOpen,
@@ -172,6 +174,26 @@ export const Navbar: React.FC = () => {
                         setIsNewMenuOpen(false);
                         setEditingTransaction(null);
                         setTransactionInitialType('expense');
+                        setTransactionInitialScanOpen(true);
+                        setIsAddExpenseOpen(true);
+                      }}
+                      className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 transition-colors group cursor-pointer"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                        <ScanLine className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-semibold text-white">Scan Bill / Payment</div>
+                        <div className="text-[10px] text-indigo-300 truncate">Camera, upload, or paste screenshot</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsNewMenuOpen(false);
+                        setEditingTransaction(null);
+                        setTransactionInitialType('expense');
+                        setTransactionInitialScanOpen(false);
                         setIsAddExpenseOpen(true);
                       }}
                       className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left hover:bg-slate-800/80 active:bg-slate-800 transition-colors group cursor-pointer"
@@ -190,6 +212,7 @@ export const Navbar: React.FC = () => {
                         setIsNewMenuOpen(false);
                         setEditingTransaction(null);
                         setTransactionInitialType('income');
+                        setTransactionInitialScanOpen(false);
                         setIsAddExpenseOpen(true);
                       }}
                       className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left hover:bg-slate-800/80 active:bg-slate-800 transition-colors group cursor-pointer"

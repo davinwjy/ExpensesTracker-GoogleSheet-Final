@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel, type GenerateContentResponse } from "@google/genai";
 import {
   initDB,
   db,
@@ -41,7 +41,7 @@ initDB();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 
 // Extend express Request for user
 interface AuthenticatedRequest extends Request {
@@ -116,6 +116,36 @@ function authenticateAdmin(req: AuthenticatedRequest, res: Response, next: NextF
   res.status(403).json({
     error: 'Forbidden: Admin access required. Only authorized administrators (such as davinwijaya16@gmail.com) can manage this platform.',
   });
+}
+
+// App-session auth middleware for AI endpoints (supports JWT token OR Firebase signed-in session headers)
+function authenticateAiSession(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  const firebaseUid = String(req.headers['x-firebase-uid'] || '').trim();
+  const userEmail = String(req.headers['x-user-email'] || req.headers['x-admin-email'] || '').trim().toLowerCase();
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+      req.user = { id: decoded.id, email: decoded.email };
+      next();
+      return;
+    } catch {
+      // Allow local offline token or Firebase headers if present
+    }
+  }
+
+  if (firebaseUid || userEmail) {
+    req.user = {
+      id: firebaseUid || `fb_${userEmail}`,
+      email: userEmail || 'firebase-user@wealthtrack.app',
+    };
+    next();
+    return;
+  }
+
+  res.status(401).json({ error: 'Authentication required to use AI scanner.' });
 }
 
 // Helper to get exchange rate for user
@@ -606,6 +636,217 @@ Return ONLY the category name as plain text (exact match from the list).`,
   } catch (err: any) {
     console.error('AI Categorization error:', err);
     res.status(500).json({ error: err.message || 'Failed to auto-categorize' });
+  }
+});
+
+// AI Bill & Payment Receipt Scanner endpoint (Expenses only)
+app.post('/api/ai/scan-receipt', authenticateAiSession, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      res.status(503).json({
+        error: 'Gemini API key is not configured on the server. Please check Settings > Secrets.',
+      });
+      return;
+    }
+
+    const { imageBase64, mimeType, categories, todayDate } = req.body || {};
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      res.status(400).json({ error: 'Receipt image data is required.' });
+      return;
+    }
+
+    const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '').trim();
+    if (!cleanBase64) {
+      res.status(400).json({ error: 'Receipt image payload is empty.' });
+      return;
+    }
+
+    const safeMimeType =
+      typeof mimeType === 'string' && mimeType.startsWith('image/')
+        ? mimeType
+        : 'image/jpeg';
+
+    const defaultExpenseCategories = [
+      'Food & Dining',
+      'Transportation',
+      'Groceries',
+      'Bills & Utilities',
+      'Shopping',
+      'Entertainment',
+      'Health & Fitness',
+      'Education',
+      'Housing & Rent',
+      'Personal Care',
+      'Family & Kids',
+      'Debt & Loans',
+      'Other Expense',
+    ];
+
+    const expenseCategories: string[] = Array.isArray(categories)
+      ? Array.from(
+          new Set(
+            categories
+              .map((c: unknown) => (typeof c === 'string' ? c.trim() : ''))
+              .filter(Boolean)
+          )
+        )
+      : defaultExpenseCategories;
+
+    const effectiveCategories = expenseCategories.length > 0 ? expenseCategories : defaultExpenseCategories;
+    const fallbackToday =
+      typeof todayDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(todayDate.trim())
+        ? todayDate.trim()
+        : new Date().toISOString().split('T')[0];
+
+    const promptText = `Extract IDR expense from receipt or payment proof.
+- isReceiptOrPayment: true if readable bill/payment proof; false if unrelated/unreadable (set rejectionReason).
+- amount: GRAND TOTAL paid as positive IDR integer (ignore subtotal, Tunai/cash, Kembali/change, card digits).
+- date: YYYY-MM-DD (default "${fallbackToday}").
+- notes: merchant name + item/service summary (max 60 chars).
+- category: pick the single best exact match from ${JSON.stringify(effectiveCategories)}.
+  Category guide (when present in list):
+  • Personal Care: laundry, dry cleaning, cuci setrika, salon, barber, spa, skincare, toiletries.
+  • Food & Dining: restaurants, cafes, coffee, bakery, food delivery (GoFood/GrabFood/ShopeeFood).
+  • Groceries: minimarket/supermarket (Indomaret, Alfamart, Superindo, Hypermart), fresh food, household supplies.
+  • Bills & Utilities: PLN, PDAM, internet/WiFi, pulsa/mobile data, BPJS, subscriptions.
+  • Transportation: GoRide/GoCar/Grab, taxi, fuel (Pertamina/Shell), toll, parking, KAI/airline.
+  • Health & Fitness: apotek/pharmacy, clinic, hospital, doctor, gym, supplements.
+  • Housing & Rent: rent, kost, IPL, home maintenance/repair.
+  • Shopping: apparel, electronics, general retail/marketplace purchases.
+  • Entertainment: cinema/XXI, games, streaming, leisure.
+  • Also consider any custom categories in the list if they fit better.
+- confidence: "high" | "medium" | "low".`;
+
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-lite',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: safeMimeType,
+              data: cleanBase64,
+            },
+          },
+          { text: promptText },
+        ],
+      },
+      config: {
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            isReceiptOrPayment: {
+              type: Type.BOOLEAN,
+              description: 'Whether the image shows a readable bill, receipt, invoice, or payment confirmation.',
+            },
+            amount: {
+              type: Type.NUMBER,
+              description: 'Total amount paid in IDR as a positive integer.',
+            },
+            date: {
+              type: Type.STRING,
+              description: 'Transaction date in YYYY-MM-DD format.',
+            },
+            notes: {
+              type: Type.STRING,
+              description: 'Concise merchant name and item or service summary.',
+            },
+            category: {
+              type: Type.STRING,
+              enum: effectiveCategories,
+              description: 'Exact category name matched from the provided list based on merchant and items in notes.',
+            },
+            confidence: {
+              type: Type.STRING,
+              enum: ['high', 'medium', 'low'],
+              description: 'Confidence level: high, medium, or low.',
+            },
+            rejectionReason: {
+              type: Type.STRING,
+              description: 'Brief reason if image is not a valid or readable bill/payment proof.',
+            },
+          },
+          propertyOrdering: [
+            'isReceiptOrPayment',
+            'amount',
+            'date',
+            'notes',
+            'category',
+            'confidence',
+            'rejectionReason',
+          ],
+          required: ['isReceiptOrPayment', 'amount', 'date', 'notes', 'category', 'confidence'],
+        },
+      },
+    });
+
+    const rawText = (response.text ?? '').trim();
+    if (!rawText) {
+      res.status(502).json({ error: 'AI returned an empty response. Please try again with a clearer image.' });
+      return;
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      res.status(502).json({ error: 'AI returned an unexpected response format. Please try scanning again.' });
+      return;
+    }
+
+    const isReceiptOrPayment = Boolean(parsed?.isReceiptOrPayment);
+    if (!isReceiptOrPayment) {
+      res.status(422).json({
+        error:
+          (typeof parsed?.rejectionReason === 'string' && parsed.rejectionReason.trim()) ||
+          'No readable bill or payment confirmation was detected in this image.',
+      });
+      return;
+    }
+
+    const numericAmount = Math.round(Number(parsed?.amount));
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      res.status(422).json({
+        error: 'Could not detect a valid expense total on this receipt. Please try a clearer photo.',
+      });
+      return;
+    }
+
+    const rawCategory = typeof parsed?.category === 'string' ? parsed.category.trim() : '';
+    const matchedCategory =
+      effectiveCategories.find((c) => c.toLowerCase() === rawCategory.toLowerCase()) ||
+      effectiveCategories[effectiveCategories.length - 1];
+
+    const rawDate = typeof parsed?.date === 'string' ? parsed.date.trim() : '';
+    const safeDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : fallbackToday;
+
+    const safeNotes =
+      typeof parsed?.notes === 'string' ? parsed.notes.trim().slice(0, 80) : '';
+
+    const rawConf = typeof parsed?.confidence === 'string' ? parsed.confidence.toLowerCase() : 'medium';
+    const safeConfidence: 'high' | 'medium' | 'low' =
+      rawConf === 'high' || rawConf === 'low' ? rawConf : 'medium';
+
+    res.json({
+      result: {
+        isReceiptOrPayment: true,
+        amount: numericAmount,
+        category: matchedCategory,
+        date: safeDate,
+        notes: safeNotes,
+        confidence: safeConfidence,
+      },
+    });
+  } catch (err: any) {
+    console.error('AI Receipt Scan error:', err);
+    const statusCode =
+      typeof err?.status === 'number' && err.status >= 400 && err.status < 600
+        ? err.status
+        : 500;
+    res.status(statusCode).json({
+      error: err?.message || 'Failed to analyze receipt image with AI.',
+    });
   }
 });
 

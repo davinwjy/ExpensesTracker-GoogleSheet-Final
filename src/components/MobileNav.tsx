@@ -11,6 +11,7 @@ import {
   ArrowDownRight,
   Target,
   X,
+  ScanLine,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
 
@@ -20,6 +21,7 @@ export const MobileNav: React.FC = () => {
     setActiveTab,
     setIsAddExpenseOpen,
     setTransactionInitialType,
+    setTransactionInitialScanOpen,
     setIsTransferOpen,
     setTransferInitialMode,
     setEditingTransaction,
@@ -79,6 +81,26 @@ export const MobileNav: React.FC = () => {
                   setIsQuickMenuOpen(false);
                   setEditingTransaction(null);
                   setTransactionInitialType('expense');
+                  setTransactionInitialScanOpen(true);
+                  setIsAddExpenseOpen(true);
+                }}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-indigo-50/90 hover:bg-indigo-100/80 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 border border-indigo-200/80 dark:border-indigo-500/30 text-slate-900 dark:text-zinc-100 transition-colors cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <ScanLine className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Scan Bill / Payment</p>
+                  <p className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80 truncate">Camera, upload, or paste screenshot</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsQuickMenuOpen(false);
+                  setEditingTransaction(null);
+                  setTransactionInitialType('expense');
+                  setTransactionInitialScanOpen(false);
                   setIsAddExpenseOpen(true);
                 }}
                 className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-[#10172a] dark:hover:bg-[#162038] border border-slate-200/80 dark:border-[#1e2a45] text-slate-900 dark:text-zinc-100 transition-colors cursor-pointer"
@@ -97,6 +119,7 @@ export const MobileNav: React.FC = () => {
                   setIsQuickMenuOpen(false);
                   setEditingTransaction(null);
                   setTransactionInitialType('income');
+                  setTransactionInitialScanOpen(false);
                   setIsAddExpenseOpen(true);
                 }}
                 className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-[#10172a] dark:hover:bg-[#162038] border border-slate-200/80 dark:border-[#1e2a45] text-slate-900 dark:text-zinc-100 transition-colors cursor-pointer"

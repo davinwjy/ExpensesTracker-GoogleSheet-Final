@@ -202,3 +202,13 @@ export interface NotificationPopupItem {
   date?: string;
   durationMs?: number;
 }
+
+export interface ScannedReceiptResult {
+  isReceiptOrPayment: boolean;
+  amount: number | null;
+  category: string;
+  date: string;
+  notes: string;
+  confidence: 'high' | 'medium' | 'low';
+  rejectionReason?: string;
+}

@@ -196,7 +196,7 @@ export const PinLockScreen: React.FC = () => {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 6 }}
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-        className="pin-modal-card relative w-full max-w-[276px] rounded-2xl border shadow-[0_16px_40px_rgba(0,0,0,0.65)] px-4 py-4 flex flex-col items-center"
+        className="pin-modal-card relative w-full max-w-[356px] sm:max-w-[292px] rounded-2xl border shadow-[0_16px_40px_rgba(0,0,0,0.65)] px-5 py-5 sm:px-4 sm:py-4 flex flex-col items-center"
       >
         {/* Top Minimalist Header Row */}
         <div className="w-full flex items-center justify-between mb-1">
@@ -218,17 +218,17 @@ export const PinLockScreen: React.FC = () => {
           )}
 
           {/* Compact Center Icon + Title */}
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-1.5">
+            <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-md bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
               {isSuccess ? (
-                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-emerald-400" />
               ) : step === 'unlock' ? (
-                <Lock className="w-3 h-3 text-blue-400" />
+                <Lock className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-blue-400" />
               ) : (
-                <KeyRound className="w-3 h-3 text-blue-400" />
+                <KeyRound className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-blue-400" />
               )}
             </div>
-            <h2 className="pin-modal-title text-sm font-bold tracking-tight">
+            <h2 className="pin-modal-title text-base sm:text-sm font-bold tracking-tight">
               {getHeaderTitle()}
             </h2>
           </div>
@@ -248,7 +248,7 @@ export const PinLockScreen: React.FC = () => {
         </div>
 
         {/* Single-line compact subtitle */}
-        <p className="text-[11px] text-zinc-400 truncate max-w-[230px] text-center mb-3">
+        <p className="text-xs sm:text-[11px] text-zinc-400 truncate max-w-[290px] sm:max-w-[240px] text-center mb-3.5 sm:mb-3">
           {getHeaderSubtitle()}
         </p>
 
@@ -261,7 +261,7 @@ export const PinLockScreen: React.FC = () => {
               : { x: 0 }
           }
           transition={{ duration: 0.32 }}
-          className={`flex items-center justify-center gap-3.5 px-5 py-2.5 rounded-xl border transition-colors ${
+          className={`flex items-center justify-center gap-4 sm:gap-3.5 px-6 py-3 sm:px-5 sm:py-2.5 rounded-xl border transition-colors ${
             errorMsg
               ? 'bg-rose-500/15 border-rose-500/50'
               : 'bg-[#0b0d13] border-[#242a38]'
@@ -273,7 +273,7 @@ export const PinLockScreen: React.FC = () => {
             return (
               <div
                 key={idx}
-                className={`w-3 h-3 rounded-full transition-all duration-150 ${
+                className={`w-3.5 h-3.5 sm:w-3 sm:h-3 rounded-full transition-all duration-150 ${
                   hasError
                     ? 'bg-rose-400 scale-105 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
                     : isFilled
@@ -313,15 +313,15 @@ export const PinLockScreen: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* High-Contrast Compact 3x4 Numeric Keypad */}
-        <div className="w-full grid grid-cols-3 gap-1.5">
+        {/* High-Contrast 3x4 Numeric Keypad (Larger ergonomic buttons on mobile, compact on desktop) */}
+        <div className="w-full grid grid-cols-3 gap-2.5 sm:gap-1.5">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
             <button
               key={num}
               type="button"
               disabled={isSaving}
               onClick={() => handleDigitPress(num)}
-              className="pin-key-btn h-11 rounded-xl border font-mono text-lg font-bold flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer shadow-sm disabled:opacity-50"
+              className="pin-key-btn h-14 sm:h-11 rounded-xl border font-mono text-2xl sm:text-lg font-bold flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer shadow-sm touch-manipulation disabled:opacity-50"
             >
               <span>{num}</span>
             </button>
@@ -332,16 +332,16 @@ export const PinLockScreen: React.FC = () => {
             disabled={isSaving || digits.length === 0}
             onClick={handleClear}
             title="Reset"
-            className="pin-key-action-btn h-11 rounded-xl border text-[11px] font-semibold flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer disabled:opacity-35"
+            className="pin-key-action-btn h-14 sm:h-11 rounded-xl border text-xs sm:text-[11px] font-semibold flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer touch-manipulation disabled:opacity-35"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-4.5 h-4.5 sm:w-3.5 sm:h-3.5" />
           </button>
 
           <button
             type="button"
             disabled={isSaving}
             onClick={() => handleDigitPress('0')}
-            className="pin-key-btn h-11 rounded-xl border font-mono text-lg font-bold flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer shadow-sm disabled:opacity-50"
+            className="pin-key-btn h-14 sm:h-11 rounded-xl border font-mono text-2xl sm:text-lg font-bold flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer shadow-sm touch-manipulation disabled:opacity-50"
           >
             <span>0</span>
           </button>
@@ -351,16 +351,16 @@ export const PinLockScreen: React.FC = () => {
             disabled={isSaving || digits.length === 0}
             onClick={handleBackspace}
             title="Delete"
-            className="pin-key-action-btn h-11 rounded-xl border flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer disabled:opacity-35"
+            className="pin-key-action-btn h-14 sm:h-11 rounded-xl border flex items-center justify-center transition-all duration-100 active:scale-95 cursor-pointer touch-manipulation disabled:opacity-35"
           >
-            <Delete className="w-4 h-4" />
+            <Delete className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
-        {/* Ultra-compact Footer Actions */}
+        {/* Footer Actions */}
         {(mode === 'unlock' || mode === 'setup') && (
           <div
-            className={`w-full mt-3 pt-2.5 border-t border-[#222836] flex items-center text-[11px] ${
+            className={`w-full mt-4 pt-3 sm:mt-3 sm:pt-2.5 border-t border-[#222836] flex items-center text-xs sm:text-[11px] ${
               mode === 'unlock' ? 'justify-between' : 'justify-end'
             }`}
           >
@@ -368,7 +368,7 @@ export const PinLockScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={forgotPinRelogin}
-                className="text-blue-400 hover:text-blue-300 font-medium transition-colors cursor-pointer"
+                className="py-1 text-blue-400 hover:text-blue-300 font-medium transition-colors cursor-pointer"
               >
                 Forgot PIN?
               </button>
@@ -377,9 +377,9 @@ export const PinLockScreen: React.FC = () => {
             <button
               type="button"
               onClick={logout}
-              className="inline-flex items-center gap-1 text-zinc-400 hover:text-rose-400 font-medium transition-colors cursor-pointer"
+              className="py-1 inline-flex items-center gap-1.5 sm:gap-1 text-zinc-400 hover:text-rose-400 font-medium transition-colors cursor-pointer"
             >
-              <LogOut className="w-3 h-3" />
+              <LogOut className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
               <span>Sign Out</span>
             </button>
           </div>

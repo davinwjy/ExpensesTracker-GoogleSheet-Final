@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import {
   X,
   Check,
@@ -12,7 +12,14 @@ import {
   Tag,
   Calendar,
   FileText,
+  Camera,
+  Upload,
+  ClipboardPaste,
+  ScanLine,
+  Sparkles,
+  ZoomIn,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { useFinance } from '../../context/FinanceContext';
 import {
   formatIdr,
@@ -20,12 +27,22 @@ import {
   INCOME_CATEGORIES,
   getLocalDateString,
 } from '../../lib/formatters';
+import { api } from '../../lib/api';
+import {
+  compressReceiptImage,
+  compressVideoFrame,
+  isSupportedImageBlob,
+  type CompressedReceiptImage,
+} from '../../lib/imageUtils';
 
 export const AddExpenseModal: React.FC = () => {
+  const { user } = useAuth();
   const {
     isAddExpenseOpen,
     setIsAddExpenseOpen,
     transactionInitialType,
+    transactionInitialScanOpen,
+    setTransactionInitialScanOpen,
     accounts,
     addTransaction,
     editingTransaction,
@@ -37,6 +54,9 @@ export const AddExpenseModal: React.FC = () => {
     setIsCategoryModalOpen,
   } = useFinance();
 
+  const cameraInputId = useId();
+  const uploadInputId = useId();
+
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState<string>('');
   const [accountId, setAccountId] = useState<string>('');
@@ -45,6 +65,29 @@ export const AddExpenseModal: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // AI Bill & Payment Scanner State
+  const [isScannerExpanded, setIsScannerExpanded] = useState(false);
+  const [scanStatus, setScanStatus] = useState<'idle' | 'compressing' | 'scanning' | 'success' | 'error'>('idle');
+  const [scanPreviewUrl, setScanPreviewUrl] = useState<string>('');
+  const [scanError, setScanError] = useState<string>('');
+  const [scanConfidence, setScanConfidence] = useState<'high' | 'medium' | 'low' | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [showReceiptPreviewModal, setShowReceiptPreviewModal] = useState(false);
+  const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
+  const [isLiveCameraReady, setIsLiveCameraReady] = useState(false);
+
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const lastCompressedImageRef = useRef<CompressedReceiptImage | null>(null);
+  const scanGenerationRef = useRef<number>(0);
+
+  const isTouchMobile = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  }, []);
 
   const getSelectableAccountsForType = React.useCallback(
     (targetType: 'expense' | 'income') => {
@@ -76,6 +119,38 @@ export const AddExpenseModal: React.FC = () => {
   const wasOpenRef = React.useRef(false);
   const lastEditingTxIdRef = React.useRef<string | null | undefined>(undefined);
 
+  const stopLiveCamera = useCallback(() => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {
+          // ignore
+        }
+      });
+      mediaStreamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsLiveCameraReady(false);
+    setIsLiveCameraOpen(false);
+  }, []);
+
+  const clearScanState = useCallback(() => {
+    scanGenerationRef.current += 1;
+    stopLiveCamera();
+    setScanStatus('idle');
+    setScanPreviewUrl('');
+    setScanError('');
+    setScanConfidence(null);
+    setIsDragOver(false);
+    setShowReceiptPreviewModal(false);
+    lastCompressedImageRef.current = null;
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (uploadInputRef.current) uploadInputRef.current.value = '';
+  }, [stopLiveCamera]);
+
   // Clean form ONLY on modal open or when editingTransaction changes, preserving typed inputs during background sync
   useEffect(() => {
     if (isAddExpenseOpen) {
@@ -87,6 +162,8 @@ export const AddExpenseModal: React.FC = () => {
         setIsSubmitting(false);
         wasOpenRef.current = true;
         lastEditingTxIdRef.current = currentEditingId;
+        clearScanState();
+        setIsScannerExpanded(!editingTransaction && Boolean(transactionInitialScanOpen));
 
         if (editingTransaction) {
           const txType = editingTransaction.type === 'income' ? 'income' : 'expense';
@@ -99,7 +176,7 @@ export const AddExpenseModal: React.FC = () => {
           setDate(editingTransaction.date);
           setNotes(editingTransaction.notes || '');
         } else {
-          const initType = transactionInitialType || 'expense';
+          const initType = transactionInitialScanOpen ? 'expense' : transactionInitialType || 'expense';
           const validAccs = getSelectableAccountsForType(initType);
           const defaultAcc = validAccs.length > 0 ? validAccs[0] : undefined;
           setType(initType);
@@ -121,12 +198,16 @@ export const AddExpenseModal: React.FC = () => {
     } else {
       wasOpenRef.current = false;
       lastEditingTxIdRef.current = undefined;
+      clearScanState();
+      setIsScannerExpanded(false);
     }
   }, [
     isAddExpenseOpen,
     editingTransaction,
     transactionInitialType,
+    transactionInitialScanOpen,
     getSelectableAccountsForType,
+    clearScanState,
   ]);
 
   // If modal opened while accounts were still empty and sync finishes, bind default account without resetting user inputs
@@ -136,8 +217,231 @@ export const AddExpenseModal: React.FC = () => {
     }
   }, [isAddExpenseOpen, accountId, selectableAccounts]);
 
+  const runReceiptExtraction = useCallback(
+    async (compressed: CompressedReceiptImage) => {
+      const requestGen = scanGenerationRef.current;
+      setScanStatus('scanning');
+      setScanError('');
+      setError('');
+
+      try {
+        const categoriesToMatch =
+          expenseCategories.length > 0 ? expenseCategories : [...EXPENSE_CATEGORIES];
+        const { result } = await api.scanReceiptImage({
+          imageBase64: compressed.base64,
+          mimeType: compressed.mimeType,
+          categories: categoriesToMatch,
+          todayDate: getLocalDateString(),
+          userEmail: user?.email,
+        });
+
+        if (requestGen !== scanGenerationRef.current) return;
+
+        // Scope: expenses only — ensure modal switches cleanly to expense mode
+        setType('expense');
+        const validExpenseAccs = getSelectableAccountsForType('expense');
+        if (validExpenseAccs.length > 0 && !validExpenseAccs.some((a) => a.id === accountId)) {
+          setAccountId(validExpenseAccs[0].id);
+        }
+
+        if (result.amount && result.amount > 0) {
+          setAmount(String(Math.round(result.amount)));
+        }
+        if (result.category) {
+          setCategory(result.category);
+        }
+        if (result.date && /^\d{4}-\d{2}-\d{2}$/.test(result.date)) {
+          setDate(result.date);
+        }
+        if (result.notes) {
+          setNotes(result.notes);
+        }
+
+        setScanConfidence(result.confidence || 'medium');
+        setScanStatus('success');
+      } catch (err: any) {
+        if (requestGen !== scanGenerationRef.current) return;
+        setScanError(err?.message || 'Failed to read receipt image. Try a clearer photo.');
+        setScanStatus('error');
+      }
+    },
+    [expenseCategories, getSelectableAccountsForType, accountId, user?.email]
+  );
+
+  const processReceiptBlob = useCallback(
+    async (blob: Blob) => {
+      if (isSubmitting) return;
+      const requestGen = ++scanGenerationRef.current;
+      setScanStatus('compressing');
+      setScanError('');
+      setError('');
+      setScanConfidence(null);
+
+      try {
+        // Read bytes up front so clearing the input element cannot invalidate File references on WebKit
+        const buffer = await blob.arrayBuffer();
+        const safeBlob = new File([buffer], (blob as File).name || 'receipt.jpg', {
+          type: blob.type || 'image/jpeg',
+        });
+        const compressed = await compressReceiptImage(safeBlob);
+        if (requestGen !== scanGenerationRef.current) return;
+        lastCompressedImageRef.current = compressed;
+        setScanPreviewUrl(compressed.previewDataUrl);
+        await runReceiptExtraction(compressed);
+      } catch (err: any) {
+        if (requestGen !== scanGenerationRef.current) return;
+        setScanError(err?.message || 'Could not process the selected image.');
+        setScanStatus('error');
+      }
+    },
+    [isSubmitting, runReceiptExtraction]
+  );
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      void processReceiptBlob(file);
+    }
+  };
+
+  const handleCameraButtonClick = async () => {
+    if (isSubmitting) return;
+    setScanError('');
+
+    // Try live camera preview first on non-mobile or when getUserMedia is supported cleanly;
+    // fall back immediately to native camera/file picker if unavailable or blocked.
+    if (
+      !isTouchMobile &&
+      typeof navigator !== 'undefined' &&
+      navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getUserMedia === 'function'
+    ) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+          audio: false,
+        });
+        mediaStreamRef.current = stream;
+        setIsLiveCameraReady(false);
+        setIsLiveCameraOpen(true);
+        return;
+      } catch {
+        stopLiveCamera();
+        // Fall back to file/camera input cleanly
+      }
+    }
+
+    cameraInputRef.current?.click();
+  };
+
+  // Attach MediaStream once the live camera video element mounts
+  useEffect(() => {
+    if (isLiveCameraOpen && videoRef.current && mediaStreamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = mediaStreamRef.current;
+      void video.play().catch(() => {});
+    }
+  }, [isLiveCameraOpen]);
+
+  const handleSnapLiveCamera = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) return;
+
+    let compressed: CompressedReceiptImage;
+    try {
+      compressed = compressVideoFrame(video);
+    } catch {
+      stopLiveCamera();
+      setScanError('Failed to capture photo from camera.');
+      setScanStatus('error');
+      return;
+    }
+
+    stopLiveCamera();
+
+    const requestGen = ++scanGenerationRef.current;
+    lastCompressedImageRef.current = compressed;
+    setScanPreviewUrl(compressed.previewDataUrl);
+    if (requestGen === scanGenerationRef.current) {
+      void runReceiptExtraction(compressed);
+    }
+  };
+
+  // Ensure camera stream stops if modal closes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
+
+  const handleClipboardButtonPaste = async () => {
+    setScanError('');
+    if (!navigator.clipboard || typeof navigator.clipboard.read !== 'function') {
+      setScanError('Use Ctrl+V (or Cmd+V) anywhere in this modal to paste a screenshot.');
+      setScanStatus('error');
+      return;
+    }
+
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imageType = item.types.find((t) => t.startsWith('image/'));
+        if (imageType) {
+          const blob = await item.getType(imageType);
+          await processReceiptBlob(blob);
+          return;
+        }
+      }
+      setScanError('No image found in clipboard. Copy a receipt or payment screenshot first.');
+      setScanStatus('error');
+    } catch {
+      setScanError('Clipboard access blocked by browser — press Ctrl+V / Cmd+V directly to paste.');
+      setScanStatus('error');
+    }
+  };
+
+  // Global clipboard paste support while modal is open for new transactions
+  useEffect(() => {
+    if (!isAddExpenseOpen || editingTransaction) return;
+
+    const handleWindowPaste = (e: ClipboardEvent) => {
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) return;
+
+      let imageFile: File | null = null;
+      if (clipboardData.items) {
+        for (let i = 0; i < clipboardData.items.length; i++) {
+          const item = clipboardData.items[i];
+          if (item.kind === 'file' && item.type.startsWith('image/')) {
+            imageFile = item.getAsFile();
+            if (imageFile) break;
+          }
+        }
+      }
+
+      if (!imageFile && clipboardData.files && clipboardData.files.length > 0) {
+        const candidate = clipboardData.files[0];
+        if (candidate.type.startsWith('image/')) {
+          imageFile = candidate;
+        }
+      }
+
+      if (imageFile) {
+        e.preventDefault();
+        setIsScannerExpanded(true);
+        void processReceiptBlob(imageFile);
+      }
+    };
+
+    window.addEventListener('paste', handleWindowPaste);
+    return () => window.removeEventListener('paste', handleWindowPaste);
+  }, [isAddExpenseOpen, editingTransaction, processReceiptBlob]);
+
   const resetForm = () => {
     setIsSubmitting(false);
+    clearScanState();
     const initType = transactionInitialType || 'expense';
     const validAccs = getSelectableAccountsForType(initType);
     const defaultAcc = validAccs.length > 0 ? validAccs[0] : undefined;
@@ -197,6 +501,7 @@ export const AddExpenseModal: React.FC = () => {
   const handleClose = () => {
     resetForm();
     setEditingTransaction(null);
+    setTransactionInitialScanOpen(false);
     setIsAddExpenseOpen(false);
   };
 
@@ -503,6 +808,223 @@ export const AddExpenseModal: React.FC = () => {
             </button>
           </div>
 
+          {/* Compact AI Bill & Payment Receipt Scanner (Expenses only, new transactions) */}
+          {!editingTransaction && type === 'expense' && (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                const droppedFile = e.dataTransfer.files?.[0];
+                if (droppedFile && isSupportedImageBlob(droppedFile)) {
+                  void processReceiptBlob(droppedFile);
+                } else if (droppedFile) {
+                  setScanError('Please drop a valid image file (PNG, JPG, WebP, or HEIC).');
+                  setScanStatus('error');
+                }
+              }}
+              className={`rounded-xl border transition-colors ${
+                isDragOver
+                  ? 'bg-indigo-50 dark:bg-indigo-500/15 border-indigo-500'
+                  : scanStatus === 'error'
+                  ? 'bg-rose-500/5 border-rose-500/30'
+                  : scanStatus === 'success'
+                  ? 'bg-emerald-500/5 border-emerald-500/30'
+                  : 'bg-slate-50/80 dark:bg-[#0f1629] border-dashed border-slate-300/90 dark:border-[#243252]'
+              } px-2.5 py-2 space-y-2`}
+            >
+              {scanStatus === 'compressing' || scanStatus === 'scanning' ? (
+                <div className="flex items-center gap-2.5">
+                  {scanPreviewUrl ? (
+                    <img
+                      src={scanPreviewUrl}
+                      alt="Scanning receipt"
+                      className="w-9 h-9 rounded-lg object-cover border border-slate-200 dark:border-[#243252] shrink-0"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
+                      <ScanLine className="w-4 h-4 text-indigo-500 animate-pulse" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-white">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 shrink-0" />
+                      <span className="truncate">
+                        {scanStatus === 'compressing'
+                          ? 'Preparing image...'
+                          : 'AI reading receipt details...'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                      Detecting total amount, category, date & merchant
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearScanState}
+                    title="Cancel scan"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#1a2645] cursor-pointer shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : scanStatus === 'success' ? (
+                <div className="flex items-center gap-2.5">
+                  {scanPreviewUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setShowReceiptPreviewModal(true)}
+                      title="View bill image"
+                      className="relative w-9 h-9 rounded-lg overflow-hidden border border-emerald-500/35 shrink-0 group cursor-pointer"
+                    >
+                      <img
+                        src={scanPreviewUrl}
+                        alt="Scanned bill"
+                        className="w-full h-full object-cover"
+                      />
+                      <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <ZoomIn className="w-3.5 h-3.5 text-white" />
+                      </span>
+                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                      <Sparkles className="w-3 h-3 shrink-0" />
+                      <span>AI Filled — Review & Save</span>
+                      {scanConfidence === 'low' && (
+                        <span className="text-[10px] font-normal text-amber-600 dark:text-amber-400">
+                          (Verify digits)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                      Tap thumbnail to inspect or pick another bill
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <label
+                      htmlFor={uploadInputId}
+                      title="Scan another bill"
+                      className="h-7 px-2 rounded-md text-[10px] font-medium bg-white dark:bg-[#131d35] border border-slate-200 dark:border-[#243252] text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-[#1a2645] cursor-pointer inline-flex items-center select-none"
+                    >
+                      Rescan
+                    </label>
+                    <button
+                      type="button"
+                      onClick={clearScanState}
+                      title="Clear scanned image"
+                      className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-[#1a2645] cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <ScanLine className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                        AI Scan Bill / Payment
+                      </span>
+                      <span className="hidden sm:inline text-[10px] text-slate-400 dark:text-zinc-500 truncate">
+                        · Ctrl+V to paste
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isTouchMobile ? (
+                        <label
+                          htmlFor={cameraInputId}
+                          title="Take photo with camera"
+                          className={`h-7 px-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer select-none ${
+                            isSubmitting ? 'opacity-50 pointer-events-none' : ''
+                          }`}
+                        >
+                          <Camera className="w-3 h-3 shrink-0" />
+                          <span>Camera</span>
+                        </label>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={handleCameraButtonClick}
+                          title="Take photo with camera"
+                          className="h-7 px-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          <Camera className="w-3 h-3 shrink-0" />
+                          <span>Camera</span>
+                        </button>
+                      )}
+                      <label
+                        htmlFor={uploadInputId}
+                        title="Upload image or payment screenshot"
+                        className={`h-7 px-2 rounded-md bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer select-none ${
+                          isSubmitting ? 'opacity-50 pointer-events-none' : ''
+                        }`}
+                      >
+                        <Upload className="w-3 h-3 shrink-0" />
+                        <span>Upload</span>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleClipboardButtonPaste}
+                        title="Paste screenshot from clipboard"
+                        className="h-7 px-2 rounded-md bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <ClipboardPaste className="w-3 h-3 shrink-0" />
+                        <span className="hidden sm:inline">Paste</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {isScannerExpanded && scanStatus === 'idle' && (
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-400">
+                      Snap a paper bill, upload a QRIS/transfer proof, drop an image here, or press Ctrl+V / Cmd+V.
+                    </p>
+                  )}
+
+                  {scanStatus === 'error' && scanError && (
+                    <div className="flex items-center justify-between gap-2 pt-1 text-[11px] text-rose-600 dark:text-rose-300">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                        <span className="truncate sm:whitespace-normal">{scanError}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {lastCompressedImageRef.current && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (lastCompressedImageRef.current) {
+                                void runReceiptExtraction(lastCompressedImageRef.current);
+                              }
+                            }}
+                            className="px-1.5 py-0.5 rounded bg-rose-500/15 hover:bg-rose-500/25 text-[10px] font-semibold text-rose-700 dark:text-rose-200 cursor-pointer"
+                          >
+                            Retry
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={clearScanState}
+                          title="Dismiss error"
+                          className="p-0.5 text-rose-400 hover:text-rose-600 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Hero Amount Card */}
           <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#0f1629] border border-slate-200/80 dark:border-[#1e2946] space-y-2">
             <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
@@ -740,11 +1262,13 @@ export const AddExpenseModal: React.FC = () => {
             form="expense-modal-form"
             disabled={
               isSubmitting ||
+              scanStatus === 'compressing' ||
+              scanStatus === 'scanning' ||
               isInsufficientBalance ||
               isExceedingRefundableDebt
             }
             className={`h-8 px-3.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs select-none ${
-              isSubmitting
+              isSubmitting || scanStatus === 'compressing' || scanStatus === 'scanning'
                 ? 'bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 cursor-not-allowed opacity-60'
                 : isInsufficientBalance || isExceedingRefundableDebt
                 ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 cursor-not-allowed'
@@ -774,6 +1298,116 @@ export const AddExpenseModal: React.FC = () => {
             )}
           </button>
         </div>
+
+        {/* Receipt Lightbox Overlay inside Modal */}
+        {showReceiptPreviewModal && scanPreviewUrl && (
+          <div
+            onClick={() => setShowReceiptPreviewModal(false)}
+            className="absolute inset-0 z-30 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            <button
+              type="button"
+              onClick={() => setShowReceiptPreviewModal(false)}
+              aria-label="Close receipt preview"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <img
+              src={scanPreviewUrl}
+              alt="Scanned bill preview"
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[75vh] max-w-full rounded-xl object-contain border border-white/15 shadow-2xl"
+            />
+          </div>
+        )}
+
+        {/* Live Camera Capture Overlay (Desktop/WebView Webcam with Native File Fallback) */}
+        {isLiveCameraOpen && (
+          <div className="absolute inset-0 z-30 bg-[#090b10] flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+              <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                <Camera className="w-4 h-4 text-indigo-400" />
+                <span>Snap Bill or Receipt</span>
+              </div>
+              <button
+                type="button"
+                onClick={stopLiveCamera}
+                aria-label="Close camera"
+                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                onLoadedMetadata={() => setIsLiveCameraReady(true)}
+                className="w-full h-full object-contain"
+              />
+              {!isLiveCameraReady && (
+                <div className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-zinc-400">
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                  <span>Starting camera...</span>
+                </div>
+              )}
+            </div>
+
+            <div className="px-4 py-3 bg-[#12151d] border-t border-white/10 flex items-center justify-between gap-2">
+              <label
+                htmlFor={uploadInputId}
+                onClick={() => stopLiveCamera()}
+                className="h-8 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-xs font-medium text-zinc-200 inline-flex items-center gap-1.5 cursor-pointer select-none"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Choose File</span>
+              </label>
+
+              <button
+                type="button"
+                disabled={!isLiveCameraReady}
+                onClick={handleSnapLiveCamera}
+                className="h-8 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Capture & Scan</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Accessible sr-only file inputs outside <form> for reliable activation across mobile & desktop browsers */}
+        <input
+          id={cameraInputId}
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*,.heic,.heif"
+          capture="environment"
+          onClick={(e) => {
+            e.currentTarget.value = '';
+          }}
+          onChange={handleFileInputChange}
+          className="sr-only"
+          tabIndex={-1}
+          aria-label="Capture bill photo with camera"
+        />
+        <input
+          id={uploadInputId}
+          ref={uploadInputRef}
+          type="file"
+          accept="image/*,.heic,.heif"
+          onClick={(e) => {
+            e.currentTarget.value = '';
+          }}
+          onChange={handleFileInputChange}
+          className="sr-only"
+          tabIndex={-1}
+          aria-label="Upload bill or payment screenshot"
+        />
       </div>
     </div>
   );
