@@ -3,7 +3,7 @@ import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
-const UI_CACHE_VERSION = 'wealthtrack_ui_obsidian_v2026_11_18_v9';
+const UI_CACHE_VERSION = 'wealthtrack_ui_obsidian_v2026_11_18_v10';
 
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   if (import.meta.env.DEV) {

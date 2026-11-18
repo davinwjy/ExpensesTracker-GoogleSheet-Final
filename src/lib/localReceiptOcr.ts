@@ -7,11 +7,12 @@ let cachedWorkerPromise: Promise<TesseractWorker> | null = null;
 async function getOcrWorker(): Promise<TesseractWorker> {
   if (!cachedWorkerPromise) {
     cachedWorkerPromise = (async () => {
-      const { createWorker, OEM } = await import('tesseract.js');
+      const { createWorker, OEM, PSM } = await import('tesseract.js');
       const worker = await createWorker('eng', OEM.LSTM_ONLY, {
         workerBlobURL: true,
       });
       await worker.setParameters({
+        tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
         preserve_interword_spaces: '1',
       });
       return worker;
@@ -89,7 +90,7 @@ const CATEGORY_KEYWORD_RULES: Array<{ targets: string[]; pattern: RegExp }> = [
   {
     targets: ['Food & Dining', 'Food', 'Dining', 'Makan'],
     pattern:
-      /\b(kantin|kant[i1]n|canteen|cafeteria|food\s*court|foodcourt|pujasera|warteg|kedai|depot|rumah\s*makan|kuliner|waroeng|angkringan|lapo|cafe|caf[e3]|c[o0]ffee|kopi|k[o0]pi|resto|restaurant|warung|bakery|roti|nasi|ayam|mie|bakmi|bakso|soto|sate|pempek|seblak|pecel|geprek|padang|gulai|rendang|martabak|dimsum|ramen|sushi|udon|pizza|burger|steak|grill|bbq|bento|gelato|dessert|ice\s*cream|gofood|grabfood|shopeefood|starbucks|mcdonald|kfc|hokben|solaria|mixue|fore|kenangan|janji\s*jiwa|makan|minum|boba|tea|jus|juice|es\s*teh|snack|kue|cake|pastry|donut|catering|eatery|kitchen|bistro|diner|dine)\b/i,
+      /\b(k[a4]nt[i1l]n|k[a4]nl[i1l]n|canteen|cafeteria|food\s*court|foodcourt|pujasera|warteg|kedai|depot|rumah\s*makan|kuliner|waroeng|angkringan|lapo|cafe|caf[e3]|c[o0]ffee|kopi|k[o0]pi|resto|restaurant|warung|bakery|roti|nasi|ayam|mie|bakmi|bakso|soto|sate|pempek|seblak|pecel|geprek|padang|gulai|rendang|martabak|dimsum|ramen|sushi|udon|pizza|burger|steak|grill|bbq|bento|gelato|dessert|ice\s*cream|gofood|grabfood|shopeefood|starbucks|mcdonald|kfc|hokben|solaria|mixue|fore|kenangan|janji\s*jiwa|makan|minum|boba|tea|jus|juice|es\s*teh|snack|kue|cake|pastry|donut|catering|eatery|kitchen|bistro|diner|dine)\b/i,
   },
   {
     targets: ['Transportation', 'Transport', 'Transportasi'],
@@ -317,10 +318,13 @@ function extractDateFromOcrText(text: string, fallbackToday: string): string {
 }
 
 const RECIPIENT_FIELD_LABEL_REGEX =
-  /^(?:pay(?:ment|rn[e3]nt)?\s+t[o0]|paid\s+t[o0]|transfer\s+(?:t[o0]|ke)|send\s+t[o0]|kirim\s+ke|tujuan(?:\s+transaksi)?|kepada|(?:nama\s+)?penerima|(?:nama\s+)?merchant(?:\s+name)?|(?:nama\s+)?toko|outlet|biller)\b[:\s-]*(.*)$/i;
+  /^(?:[^a-zA-Z0-9\n]*[a-zA-Z]{1,3}\s+)?(?:p[a4][yv](?:m[e3]nt|rn[e3]nt|r[e3]nt|n[e3]nt|in[e3]nt|m[e3]n)?\s*t[o0]|p[a4][i1l]d\s*t[o0]|tr[a4]nsf[e3]r\s*(?:t[o0]|k[e3])|s[e3]nd\s*t[o0]|k[i1]r[i1]m\s*k[e3]|tujuan(?:\s+transaksi)?|k[e3]p[a4]d[a4]|(?:nama\s+)?p[e3]n[e3]r[i1]m[a4]|(?:nama\s+)?m[e3]rch[a4]nt(?:\s+n[a4]m[e3])?|(?:nama\s+)?t[o0]k[o0]|outl[e3]t|b[i1]ll[e3]r)\b[:\s-]*(.*)$/i;
 
 const NON_MERCHANT_FIELD_LABEL_REGEX =
-  /^(?:acquirer|rrn|transaction\s*type|merchant\s*(?:location|pan)|customer\s*pan|terminal\s*id|source\s*of\s*fund|total(?:\s*payment|\s*bayar)?|reference\s*no|status|tanggal|date|waktu|time|nominal|biaya|admin|fee|idr|rp\b)/i;
+  /^(?:acquirer|rrn|transaction\s*type|merc[hn]ant\s*(?:location|pan)|cust[o0][mnr]er\s*pan|ter\s*[mnr]inal\s*id|source\s*of\s*fund|tota[l1]?(?:\s*payment|\s*bayar)?|reference\s*no|status|tanggal|date|waktu|time|nominal|biaya|admin|fee|idr|rp\b)/i;
+
+const STATUS_OR_BOILERPLATE_LINE_REGEX =
+  /\b(payment\s+success\w*|successfull?\b|pembayaran\s+berhasil|transaksi\s+berhasil|transfer\s+berhasil|transaction\s+success\w*|[gq0o]r[i1l]s\s+payment|transaction\s+type|source\s+of\s+fund|merc[hn]ant\s+location|merc[hn]ant\s+pan|cust[o0][mnr]er\s+pan|ter\s*[mnr]inal\s+id|reference\s+no|tota[l1]?\s+payment|acquirer|tahapan\s+xpresi|jakarta\s+(?:barat|timur|selatan|utara|pusat)|terima\s*kasih|thank\s*you)\b/i;
 
 const KEEP_UPPERCASE_ACRONYMS = new Set(['PLN', 'PDAM', 'BPJS', 'KFC', 'XXI', 'CGV', 'SPBU', 'ATM', 'ID']);
 
@@ -339,7 +343,9 @@ function toCleanTitleCase(input: string): string {
 function cleanMerchantValue(raw: string): string | null {
   let cleaned = raw
     .replace(/^[:\s\-|.]+/, '')
-    .replace(/\s*,\s*(?:[A-Z]{2,4}|ID|INDONESIA|JAKARTA(?:\s+(?:BARAT|TIMUR|SELATAN|UTARA|PUSAT))?|SURABAYA|BANDUNG|MEDAN|TANGERANG|BEKASI|DEPOK|BOGOR|BALI|YOGYAKARTA)\s*$/i, '')
+    // Strip any accidental leading "Payrent to" / "Payment to" fragment if passed a full line
+    .replace(/^(?:p[a4][yv]\w*\s+t[o0]|p[a4][i1l]d\s+t[o0]|k[e3]p[a4]d[a4])\b[:\s-]*/i, '')
+    .replace(/\s*[,.]\s*(?:[A-Z]{2,4}|ID|INDONESIA|JAKARTA(?:\s+(?:BARAT|TIMUR|SELATAN|UTARA|PUSAT))?|SURABAYA|BANDUNG|MEDAN|TANGERANG|BEKASI|DEPOK|BOGOR|BALI|YOGYAKARTA)\s*$/i, '')
     .replace(/[^\p{L}\p{N}\s&'./-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -357,7 +363,9 @@ function cleanMerchantValue(raw: string): string | null {
   }
 
   if (!cleaned || cleaned.length < 3) return null;
-  if (NON_MERCHANT_FIELD_LABEL_REGEX.test(cleaned)) return null;
+  if (NON_MERCHANT_FIELD_LABEL_REGEX.test(cleaned) || STATUS_OR_BOILERPLATE_LINE_REGEX.test(cleaned)) {
+    return null;
+  }
 
   const letterCount = (cleaned.match(/[a-zA-Z]/g) || []).length;
   const digitCount = (cleaned.match(/\d/g) || []).length;
@@ -377,7 +385,7 @@ function extractLabeledMerchant(text: string): string | null {
     const match = line.match(RECIPIENT_FIELD_LABEL_REGEX);
     if (!match) continue;
 
-    // 1. Check same-line right-hand value ("Payment to   HOMEY LAUNDRY GPV")
+    // 1. Check same-line right-hand value ("Payment to   Kantin Citra GPV, CGK" or "Payrent to Kantin Citra")
     const sameLineCandidate = cleanMerchantValue(match[1] || '');
     if (sameLineCandidate) {
       return sameLineCandidate;
@@ -392,11 +400,22 @@ function extractLabeledMerchant(text: string): string | null {
     }
   }
 
+  // 3. Fallback for QRIS receipts where left-column "Payment to" was cut off or blurred by camera angle,
+  //    but the right-column merchant still ends with the standard QRIS "... GPV" or "... GPV, CGK" suffix.
+  for (const line of lines) {
+    if (/\bGPV(?:[\s,.]+(?:[A-Z]{2,4}))?\s*$/i.test(line)) {
+      const gpvCandidate = cleanMerchantValue(line);
+      if (gpvCandidate) {
+        return gpvCandidate;
+      }
+    }
+  }
+
   return null;
 }
 
 function isPaymentTransferReceipt(text: string): boolean {
-  return /\b(payment\s+to|paid\s+to|transfer|qris|pembayaran\s+berhasil|payment\s+successful|acquirer|source\s+of\s+fund|kepada|penerima)\b/i.test(
+  return /\b(p[a4][yv]\w*\s+t[o0]|paid\s+to|transfer|[gq0o]r[i1l]s|pembayaran\s+berhasil|payment\s+success\w*|acquirer|source\s+of\s+fund|kepada|penerima|\bgpv\b)\b/i.test(
     text
   );
 }
@@ -413,7 +432,7 @@ function normalizeOcrNoiseForMatching(text: string): string {
 function extractNotesFromOcrText(text: string): string {
   const isTransferProof = isPaymentTransferReceipt(text);
 
-  // 1. Highest priority: labeled recipient/merchant ("Payment to HOMEY LAUNDRY GPV" -> "Payment to Homey Laundry")
+  // 1. Highest priority: labeled recipient/merchant ("Payment to Kantin Citra GPV, CGK" -> "Payment to Kantin Citra")
   const labeledMerchant = extractLabeledMerchant(text);
   if (labeledMerchant) {
     const formatted = isTransferProof ? `Payment to ${labeledMerchant}` : labeledMerchant;
@@ -427,25 +446,27 @@ function extractNotesFromOcrText(text: string): string {
     }
   }
 
-  // 3. First clean readable merchant line (skipping bank/QRIS boilerplate headers & field labels)
+  // 3. First clean readable merchant line (skipping bank/QRIS status banners like "Giris Payment Successfull" & field labels)
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.replace(/[^\p{L}\p{N}\s&'./-]/gu, ' ').replace(/\s+/g, ' ').trim())
     .filter((l) => l.length >= 3 && l.length <= 50);
 
-  const boilerplateRegex =
-    /^(struk|receipt|invoice|nota|pembayaran|transaksi|bukti|selamat|terima\s*kasih|thank\s*you|jl\.|jalan|telp|npwp|tanggal|date|waktu|time|kasir|cashier|bca|mandiri|bni|bri|qris\s+payment|payment\s+successful|shopeepay|gopay|ovo|dana|jakarta|tahapan)/i;
+  const startBoilerplateRegex =
+    /^(struk|receipt|invoice|nota|pembayaran|transaksi|bukti|selamat|terima\s*kasih|thank\s*you|jl\.|jalan|telp|npwp|tanggal|date|waktu|time|kasir|cashier|bca|mandiri|bni|bri|[gq0o]r[i1l]s|payment|shopeepay|gopay|ovo|dana|jakarta|tahapan)/i;
 
-  for (const line of lines.slice(0, 10)) {
+  for (const line of lines.slice(0, 12)) {
     const letterCount = (line.match(/[a-zA-Z]/g) || []).length;
     const digitCount = (line.match(/\d/g) || []).length;
     if (
       letterCount >= 4 &&
       letterCount > digitCount &&
-      !boilerplateRegex.test(line) &&
+      !startBoilerplateRegex.test(line) &&
+      !STATUS_OR_BOILERPLATE_LINE_REGEX.test(line) &&
       !NON_MERCHANT_FIELD_LABEL_REGEX.test(line)
     ) {
-      return toCleanTitleCase(line).slice(0, 60);
+      const cleanedLine = cleanMerchantValue(line) || toCleanTitleCase(line);
+      return (isTransferProof ? `Payment to ${cleanedLine}` : cleanedLine).slice(0, 60);
     }
   }
 
