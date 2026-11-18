@@ -28,6 +28,7 @@ import {
   getLocalDateString,
 } from '../../lib/formatters';
 import { api } from '../../lib/api';
+import { learnMerchantCategory } from '../../lib/localReceiptOcr';
 import {
   compressReceiptImage,
   compressVideoFrame,
@@ -826,6 +827,10 @@ export const AddExpenseModal: React.FC = () => {
           date,
           notes,
         });
+      }
+
+      if (type === 'expense' && scanStatus === 'success' && notes.trim() && category) {
+        learnMerchantCategory(notes, category);
       }
 
       const targetAcc = accounts.find((a) => a.id === accountId);

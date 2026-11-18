@@ -89,7 +89,7 @@ const CATEGORY_KEYWORD_RULES: Array<{ targets: string[]; pattern: RegExp }> = [
   {
     targets: ['Food & Dining', 'Food', 'Dining', 'Makan'],
     pattern:
-      /\b(cafe|coffee|kopi|resto|restaurant|warung|bakery|roti|nasi|ayam|mie|bakso|soto|sate|gofood|grabfood|shopeefood|starbucks|mcdonald|kfc|hokben|solaria|mixue|fore|kenangan|janji\s*jiwa|makan|minum|boba|tea|kitchen|bistro|dine)\b/i,
+      /\b(kantin|kant[i1]n|canteen|cafeteria|food\s*court|foodcourt|pujasera|warteg|kedai|depot|rumah\s*makan|kuliner|waroeng|angkringan|lapo|cafe|caf[e3]|c[o0]ffee|kopi|k[o0]pi|resto|restaurant|warung|bakery|roti|nasi|ayam|mie|bakmi|bakso|soto|sate|pempek|seblak|pecel|geprek|padang|gulai|rendang|martabak|dimsum|ramen|sushi|udon|pizza|burger|steak|grill|bbq|bento|gelato|dessert|ice\s*cream|gofood|grabfood|shopeefood|starbucks|mcdonald|kfc|hokben|solaria|mixue|fore|kenangan|janji\s*jiwa|makan|minum|boba|tea|jus|juice|es\s*teh|snack|kue|cake|pastry|donut|catering|eatery|kitchen|bistro|diner|dine)\b/i,
   },
   {
     targets: ['Transportation', 'Transport', 'Transportasi'],
@@ -339,16 +339,20 @@ function toCleanTitleCase(input: string): string {
 function cleanMerchantValue(raw: string): string | null {
   let cleaned = raw
     .replace(/^[:\s\-|.]+/, '')
+    .replace(/\s*,\s*(?:[A-Z]{2,4}|ID|INDONESIA|JAKARTA(?:\s+(?:BARAT|TIMUR|SELATAN|UTARA|PUSAT))?|SURABAYA|BANDUNG|MEDAN|TANGERANG|BEKASI|DEPOK|BOGOR|BALI|YOGYAKARTA)\s*$/i, '')
     .replace(/[^\p{L}\p{N}\s&'./-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // Strip trailing QRIS / acquirer / legal suffix tokens repeatedly (e.g. "HOMEY LAUNDRY GPV" -> "HOMEY LAUNDRY")
+  // Strip trailing QRIS / acquirer / branch / airport tags repeatedly (e.g. "Kantin Citra GPV, CGK" -> "Kantin Citra")
   let prev = '';
   while (cleaned && cleaned !== prev) {
     prev = cleaned;
     cleaned = cleaned
-      .replace(/\s+(?:GPV|QRIS|ID|PT|CV|TBK|SHOPEEPAY|GOPAY|OVO|DANA|LINKAJA)\.?$/i, '')
+      .replace(
+        /\s+(?:GPV|QRIS|ID|PT|CV|TBK|SHOPEEPAY|GOPAY|OVO|DANA|LINKAJA|CGK|HLP|JKT|SBY|SUB|BDG|MDN|DPS|SOC|JOG|YIA)\.?$/i,
+        ''
+      )
       .trim();
   }
 
@@ -455,12 +459,91 @@ function extractNotesFromOcrText(text: string): string {
   return 'Scanned Receipt';
 }
 
-function matchCategoryFromOcrText(text: string, categories: string[]): string {
+const MERCHANT_CATEGORY_MEMORY_KEY = 'wealthtrack_ocr_merchant_categories_v1';
+const GENERIC_MEMORY_KEYS = new Set([
+  'scanned receipt',
+  'qris payment',
+  'bca transfer qris',
+  'gopay payment',
+  'ovo payment',
+  'dana payment',
+  'mandiri payment',
+]);
+
+export function normalizeMerchantMemoryKey(merchantOrNotes: string): string {
+  return String(merchantOrNotes || '')
+    .replace(/^(?:payment\s+to|paid\s+to|transfer\s+to|kepada)\s+/i, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function loadMerchantCategoryMemory(): Record<string, string> {
+  try {
+    if (typeof localStorage === 'undefined') return {};
+    const raw = localStorage.getItem(MERCHANT_CATEGORY_MEMORY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function learnMerchantCategory(merchantOrNotes: string, category: string): void {
+  const key = normalizeMerchantMemoryKey(merchantOrNotes);
+  const cleanCategory = String(category || '').trim();
+  if (!key || key.length < 3 || GENERIC_MEMORY_KEYS.has(key) || !cleanCategory) return;
+
+  try {
+    if (typeof localStorage === 'undefined') return;
+    const map = loadMerchantCategoryMemory();
+    map[key] = cleanCategory;
+
+    // Keep storage bounded to the 200 most recently saved merchants
+    const entries = Object.entries(map);
+    const trimmedMap =
+      entries.length > 200 ? Object.fromEntries(entries.slice(entries.length - 200)) : map;
+    localStorage.setItem(MERCHANT_CATEGORY_MEMORY_KEY, JSON.stringify(trimmedMap));
+  } catch {
+    // Ignore storage quota / private mode restrictions
+  }
+}
+
+export function getLearnedMerchantCategory(
+  merchantOrNotes: string,
+  validCategories: string[]
+): string | null {
+  const key = normalizeMerchantMemoryKey(merchantOrNotes);
+  if (!key || key.length < 3 || GENERIC_MEMORY_KEYS.has(key)) return null;
+
+  const map = loadMerchantCategoryMemory();
+  const savedCategory = map[key];
+  if (!savedCategory) return null;
+
+  return (
+    validCategories.find((c) => c.toLowerCase() === savedCategory.toLowerCase()) || null
+  );
+}
+
+function matchCategoryFromOcrText(
+  text: string,
+  categories: string[],
+  preferredNotes?: string
+): string {
   if (!categories || categories.length === 0) return 'Other Expense';
+
+  // Tier 1: Learned user preference for this exact merchant
+  if (preferredNotes) {
+    const learned = getLearnedMerchantCategory(preferredNotes, categories);
+    if (learned) return learned;
+  }
 
   const normalizedText = normalizeOcrNoiseForMatching(text);
   const combinedCandidates = [text, normalizedText];
 
+  // Tier 2: Expanded bilingual Indonesian + English keyword rules
   for (const rule of CATEGORY_KEYWORD_RULES) {
     if (combinedCandidates.some((candidate) => rule.pattern.test(candidate))) {
       const matched = categories.find((cat) =>
@@ -470,7 +553,7 @@ function matchCategoryFromOcrText(text: string, categories: string[]): string {
     }
   }
 
-  // Fallback: match custom category words directly in OCR text
+  // Tier 3: Match custom category words directly in OCR text
   const lowerText = normalizedText.toLowerCase();
   for (const cat of categories) {
     const words = cat
@@ -532,7 +615,7 @@ export async function scanReceiptLocally(data: {
   }
 
   const notes = extractNotesFromOcrText(rawText);
-  const category = matchCategoryFromOcrText(`${notes}\n${rawText}`, data.categories);
+  const category = matchCategoryFromOcrText(`${notes}\n${rawText}`, data.categories, notes);
   const date = extractDateFromOcrText(rawText, data.todayDate);
   const ocrConfidence = typeof ocrData?.confidence === 'number' ? ocrData.confidence : 60;
 

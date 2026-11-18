@@ -90,8 +90,8 @@ function applySoftwareGrayscaleContrast(
 }
 
 /**
- * Enhances grayscale text legibility and suppresses light pastel bank/wallet watermarks
- * (e.g., BCA / QRIS background seals) for on-device OCR.
+ * Enhances grayscale text legibility, suppresses light pastel bank/wallet watermarks
+ * (e.g., BCA / QRIS background seals), and applies lightweight 3x3 sharpening for OCR.
  */
 function applyOcrWatermarkCleanup(
   ctx: CanvasRenderingContext2D,
@@ -100,22 +100,47 @@ function applyOcrWatermarkCleanup(
 ): void {
   const imageData = ctx.getImageData(0, 0, width, height);
   const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
+  const totalPixels = width * height;
+  const lumBuf = new Uint8Array(totalPixels);
+
+  // Pass 1: Suppress light pastel watermarks and stretch text contrast
+  for (let p = 0, i = 0; p < totalPixels; p++, i += 4) {
     const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
     let adjusted: number;
     if (lum >= 205) {
-      // Wash out faint watermarks / off-white paper cleanly to pure white
       adjusted = 255;
     } else {
-      // Crisp dark contrast curve centered at mid-high luminance while preserving anti-aliased edges
       adjusted = (lum - 155) * 1.45 + 155;
       if (adjusted < 0) adjusted = 0;
       else if (adjusted > 255) adjusted = 255;
     }
-    data[i] = adjusted;
-    data[i + 1] = adjusted;
-    data[i + 2] = adjusted;
+    lumBuf[p] = adjusted;
   }
+
+  // Pass 2: Lightweight 3x3 unsharp-mask kernel to crisp small mobile screenshot glyphs
+  for (let y = 0; y < height; y++) {
+    const rowOffset = y * width;
+    for (let x = 0; x < width; x++) {
+      const idx = rowOffset + x;
+      let val = lumBuf[idx];
+      if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+        const blur =
+          (lumBuf[idx - width] +
+            lumBuf[idx - 1] +
+            lumBuf[idx + 1] +
+            lumBuf[idx + width]) >>
+          2;
+        val = val + ((val - blur) * 0.45);
+        if (val < 0) val = 0;
+        else if (val > 255) val = 255;
+      }
+      const p4 = idx * 4;
+      data[p4] = val;
+      data[p4 + 1] = val;
+      data[p4 + 2] = val;
+    }
+  }
+
   ctx.putImageData(imageData, 0, 0);
 }
 
@@ -125,11 +150,11 @@ function drawSourceToOcrDataUrl(
   srcHeight: number
 ): string | undefined {
   try {
-    // Tall mobile screenshots (e.g., 539x1346) lose small text detail if shrunk to 768px height.
-    // Ensure a crisp horizontal text width (~1000px) while capping height safely for WebView memory.
-    const minReadableWidth = 1000;
-    const maxOcrWidth = 1400;
-    const maxOcrHeight = 2500;
+    // Tall mobile screenshots (e.g., 539x1346) lose small text detail if shrunk aggressively.
+    // Target ~1400-1800px width (and up to 3600px height) with lossless PNG for crisp OCR glyphs.
+    const minReadableWidth = 1400;
+    const maxOcrWidth = 1800;
+    const maxOcrHeight = 3600;
 
     let scale = 1;
     if (srcWidth < minReadableWidth) {
@@ -168,8 +193,8 @@ export function drawSourceToJpeg(
   source: CanvasImageSource,
   srcWidth: number,
   srcHeight: number,
-  maxDimension: number = 768,
-  quality: number = 0.70
+  maxDimension: number = 1280,
+  quality: number = 0.85
 ): CompressedReceiptImage {
   const scale = Math.min(1, maxDimension / Math.max(srcWidth, srcHeight));
   const targetW = Math.max(1, Math.round(srcWidth * scale));
@@ -187,15 +212,17 @@ export function drawSourceToJpeg(
   // White fill ensures transparent PNG screenshots convert cleanly
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, targetW, targetH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
 
   const supportsCanvasFilter = 'filter' in ctx && typeof ctx.filter === 'string';
   if (supportsCanvasFilter) {
-    ctx.filter = 'grayscale(1) contrast(1.18)';
+    ctx.filter = 'grayscale(1) contrast(1.16)';
     ctx.drawImage(source, 0, 0, targetW, targetH);
     ctx.filter = 'none';
   } else {
     ctx.drawImage(source, 0, 0, targetW, targetH);
-    applySoftwareGrayscaleContrast(ctx, targetW, targetH, 1.18);
+    applySoftwareGrayscaleContrast(ctx, targetW, targetH, 1.16);
   }
 
   const previewDataUrl = canvas.toDataURL('image/jpeg', quality);
@@ -218,20 +245,20 @@ export function drawSourceToJpeg(
 
 export function compressVideoFrame(
   video: HTMLVideoElement,
-  maxDimension: number = 768,
-  quality: number = 0.70
+  maxDimension: number = 1280,
+  quality: number = 0.85
 ): CompressedReceiptImage {
   return drawSourceToJpeg(video, video.videoWidth, video.videoHeight, maxDimension, quality);
 }
 
 /**
- * Downscales receipt photos or payment screenshots to 768px high-contrast grayscale JPEG (0.70)
- * to shrink network payloads while sharpening thermal ink and payment digits.
+ * Downscales receipt photos or payment screenshots to 1280px high-contrast grayscale JPEG (0.85)
+ * for sharp zoom previews & Web AI, plus a high-DPI sharpened PNG buffer for on-device OCR.
  */
 export async function compressReceiptImage(
   file: Blob,
-  maxDimension: number = 768,
-  quality: number = 0.70
+  maxDimension: number = 1280,
+  quality: number = 0.85
 ): Promise<CompressedReceiptImage> {
   if (!isSupportedImageBlob(file)) {
     throw new Error('Please provide a valid image file (PNG, JPG, WebP, or HEIC).');
