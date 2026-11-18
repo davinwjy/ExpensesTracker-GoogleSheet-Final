@@ -151,11 +151,14 @@ function parseIdrCandidatesFromLine(line: string): number[] {
     if (!rawToken) continue;
 
     // Strip decimal cents like ".00" or ",00" at the end
-    rawToken = rawToken.replace(/([.,]\d{2})$/, (dec, _, full) => {
+    const centMatch = rawToken.match(/^(.+?)([.,]\d{2})$/);
+    if (centMatch) {
+      const before = centMatch[1];
       // Only strip if the remaining part already has thousands grouping or is clearly cents
-      const before = full.slice(0, full.length - dec.length);
-      return /[.,]\d{3}/.test(before) || Number(before.replace(/[.,]/g, '')) >= 100 ? '' : dec;
-    });
+      if (/[.,]\d{3}/.test(before) || Number(before.replace(/[.,]/g, '')) >= 100) {
+        rawToken = before;
+      }
+    }
 
     const hasSeparator = /[.,]/.test(rawToken);
     const digitsOnly = rawToken.replace(/[.,]/g, '');
@@ -163,9 +166,9 @@ function parseIdrCandidatesFromLine(line: string): number[] {
 
     // Skip years like 2024, 2025, 2026 unless formatted with separator or Rp/IDR prefix
     const numVal = Number(digitsOnly);
-    const hasCurrencyPrefix = /(?:rp\.?|idr)\s*$/i.test(
-      cleaned.slice(Math.max(0, match.index - 6), match.index + 5)
-    );
+    const hasCurrencyPrefix =
+      /^(?:rp\.?|idr)/i.test(match[0]) ||
+      /(?:rp\.?|idr)\s*$/i.test(cleaned.slice(Math.max(0, match.index - 6), match.index));
 
     if (!hasCurrencyPrefix && !hasSeparator && numVal >= 1990 && numVal <= 2035) {
       continue;
@@ -366,6 +369,25 @@ function matchCategoryFromOcrText(text: string, categories: string[]): string {
   );
 }
 
+function dataUrlToBlobIfNonStandard(dataUrl: string): string | Blob {
+  if (/^data:image\/[a-zA-Z]+;base64,/i.test(dataUrl)) {
+    return dataUrl;
+  }
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/i);
+  if (!match) return dataUrl;
+  try {
+    const mime = match[1].startsWith('image/') ? match[1] : 'image/jpeg';
+    const binary = atob(match[2]);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new Blob([bytes], { type: mime });
+  } catch {
+    return dataUrl;
+  }
+}
+
 /**
  * On-device OCR fallback when the live Express/Gemini backend is unavailable
  * (e.g., standalone Capacitor Android APK, GitHub Pages, or offline PWA mode).
@@ -376,8 +398,9 @@ export async function scanReceiptLocally(data: {
   todayDate: string;
 }): Promise<{ result: ScannedReceiptResult }> {
   const worker = await getOcrWorker();
-  const { data: ocrData } = await worker.recognize(data.imageDataUrl);
-  const rawText = (ocrData?.text || '').trim();
+  const imageInput = dataUrlToBlobIfNonStandard(data.imageDataUrl);
+  const { data: ocrData } = await worker.recognize(imageInput);
+  const rawText = (typeof ocrData?.text === 'string' ? ocrData.text : String(ocrData?.text || '')).trim();
 
   if (!rawText || rawText.length < 4) {
     throw new Error('Could not read any text from this image. Please try a clearer photo.');
