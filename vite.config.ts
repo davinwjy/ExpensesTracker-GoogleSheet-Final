@@ -53,9 +53,9 @@ export default defineConfig(() => {
           clientsClaim: true,
           skipWaiting: true,
           runtimeCaching: [
-            // 1. Critical Financial API Cache (Accounts, Transactions, Investments, Budgets, Stats)
+            // 1. Critical Financial API Cache (Accounts, Transactions, Investments, Budgets, Stats) — never intercept /api/ai/*
             {
-              urlPattern: /\/api\/.*/i,
+              urlPattern: /\/api\/(?!ai\/).*/i,
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'wealthtrack-financial-data-cache',

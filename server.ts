@@ -118,11 +118,11 @@ function authenticateAdmin(req: AuthenticatedRequest, res: Response, next: NextF
   });
 }
 
-// App-session auth middleware for AI endpoints (supports JWT token OR Firebase signed-in session headers)
+// App-session auth middleware for AI endpoints (supports JWT token OR Firebase/App signed-in session headers)
 function authenticateAiSession(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  const firebaseUid = String(req.headers['x-firebase-uid'] || '').trim();
+  const firebaseUid = String(req.headers['x-firebase-uid'] || req.headers['x-user-id'] || '').trim();
   const userEmail = String(req.headers['x-user-email'] || req.headers['x-admin-email'] || '').trim().toLowerCase();
 
   if (token) {
@@ -2203,6 +2203,24 @@ app.post('/api/user/apps-script-url', (req: Request, res: Response): void => {
   } catch (err) {
     res.status(500).json({ error: 'Failed to save Apps Script URL' });
   }
+});
+
+// Guarantee all unknown /api/* routes and Express body-parser/runtime errors return JSON (never HTML)
+app.use('/api', (_req: Request, res: Response): void => {
+  res.status(404).json({ error: 'API endpoint not found.' });
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
+  if (!req.path.startsWith('/api')) {
+    next(err);
+    return;
+  }
+  const status = typeof err?.status === 'number' && err.status >= 400 && err.status < 600 ? err.status : 500;
+  const message =
+    err?.type === 'entity.too.large' || status === 413
+      ? 'Uploaded receipt payload is too large. Please try a smaller photo.'
+      : err?.message || 'Unexpected server error.';
+  res.status(status).json({ error: message });
 });
 
 // -------------------------------------------------------------

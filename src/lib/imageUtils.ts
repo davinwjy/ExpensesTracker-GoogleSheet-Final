@@ -32,9 +32,12 @@ export function inferImageMimeType(blob: Blob): string {
 
 export function isSupportedImageBlob(blob: Blob): boolean {
   if (!blob || blob.size === 0) return false;
-  if (blob.type && blob.type.startsWith('image/')) return true;
-  if (!blob.type || blob.type === 'application/octet-stream') {
+  const rawType = (blob.type || '').toLowerCase().trim();
+  if (rawType.startsWith('image/')) return true;
+  if (!rawType || rawType === 'application/octet-stream') {
     const maybeName = (blob as File).name || '';
+    // Android MediaStore / content:// URIs often omit file extension (e.g. "1000048219")
+    if (!maybeName || !maybeName.includes('.')) return true;
     return /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(maybeName);
   }
   return false;
@@ -52,6 +55,15 @@ function readBlobAsDataUrl(blob: Blob): Promise<string> {
     };
     reader.onerror = () => reject(new Error('Failed to read selected image file.'));
     reader.readAsDataURL(blob);
+  });
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Browser could not decode image for resizing.'));
+    image.src = src;
   });
 }
 
@@ -135,7 +147,7 @@ export function compressVideoFrame(
 
 /**
  * Downscales receipt photos or payment screenshots to 768px high-contrast grayscale JPEG (0.70)
- * to shrink network payloads by ~45-55% while sharpening thermal ink and payment digits.
+ * to shrink network payloads while sharpening thermal ink and payment digits.
  */
 export async function compressReceiptImage(
   file: Blob,
@@ -148,63 +160,74 @@ export async function compressReceiptImage(
 
   const detectedMime = inferImageMimeType(file) || 'image/jpeg';
 
-  // Fast path: createImageBitmap decodes large phone photos off the main thread with Exif orientation
+  // 1. Fast path: createImageBitmap with EXIF orientation
   if (typeof createImageBitmap === 'function') {
-    try {
-      const bitmap = await createImageBitmap(file, {
-        imageOrientation: 'from-image',
-      } as ImageBitmapOptions);
+    for (const useOptions of [true, false]) {
       try {
-        if (bitmap.width > 0 && bitmap.height > 0) {
-          return drawSourceToJpeg(bitmap, bitmap.width, bitmap.height, maxDimension, quality);
+        const bitmap = useOptions
+          ? await createImageBitmap(file, { imageOrientation: 'from-image' } as ImageBitmapOptions)
+          : await createImageBitmap(file);
+        try {
+          if (bitmap.width > 0 && bitmap.height > 0) {
+            return drawSourceToJpeg(bitmap, bitmap.width, bitmap.height, maxDimension, quality);
+          }
+        } finally {
+          bitmap.close();
         }
-      } finally {
-        bitmap.close();
+      } catch {
+        // Try next decoding path
       }
-    } catch {
-      // Fall through to HTMLImageElement or raw fallback
     }
   }
 
-  // HTMLImageElement + canvas fallback
+  // 2. HTMLImageElement via Object URL fallback
   const objectUrl = URL.createObjectURL(file);
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error('Browser could not decode image for resizing.'));
-      image.src = objectUrl;
-    });
-
+    const img = await loadImageElement(objectUrl);
     const naturalW = img.naturalWidth || img.width;
     const naturalH = img.naturalHeight || img.height;
     if (naturalW > 0 && naturalH > 0) {
       return drawSourceToJpeg(img, naturalW, naturalH, maxDimension, quality);
     }
   } catch {
-    // Fall through to raw Data URL fallback (e.g., HEIC/HEIF)
+    // Fall through to Data URL decoding
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
 
-  // Raw fallback for formats like HEIC/HEIF that Gemini natively supports server-side
-  if (file.size <= 10 * 1024 * 1024) {
-    const dataUrl = await readBlobAsDataUrl(file);
-    const commaIdx = dataUrl.indexOf(',');
-    const base64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
-    const mimeMatch = dataUrl.match(/^data:([^;]+);base64,/);
-    const finalMime =
-      (mimeMatch?.[1] && mimeMatch[1] !== 'application/octet-stream' ? mimeMatch[1] : '') ||
-      detectedMime;
+  // 3. Data URL -> HTMLImageElement (works reliably on Android content:// URIs where blob URLs fail)
+  // and keeps oversized Android camera photos compressed instead of sending huge raw payloads.
+  if (file.size <= 20 * 1024 * 1024) {
+    const rawDataUrl = await readBlobAsDataUrl(file);
+    const commaIdx = rawDataUrl.indexOf(',');
+    const rawBase64 = commaIdx >= 0 ? rawDataUrl.slice(commaIdx + 1) : rawDataUrl;
+    const mimeMatch = rawDataUrl.match(/^data:([^;]+);base64,/);
+    const normalizedDataUrl =
+      mimeMatch?.[1] && mimeMatch[1] !== 'application/octet-stream'
+        ? rawDataUrl
+        : `data:${detectedMime};base64,${rawBase64}`;
 
-    if (base64) {
-      return {
-        base64,
-        mimeType: finalMime,
-        previewDataUrl: dataUrl,
-      };
+    try {
+      const img = await loadImageElement(normalizedDataUrl);
+      const naturalW = img.naturalWidth || img.width;
+      const naturalH = img.naturalHeight || img.height;
+      if (naturalW > 0 && naturalH > 0) {
+        return drawSourceToJpeg(img, naturalW, naturalH, maxDimension, quality);
+      }
+    } catch {
+      // Raw fallback only for undecodable formats like HEIC/HEIF within safe payload size
+      if (rawBase64 && file.size <= 3.5 * 1024 * 1024) {
+        const finalMime =
+          (mimeMatch?.[1] && mimeMatch[1] !== 'application/octet-stream' ? mimeMatch[1] : '') ||
+          detectedMime;
+        return {
+          base64: rawBase64,
+          mimeType: finalMime,
+          previewDataUrl: normalizedDataUrl,
+        };
+      }
     }
   }
 
-  throw new Error('Could not read the selected image. Please try a JPG, PNG, or WebP image.');
+  throw new Error('Could not process this image. Please try a JPG, PNG, or WebP photo.');
 }

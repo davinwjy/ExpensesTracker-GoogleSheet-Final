@@ -63,6 +63,25 @@ async function checkServer(): Promise<boolean> {
   }
 }
 
+const CONFIGURED_API_BASE = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+
+function resolveApiUrl(endpoint: string): string {
+  if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  return CONFIGURED_API_BASE ? `${CONFIGURED_API_BASE}${endpoint}` : endpoint;
+}
+
+function isCapacitorOrStaticHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { protocol, hostname, origin } = window.location;
+  if (protocol === 'capacitor:' || protocol === 'file:') return true;
+  if (hostname.endsWith('.github.io')) return true;
+  // Capacitor Android WebView runs on https://localhost without an Express API server
+  if (origin === 'https://localhost' || (hostname === 'localhost' && !window.location.port)) {
+    return true;
+  }
+  return false;
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const fbUser = firebaseAuth?.currentUser;
@@ -79,14 +98,34 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  const response = await fetch(resolveApiUrl(endpoint), {
     ...options,
     headers,
   });
 
-  const contentType = response.headers.get('content-type') || '';
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
   if (!contentType.includes('application/json')) {
-    throw new Error('Non-JSON response from server');
+    const rawBody = await response.text().catch(() => '');
+
+    if (response.status === 413) {
+      throw new Error('Receipt image is too large for the server. Please crop or use a smaller photo.');
+    }
+
+    const looksLikeAppShell =
+      rawBody.includes('WealthTrack') ||
+      (rawBody.includes('<div id="root"') && rawBody.includes('<!doctype html'));
+
+    if (looksLikeAppShell || isCapacitorOrStaticHost()) {
+      throw new Error(
+        'AI Bill Scanner requires the live WealthTrack web server and is unavailable inside the offline/static Android APK. Open WealthTrack in your Android browser via the live web URL to scan bills.'
+      );
+    }
+
+    if (response.redirected || rawBody.includes('accounts.google.com') || response.status === 401 || response.status === 403) {
+      throw new Error('Server session expired or blocked by proxy login. Reload the page and sign in again.');
+    }
+
+    throw new Error(`Non-JSON response from server (HTTP ${response.status}). Please refresh and try again.`);
   }
 
   const data = await response.json();
@@ -795,11 +834,15 @@ export const api = {
     categories: string[];
     todayDate: string;
     userEmail?: string;
+    userId?: string;
   }): Promise<{ result: ScannedReceiptResult }> {
-    const { userEmail, ...payload } = data;
+    const { userEmail, userId, ...payload } = data;
+    const extraHeaders: Record<string, string> = {};
+    if (userEmail) extraHeaders['X-User-Email'] = userEmail;
+    if (userId) extraHeaders['X-User-Id'] = userId;
     return await request<{ result: ScannedReceiptResult }>('/api/ai/scan-receipt', {
       method: 'POST',
-      headers: userEmail ? { 'X-User-Email': userEmail } : undefined,
+      headers: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
       body: JSON.stringify(payload),
     });
   },

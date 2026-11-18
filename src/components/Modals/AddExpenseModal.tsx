@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X,
   Check,
@@ -54,8 +54,8 @@ export const AddExpenseModal: React.FC = () => {
     setIsCategoryModalOpen,
   } = useFinance();
 
-  const cameraInputId = useId();
-  const uploadInputId = useId();
+  const cameraInputId = 'wt-receipt-camera-input';
+  const uploadInputId = 'wt-receipt-upload-input';
 
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [amount, setAmount] = useState<string>('');
@@ -76,11 +76,13 @@ export const AddExpenseModal: React.FC = () => {
   const [showReceiptPreviewModal, setShowReceiptPreviewModal] = useState(false);
   const [isLiveCameraOpen, setIsLiveCameraOpen] = useState(false);
   const [isLiveCameraReady, setIsLiveCameraReady] = useState(false);
+  const [isPasteBoxOpen, setIsPasteBoxOpen] = useState(false);
 
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const pasteBoxRef = useRef<HTMLDivElement | null>(null);
   const lastCompressedImageRef = useRef<CompressedReceiptImage | null>(null);
   const scanGenerationRef = useRef<number>(0);
 
@@ -146,6 +148,7 @@ export const AddExpenseModal: React.FC = () => {
     setScanConfidence(null);
     setIsDragOver(false);
     setShowReceiptPreviewModal(false);
+    setIsPasteBoxOpen(false);
     lastCompressedImageRef.current = null;
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (uploadInputRef.current) uploadInputRef.current.value = '';
@@ -233,6 +236,7 @@ export const AddExpenseModal: React.FC = () => {
           categories: categoriesToMatch,
           todayDate: getLocalDateString(),
           userEmail: user?.email,
+          userId: user?.id,
         });
 
         if (requestGen !== scanGenerationRef.current) return;
@@ -278,12 +282,26 @@ export const AddExpenseModal: React.FC = () => {
       setScanConfidence(null);
 
       try {
-        // Read bytes up front so clearing the input element cannot invalidate File references on WebKit
-        const buffer = await blob.arrayBuffer();
-        const safeBlob = new File([buffer], (blob as File).name || 'receipt.jpg', {
-          type: blob.type || 'image/jpeg',
-        });
-        const compressed = await compressReceiptImage(safeBlob);
+        let sourceBlob: Blob = blob;
+        const normalizedMime =
+          blob.type && blob.type !== 'application/octet-stream' ? blob.type : 'image/jpeg';
+
+        // Copy bytes when supported so resetting the input element cannot invalidate WebKit File references,
+        // while falling back directly to the Blob if an Android content:// URI rejects arrayBuffer().
+        if (typeof blob.arrayBuffer === 'function') {
+          try {
+            const buffer = await blob.arrayBuffer();
+            if (buffer.byteLength > 0) {
+              sourceBlob = new File([buffer], (blob as File).name || 'receipt.jpg', {
+                type: normalizedMime,
+              });
+            }
+          } catch {
+            sourceBlob = blob;
+          }
+        }
+
+        const compressed = await compressReceiptImage(sourceBlob);
         if (requestGen !== scanGenerationRef.current) return;
         lastCompressedImageRef.current = compressed;
         setScanPreviewUrl(compressed.previewDataUrl);
@@ -292,13 +310,16 @@ export const AddExpenseModal: React.FC = () => {
         if (requestGen !== scanGenerationRef.current) return;
         setScanError(err?.message || 'Could not process the selected image.');
         setScanStatus('error');
+      } finally {
+        if (cameraInputRef.current) cameraInputRef.current.value = '';
+        if (uploadInputRef.current) uploadInputRef.current.value = '';
       }
     },
     [isSubmitting, runReceiptExtraction]
   );
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.currentTarget.files?.[0];
     if (file) {
       void processReceiptBlob(file);
     }
@@ -376,68 +397,210 @@ export const AddExpenseModal: React.FC = () => {
     };
   }, []);
 
-  const handleClipboardButtonPaste = async () => {
-    setScanError('');
-    if (!navigator.clipboard || typeof navigator.clipboard.read !== 'function') {
-      setScanError('Use Ctrl+V (or Cmd+V) anywhere in this modal to paste a screenshot.');
-      setScanStatus('error');
-      return;
-    }
-
+  const dataUrlToBlob = useCallback((dataUrl: string): Blob | null => {
     try {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const imageType = item.types.find((t) => t.startsWith('image/'));
-        if (imageType) {
-          const blob = await item.getType(imageType);
-          await processReceiptBlob(blob);
-          return;
+      const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/i);
+      if (!match) return null;
+      const mime = match[1];
+      const binaryStr = atob(match[2]);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      return new Blob([bytes], { type: mime });
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const extractImageBlobFromSrc = useCallback(
+    async (src: string): Promise<Blob | null> => {
+      if (!src) return null;
+      if (src.startsWith('data:image/')) {
+        return dataUrlToBlob(src);
+      }
+      if (src.startsWith('blob:')) {
+        try {
+          const res = await fetch(src);
+          const blob = await res.blob();
+          return isSupportedImageBlob(blob) ? blob : null;
+        } catch {
+          return null;
         }
       }
-      setScanError('No image found in clipboard. Copy a receipt or payment screenshot first.');
-      setScanStatus('error');
-    } catch {
-      setScanError('Clipboard access blocked by browser — press Ctrl+V / Cmd+V directly to paste.');
+      return null;
+    },
+    [dataUrlToBlob]
+  );
+
+  const extractImageFromDataTransfer = useCallback(
+    async (dt: DataTransfer | null | undefined): Promise<Blob | null> => {
+      if (!dt) return null;
+
+      if (dt.items) {
+        for (let i = 0; i < dt.items.length; i++) {
+          const item = dt.items[i];
+          if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file && isSupportedImageBlob(file)) {
+              return file;
+            }
+          }
+        }
+      }
+
+      if (dt.files && dt.files.length > 0) {
+        for (let i = 0; i < dt.files.length; i++) {
+          const candidate = dt.files[i];
+          if (isSupportedImageBlob(candidate)) {
+            return candidate;
+          }
+        }
+      }
+
+      // Some mobile/desktop apps paste an image as HTML (<img src="data:image/..."> or blob:)
+      try {
+        const html = dt.getData('text/html');
+        if (html) {
+          const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+          if (imgMatch?.[1]) {
+            const blob = await extractImageBlobFromSrc(imgMatch[1]);
+            if (blob) return blob;
+          }
+        }
+        const plain = dt.getData('text/plain')?.trim();
+        if (plain && plain.startsWith('data:image/')) {
+          const blob = dataUrlToBlob(plain);
+          if (blob) return blob;
+        }
+      } catch {
+        // Ignore clipboard getData restrictions
+      }
+
+      return null;
+    },
+    [dataUrlToBlob, extractImageBlobFromSrc]
+  );
+
+  // Focus mobile paste zone automatically when opened so Gboard/Samsung clipboard & long-press Paste work immediately
+  useEffect(() => {
+    if (isPasteBoxOpen && pasteBoxRef.current) {
+      const timer = setTimeout(() => {
+        pasteBoxRef.current?.focus();
+      }, 40);
+      return () => clearTimeout(timer);
+    }
+  }, [isPasteBoxOpen]);
+
+  const handleClipboardButtonPaste = async () => {
+    if (isSubmitting) return;
+    setScanError('');
+    setScanStatus('idle');
+
+    // 1. Try direct Clipboard API read (works on Chrome desktop & Android Chrome when permission granted)
+    if (navigator.clipboard && typeof navigator.clipboard.read === 'function') {
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((t) => t.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            setIsPasteBoxOpen(false);
+            await processReceiptBlob(blob);
+            return;
+          }
+          if (item.types.includes('text/html')) {
+            const htmlBlob = await item.getType('text/html');
+            const html = await htmlBlob.text();
+            const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imgMatch?.[1]) {
+              const imgBlob = await extractImageBlobFromSrc(imgMatch[1]);
+              if (imgBlob) {
+                setIsPasteBoxOpen(false);
+                await processReceiptBlob(imgBlob);
+                return;
+              }
+            }
+          }
+        }
+      } catch {
+        // Blocked by browser/WebView/iframe permission policy -> open mobile tap-and-paste zone below
+      }
+    }
+
+    // 2. Fallback to interactive Paste Box (enables mobile long-press "Paste" & Android Gboard/Samsung keyboard clipboard strip)
+    setIsScannerExpanded(true);
+    setIsPasteBoxOpen(true);
+  };
+
+  const handlePasteZonePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const imageBlob = await extractImageFromDataTransfer(e.clipboardData);
+    if (pasteBoxRef.current) {
+      pasteBoxRef.current.innerHTML = '';
+    }
+    if (imageBlob) {
+      setIsPasteBoxOpen(false);
+      await processReceiptBlob(imageBlob);
+    } else {
+      setScanError('Clipboard contains text only — copy an image/screenshot first, then paste.');
       setScanStatus('error');
     }
+  };
+
+  const handlePasteZoneBeforeInput = async (e: React.FormEvent<HTMLDivElement>) => {
+    const inputEvt = e.nativeEvent as unknown as InputEvent & { dataTransfer?: DataTransfer | null };
+    if (inputEvt?.dataTransfer) {
+      const imageBlob = await extractImageFromDataTransfer(inputEvt.dataTransfer);
+      if (imageBlob) {
+        e.preventDefault();
+        if (pasteBoxRef.current) pasteBoxRef.current.innerHTML = '';
+        setIsPasteBoxOpen(false);
+        await processReceiptBlob(imageBlob);
+      }
+    }
+  };
+
+  const handlePasteZoneInput = async () => {
+    const el = pasteBoxRef.current;
+    if (!el) return;
+    const imgEl = el.querySelector('img');
+    if (imgEl?.src) {
+      const src = imgEl.src;
+      el.innerHTML = '';
+      const blob = await extractImageBlobFromSrc(src);
+      if (blob) {
+        setIsPasteBoxOpen(false);
+        await processReceiptBlob(blob);
+        return;
+      }
+    }
+    // Strip any typed text so the paste box stays clean
+    el.innerHTML = '';
   };
 
   // Global clipboard paste support while modal is open for new transactions
   useEffect(() => {
     if (!isAddExpenseOpen || editingTransaction) return;
 
-    const handleWindowPaste = (e: ClipboardEvent) => {
-      const clipboardData = e.clipboardData;
-      if (!clipboardData) return;
-
-      let imageFile: File | null = null;
-      if (clipboardData.items) {
-        for (let i = 0; i < clipboardData.items.length; i++) {
-          const item = clipboardData.items[i];
-          if (item.kind === 'file' && item.type.startsWith('image/')) {
-            imageFile = item.getAsFile();
-            if (imageFile) break;
-          }
-        }
+    const handleWindowPaste = async (e: ClipboardEvent) => {
+      // If paste target is inside the dedicated paste zone, its own handler handles it
+      if (pasteBoxRef.current && e.target instanceof Node && pasteBoxRef.current.contains(e.target)) {
+        return;
       }
-
-      if (!imageFile && clipboardData.files && clipboardData.files.length > 0) {
-        const candidate = clipboardData.files[0];
-        if (candidate.type.startsWith('image/')) {
-          imageFile = candidate;
-        }
-      }
-
-      if (imageFile) {
+      const imageBlob = await extractImageFromDataTransfer(e.clipboardData);
+      if (imageBlob) {
         e.preventDefault();
         setIsScannerExpanded(true);
-        void processReceiptBlob(imageFile);
+        setIsPasteBoxOpen(false);
+        void processReceiptBlob(imageBlob);
       }
     };
 
     window.addEventListener('paste', handleWindowPaste);
     return () => window.removeEventListener('paste', handleWindowPaste);
-  }, [isAddExpenseOpen, editingTransaction, processReceiptBlob]);
+  }, [isAddExpenseOpen, editingTransaction, extractImageFromDataTransfer, processReceiptBlob]);
 
   const resetForm = () => {
     setIsSubmitting(false);
@@ -925,11 +1088,11 @@ export const AddExpenseModal: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-1.5 sm:gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <ScanLine className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                       <span className="text-[11px] font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                        AI Scan Bill / Payment
+                        AI Scan Bill<span className="hidden sm:inline"> / Payment</span>
                       </span>
                       <span className="hidden sm:inline text-[10px] text-slate-400 dark:text-zinc-500 truncate">
                         · Ctrl+V to paste
@@ -941,7 +1104,7 @@ export const AddExpenseModal: React.FC = () => {
                         <label
                           htmlFor={cameraInputId}
                           title="Take photo with camera"
-                          className={`h-7 px-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer select-none ${
+                          className={`h-7 px-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium inline-flex items-center justify-center gap-1 transition-colors cursor-pointer select-none ${
                             isSubmitting ? 'opacity-50 pointer-events-none' : ''
                           }`}
                         >
@@ -963,7 +1126,7 @@ export const AddExpenseModal: React.FC = () => {
                       <label
                         htmlFor={uploadInputId}
                         title="Upload image or payment screenshot"
-                        className={`h-7 px-2 rounded-md bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] text-[11px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer select-none ${
+                        className={`h-7 px-2 rounded-md bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] text-[11px] font-medium inline-flex items-center justify-center gap-1 transition-colors cursor-pointer select-none ${
                           isSubmitting ? 'opacity-50 pointer-events-none' : ''
                         }`}
                       >
@@ -975,17 +1138,50 @@ export const AddExpenseModal: React.FC = () => {
                         disabled={isSubmitting}
                         onClick={handleClipboardButtonPaste}
                         title="Paste screenshot from clipboard"
-                        className="h-7 px-2 rounded-md bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-[#243252] text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                        aria-label="Paste screenshot from clipboard"
+                        className={`w-7 h-7 rounded-md border flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50 ${
+                          isPasteBoxOpen
+                            ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-600 dark:text-indigo-300'
+                            : 'bg-white dark:bg-[#131d35] hover:bg-slate-100 dark:hover:bg-[#1a2645] text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-[#243252]'
+                        }`}
                       >
-                        <ClipboardPaste className="w-3 h-3 shrink-0" />
-                        <span className="hidden sm:inline">Paste</span>
+                        <ClipboardPaste className="w-3.5 h-3.5 shrink-0" />
                       </button>
                     </div>
                   </div>
 
-                  {isScannerExpanded && scanStatus === 'idle' && (
+                  {isPasteBoxOpen && (
+                    <div className="relative rounded-lg border border-indigo-500/45 bg-indigo-500/8 px-2.5 py-2 flex items-center gap-2">
+                      <div
+                        ref={pasteBoxRef}
+                        contentEditable
+                        suppressContentEditableWarning
+                        role="textbox"
+                        aria-label="Tap and paste receipt image here"
+                        onPaste={handlePasteZonePaste}
+                        onBeforeInput={handlePasteZoneBeforeInput}
+                        onInput={handlePasteZoneInput}
+                        className="flex-1 min-h-[28px] flex items-center text-[11px] text-indigo-700 dark:text-indigo-200 outline-none select-text cursor-text empty:before:content-[attr(data-placeholder)] empty:before:text-indigo-600/80 dark:empty:before:text-indigo-300/85"
+                        data-placeholder={
+                          isTouchMobile
+                            ? 'Tap or long-press here to Paste image from keyboard / clipboard'
+                            : 'Press Ctrl+V / Cmd+V here to paste your receipt image'
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setIsPasteBoxOpen(false)}
+                        title="Close paste box"
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-indigo-400 hover:text-indigo-600 dark:hover:text-white shrink-0 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {isScannerExpanded && scanStatus === 'idle' && !isPasteBoxOpen && (
                     <p className="text-[10px] text-slate-500 dark:text-zinc-400">
-                      Snap a paper bill, upload a QRIS/transfer proof, drop an image here, or press Ctrl+V / Cmd+V.
+                      Snap a paper bill, upload a QRIS/transfer proof, or tap Paste to insert a copied screenshot.
                     </p>
                   )}
 
@@ -1063,7 +1259,7 @@ export const AddExpenseModal: React.FC = () => {
                     : 'border-slate-200 dark:border-[#243252] focus:border-indigo-500'
                 }`}
                 required
-                autoFocus
+                autoFocus={!isTouchMobile && !transactionInitialScanOpen}
               />
             </div>
 
@@ -1380,12 +1576,12 @@ export const AddExpenseModal: React.FC = () => {
           </div>
         )}
 
-        {/* Accessible sr-only file inputs outside <form> for reliable activation across mobile & desktop browsers */}
+        {/* Accessible sr-only file inputs outside <form> for reliable activation across Android, iOS & desktop */}
         <input
           id={cameraInputId}
           ref={cameraInputRef}
           type="file"
-          accept="image/*,.heic,.heif"
+          accept="image/*"
           capture="environment"
           onClick={(e) => {
             e.currentTarget.value = '';
@@ -1399,7 +1595,7 @@ export const AddExpenseModal: React.FC = () => {
           id={uploadInputId}
           ref={uploadInputRef}
           type="file"
-          accept="image/*,.heic,.heif"
+          accept="image/*"
           onClick={(e) => {
             e.currentTarget.value = '';
           }}
