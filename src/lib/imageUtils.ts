@@ -2,6 +2,7 @@ export interface CompressedReceiptImage {
   base64: string;
   mimeType: string;
   previewDataUrl: string;
+  ocrDataUrl?: string;
 }
 
 const IMAGE_EXT_TO_MIME: Record<string, string> = {
@@ -88,6 +89,81 @@ function applySoftwareGrayscaleContrast(
   ctx.putImageData(imageData, 0, 0);
 }
 
+/**
+ * Enhances grayscale text legibility and suppresses light pastel bank/wallet watermarks
+ * (e.g., BCA / QRIS background seals) for on-device OCR.
+ */
+function applyOcrWatermarkCleanup(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    let adjusted: number;
+    if (lum >= 205) {
+      // Wash out faint watermarks / off-white paper cleanly to pure white
+      adjusted = 255;
+    } else {
+      // Crisp dark contrast curve centered at mid-high luminance while preserving anti-aliased edges
+      adjusted = (lum - 155) * 1.45 + 155;
+      if (adjusted < 0) adjusted = 0;
+      else if (adjusted > 255) adjusted = 255;
+    }
+    data[i] = adjusted;
+    data[i + 1] = adjusted;
+    data[i + 2] = adjusted;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+function drawSourceToOcrDataUrl(
+  source: CanvasImageSource,
+  srcWidth: number,
+  srcHeight: number
+): string | undefined {
+  try {
+    // Tall mobile screenshots (e.g., 539x1346) lose small text detail if shrunk to 768px height.
+    // Ensure a crisp horizontal text width (~1000px) while capping height safely for WebView memory.
+    const minReadableWidth = 1000;
+    const maxOcrWidth = 1400;
+    const maxOcrHeight = 2500;
+
+    let scale = 1;
+    if (srcWidth < minReadableWidth) {
+      scale = minReadableWidth / srcWidth;
+    } else if (srcWidth > maxOcrWidth) {
+      scale = maxOcrWidth / srcWidth;
+    }
+    if (srcHeight * scale > maxOcrHeight) {
+      scale = maxOcrHeight / srcHeight;
+    }
+
+    const targetW = Math.max(1, Math.round(srcWidth * scale));
+    const targetH = Math.max(1, Math.round(srcHeight * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return undefined;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, targetW, targetH);
+
+    applyOcrWatermarkCleanup(ctx, targetW, targetH);
+    return canvas.toDataURL('image/png');
+  } catch {
+    return undefined;
+  }
+}
+
 export function drawSourceToJpeg(
   source: CanvasImageSource,
   srcWidth: number,
@@ -130,10 +206,13 @@ export function drawSourceToJpeg(
     throw new Error('Failed to encode compressed receipt image.');
   }
 
+  const ocrDataUrl = drawSourceToOcrDataUrl(source, srcWidth, srcHeight);
+
   return {
     base64,
     mimeType: 'image/jpeg',
     previewDataUrl,
+    ocrDataUrl,
   };
 }
 

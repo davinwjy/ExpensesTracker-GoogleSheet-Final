@@ -240,6 +240,7 @@ export const AddExpenseModal: React.FC = () => {
           userEmail: user?.email,
           userId: user?.id,
           previewDataUrl: compressed.previewDataUrl,
+          ocrDataUrl: compressed.ocrDataUrl,
         });
 
         if (requestGen !== scanGenerationRef.current) return;

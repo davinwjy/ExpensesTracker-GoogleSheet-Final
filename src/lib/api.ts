@@ -844,10 +844,13 @@ export const api = {
     userEmail?: string;
     userId?: string;
     previewDataUrl?: string;
+    ocrDataUrl?: string;
   }): Promise<{ result: ScannedReceiptResult }> {
-    const { userEmail, userId, previewDataUrl, ...payload } = data;
+    const { userEmail, userId, previewDataUrl, ocrDataUrl, ...payload } = data;
     const localDataUrl =
-      previewDataUrl || `data:${payload.mimeType || 'image/jpeg'};base64,${payload.imageBase64}`;
+      ocrDataUrl ||
+      previewDataUrl ||
+      `data:${payload.mimeType || 'image/jpeg'};base64,${payload.imageBase64}`;
 
     // Inside standalone Capacitor Android APK (https://localhost) or GitHub Pages without a configured API backend,
     // immediately run on-device receipt OCR without wasting a round-trip to a non-existent /api endpoint.

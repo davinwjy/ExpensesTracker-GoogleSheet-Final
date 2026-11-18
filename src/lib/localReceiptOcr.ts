@@ -23,7 +23,7 @@ async function getOcrWorker(): Promise<TesseractWorker> {
   return cachedWorkerPromise;
 }
 
-const KNOWN_MERCHANTS: Array<{ pattern: RegExp; label: string }> = [
+const SPECIFIC_MERCHANTS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /\bindomaret\b/i, label: 'Indomaret' },
   { pattern: /\balfamart\b/i, label: 'Alfamart' },
   { pattern: /\balfamidi\b/i, label: 'Alfamidi' },
@@ -50,7 +50,6 @@ const KNOWN_MERCHANTS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /\bblue\s*bird\b/i, label: 'Bluebird' },
   { pattern: /\bpertamina|spbu\b/i, label: 'Pertamina Fuel' },
   { pattern: /\bshell\b/i, label: 'Shell Fuel' },
-  { pattern: /\blaundry|londri|cuci\s*setrika|dry\s*clean\b/i, label: 'Laundry' },
   { pattern: /\bkimia\s*farma\b/i, label: 'Kimia Farma' },
   { pattern: /\bk[\s-]?24\b/i, label: 'Apotek K-24' },
   { pattern: /\bguardian\b/i, label: 'Guardian' },
@@ -59,25 +58,28 @@ const KNOWN_MERCHANTS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /\bpdam\b/i, label: 'PDAM Water' },
   { pattern: /\bbpjs\b/i, label: 'BPJS' },
   { pattern: /\btelkomsel\b/i, label: 'Telkomsel' },
-  { pattern: /\bshopee\b/i, label: 'Shopee' },
-  { pattern: /\btokopedia\b/i, label: 'Tokopedia' },
   { pattern: /\buniglo|uniqlo\b/i, label: 'Uniqlo' },
   { pattern: /\bgramedia\b/i, label: 'Gramedia' },
   { pattern: /\bcinema\s*xxi|xxi\b/i, label: 'Cinema XXI' },
   { pattern: /\bcgv\b/i, label: 'CGV Cinema' },
+];
+
+const PAYMENT_CHANNEL_FALLBACKS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /\bgopay\b/i, label: 'GoPay Payment' },
   { pattern: /\bovo\b/i, label: 'OVO Payment' },
   { pattern: /\bdana\b/i, label: 'DANA Payment' },
   { pattern: /\bqris\b/i, label: 'QRIS Payment' },
   { pattern: /\bbca\b/i, label: 'BCA Transfer / QRIS' },
   { pattern: /\bmandiri\b/i, label: 'Mandiri Payment' },
+  { pattern: /\bshopee\b/i, label: 'Shopee' },
+  { pattern: /\btokopedia\b/i, label: 'Tokopedia' },
 ];
 
 const CATEGORY_KEYWORD_RULES: Array<{ targets: string[]; pattern: RegExp }> = [
   {
     targets: ['Personal Care', 'Perawatan', 'Laundry'],
     pattern:
-      /\b(laundry|londri|cuci|setrika|dry\s*clean|salon|barber|pangkas|spa|skincare|kosmetik|parfum|shampoo|sabun|toiletries|facial|haircut)\b/i,
+      /\b(laun[do0]r[yi1]|l[o0]ndri|l[o0]undr[yi]|cuci|setrika|dry\s*clean|salon|barber|pangkas|spa|skincare|kosmetik|parfum|shampoo|sabun|toiletries|facial|haircut)\b/i,
   },
   {
     targets: ['Groceries', 'Belanja Harian', 'Minimarket', 'Supermarket'],
@@ -314,26 +316,139 @@ function extractDateFromOcrText(text: string, fallbackToday: string): string {
   return fallbackToday;
 }
 
-function extractNotesFromOcrText(text: string): string {
-  for (const merchant of KNOWN_MERCHANTS) {
-    if (merchant.pattern.test(text)) {
-      return merchant.label;
+const RECIPIENT_FIELD_LABEL_REGEX =
+  /^(?:pay(?:ment|rn[e3]nt)?\s+t[o0]|paid\s+t[o0]|transfer\s+(?:t[o0]|ke)|send\s+t[o0]|kirim\s+ke|tujuan(?:\s+transaksi)?|kepada|(?:nama\s+)?penerima|(?:nama\s+)?merchant(?:\s+name)?|(?:nama\s+)?toko|outlet|biller)\b[:\s-]*(.*)$/i;
+
+const NON_MERCHANT_FIELD_LABEL_REGEX =
+  /^(?:acquirer|rrn|transaction\s*type|merchant\s*(?:location|pan)|customer\s*pan|terminal\s*id|source\s*of\s*fund|total(?:\s*payment|\s*bayar)?|reference\s*no|status|tanggal|date|waktu|time|nominal|biaya|admin|fee|idr|rp\b)/i;
+
+const KEEP_UPPERCASE_ACRONYMS = new Set(['PLN', 'PDAM', 'BPJS', 'KFC', 'XXI', 'CGV', 'SPBU', 'ATM', 'ID']);
+
+function toCleanTitleCase(input: string): string {
+  return input
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => {
+      const upper = word.toUpperCase();
+      if (KEEP_UPPERCASE_ACRONYMS.has(upper)) return upper;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
+function cleanMerchantValue(raw: string): string | null {
+  let cleaned = raw
+    .replace(/^[:\s\-|.]+/, '')
+    .replace(/[^\p{L}\p{N}\s&'./-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Strip trailing QRIS / acquirer / legal suffix tokens repeatedly (e.g. "HOMEY LAUNDRY GPV" -> "HOMEY LAUNDRY")
+  let prev = '';
+  while (cleaned && cleaned !== prev) {
+    prev = cleaned;
+    cleaned = cleaned
+      .replace(/\s+(?:GPV|QRIS|ID|PT|CV|TBK|SHOPEEPAY|GOPAY|OVO|DANA|LINKAJA)\.?$/i, '')
+      .trim();
+  }
+
+  if (!cleaned || cleaned.length < 3) return null;
+  if (NON_MERCHANT_FIELD_LABEL_REGEX.test(cleaned)) return null;
+
+  const letterCount = (cleaned.match(/[a-zA-Z]/g) || []).length;
+  const digitCount = (cleaned.match(/\d/g) || []).length;
+  if (letterCount < 3 || digitCount > letterCount) return null;
+
+  return toCleanTitleCase(cleaned);
+}
+
+function extractLabeledMerchant(text: string): string | null {
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const match = line.match(RECIPIENT_FIELD_LABEL_REGEX);
+    if (!match) continue;
+
+    // 1. Check same-line right-hand value ("Payment to   HOMEY LAUNDRY GPV")
+    const sameLineCandidate = cleanMerchantValue(match[1] || '');
+    if (sameLineCandidate) {
+      return sameLineCandidate;
+    }
+
+    // 2. Check next non-empty line if the label sat on its own line
+    if (i + 1 < lines.length && !NON_MERCHANT_FIELD_LABEL_REGEX.test(lines[i + 1])) {
+      const nextLineCandidate = cleanMerchantValue(lines[i + 1]);
+      if (nextLineCandidate) {
+        return nextLineCandidate;
+      }
     }
   }
 
+  return null;
+}
+
+function isPaymentTransferReceipt(text: string): boolean {
+  return /\b(payment\s+to|paid\s+to|transfer|qris|pembayaran\s+berhasil|payment\s+successful|acquirer|source\s+of\s+fund|kepada|penerima)\b/i.test(
+    text
+  );
+}
+
+function normalizeOcrNoiseForMatching(text: string): string {
+  // Normalize common OCR digit-letter confusions inside alphabetic words (e.g. H0MEY -> HOMEY, L0NDRI -> LONDRI)
+  return text
+    .replace(/(?<=[a-zA-Z])0(?=[a-zA-Z])/g, 'o')
+    .replace(/(?<=[a-zA-Z])1(?=[a-zA-Z])/g, 'l')
+    .replace(/(?<=[a-zA-Z])5(?=[a-zA-Z])/g, 's')
+    .replace(/(?<=[a-zA-Z])3(?=[a-zA-Z])/g, 'e');
+}
+
+function extractNotesFromOcrText(text: string): string {
+  const isTransferProof = isPaymentTransferReceipt(text);
+
+  // 1. Highest priority: labeled recipient/merchant ("Payment to HOMEY LAUNDRY GPV" -> "Payment to Homey Laundry")
+  const labeledMerchant = extractLabeledMerchant(text);
+  if (labeledMerchant) {
+    const formatted = isTransferProof ? `Payment to ${labeledMerchant}` : labeledMerchant;
+    return formatted.slice(0, 60);
+  }
+
+  // 2. Well-known retail/food/utility merchants (but keep fuller line context when available)
+  for (const merchant of SPECIFIC_MERCHANTS) {
+    if (merchant.pattern.test(text)) {
+      return isTransferProof ? `Payment to ${merchant.label}`.slice(0, 60) : merchant.label;
+    }
+  }
+
+  // 3. First clean readable merchant line (skipping bank/QRIS boilerplate headers & field labels)
   const lines = text
     .split(/\r?\n/)
-    .map((l) => l.replace(/[^\p{L}\p{N}\s&'./-]/gu, '').trim())
+    .map((l) => l.replace(/[^\p{L}\p{N}\s&'./-]/gu, ' ').replace(/\s+/g, ' ').trim())
     .filter((l) => l.length >= 3 && l.length <= 50);
 
   const boilerplateRegex =
-    /^(struk|receipt|invoice|nota|pembayaran|transaksi|bukti|selamat|terima\s*kasih|thank\s*you|jl\.|jalan|telp|npwp|tanggal|date|waktu|time|kasir|cashier)/i;
+    /^(struk|receipt|invoice|nota|pembayaran|transaksi|bukti|selamat|terima\s*kasih|thank\s*you|jl\.|jalan|telp|npwp|tanggal|date|waktu|time|kasir|cashier|bca|mandiri|bni|bri|qris\s+payment|payment\s+successful|shopeepay|gopay|ovo|dana|jakarta|tahapan)/i;
 
-  for (const line of lines.slice(0, 6)) {
+  for (const line of lines.slice(0, 10)) {
     const letterCount = (line.match(/[a-zA-Z]/g) || []).length;
     const digitCount = (line.match(/\d/g) || []).length;
-    if (letterCount >= 3 && letterCount >= digitCount && !boilerplateRegex.test(line)) {
-      return line.slice(0, 60);
+    if (
+      letterCount >= 4 &&
+      letterCount > digitCount &&
+      !boilerplateRegex.test(line) &&
+      !NON_MERCHANT_FIELD_LABEL_REGEX.test(line)
+    ) {
+      return toCleanTitleCase(line).slice(0, 60);
+    }
+  }
+
+  // 4. Last-resort fallback: generic payment channel
+  for (const channel of PAYMENT_CHANNEL_FALLBACKS) {
+    if (channel.pattern.test(text)) {
+      return channel.label;
     }
   }
 
@@ -343,8 +458,11 @@ function extractNotesFromOcrText(text: string): string {
 function matchCategoryFromOcrText(text: string, categories: string[]): string {
   if (!categories || categories.length === 0) return 'Other Expense';
 
+  const normalizedText = normalizeOcrNoiseForMatching(text);
+  const combinedCandidates = [text, normalizedText];
+
   for (const rule of CATEGORY_KEYWORD_RULES) {
-    if (rule.pattern.test(text)) {
+    if (combinedCandidates.some((candidate) => rule.pattern.test(candidate))) {
       const matched = categories.find((cat) =>
         rule.targets.some((target) => cat.toLowerCase().includes(target.toLowerCase()))
       );
@@ -353,7 +471,7 @@ function matchCategoryFromOcrText(text: string, categories: string[]): string {
   }
 
   // Fallback: match custom category words directly in OCR text
-  const lowerText = text.toLowerCase();
+  const lowerText = normalizedText.toLowerCase();
   for (const cat of categories) {
     const words = cat
       .toLowerCase()
