@@ -252,3 +252,12 @@ export function isTransactionLocked(
   return { locked: false };
 }
 
+export function formatSameAccountTransferError(accountName?: string): string {
+  const trimmedName = accountName?.trim();
+  if (trimmedName) {
+    return `Cannot transfer to the same account ("${trimmedName}"). Please choose a different destination account.`;
+  }
+  return 'Source and destination accounts cannot be the same. Please choose a different destination account.';
+}
+
+

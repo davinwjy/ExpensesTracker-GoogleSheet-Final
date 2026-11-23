@@ -23,7 +23,13 @@ import { firestoreService } from '../lib/firestoreService';
 import { computeStats } from '../lib/statsHelper';
 import { exchangeRateService } from '../lib/exchangeRateService';
 import { offlineSyncManager } from '../lib/offlineSync';
-import { isTransactionLocked, EXPENSE_CATEGORIES, INCOME_CATEGORIES, CATEGORY_COLORS } from '../lib/formatters';
+import {
+  isTransactionLocked,
+  EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
+  CATEGORY_COLORS,
+  formatSameAccountTransferError,
+} from '../lib/formatters';
 import {
   googleSheetsService,
   SHEET_TAB_NAMES,
@@ -2246,16 +2252,29 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     assertOnline('Transferring funds');
     const now = new Date().toISOString();
     const txId = 'tx_' + Date.now();
+    const normalizedFromId = String(data.fromAccountId || '').trim();
+    const normalizedToId = String(data.toAccountId || '').trim();
 
-    if (data.type === 'account_to_account' && data.toAccountId) {
-      const fromAcc = accounts.find((a) => a.id === data.fromAccountId);
-      const toAcc = accounts.find((a) => a.id === data.toAccountId);
+    if (data.type === 'account_to_account') {
+      if (!normalizedFromId) {
+        throw new Error('Select source account (Bank or Cash)');
+      }
+      if (!normalizedToId) {
+        throw new Error('Please choose a destination account.');
+      }
+
+      const fromAcc = accounts.find((a) => a.id === normalizedFromId);
+      if (normalizedFromId === normalizedToId) {
+        throw new Error(formatSameAccountTransferError(fromAcc?.name));
+      }
+
+      const toAcc = accounts.find((a) => a.id === normalizedToId);
       if (fromAcc && toAcc) {
         const transferKey = await generateIdempotencyKey({
           date: data.date || now.split('T')[0],
           amount: data.amountIdr,
           category: `Transfer to ${toAcc.name}`,
-          accountId: data.fromAccountId,
+          accountId: normalizedFromId,
           notes: data.notes,
           type: 'transfer',
         });
@@ -2282,8 +2301,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           userId: user?.id || 'usr_local',
           type: 'transfer',
           amount: data.amountIdr,
-          accountId: data.fromAccountId,
-          toAccountId: data.toAccountId,
+          accountId: normalizedFromId,
+          toAccountId: normalizedToId,
           category: `Transfer to ${toAcc.name}`,
           date: data.date || now.split('T')[0],
           notes: data.notes,
@@ -2491,7 +2510,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
 
-    await api.executeTransfer(data);
+    await api.executeTransfer({
+      ...data,
+      fromAccountId: normalizedFromId,
+      toAccountId: data.type === 'account_to_account' ? normalizedToId : data.toAccountId,
+    });
     await refreshData();
   };
 

@@ -14,7 +14,7 @@ import {
   CategoryBudget,
 } from '../types';
 import { computeStats } from './statsHelper';
-import { isTransactionLocked } from './formatters';
+import { isTransactionLocked, formatSameAccountTransferError } from './formatters';
 import {
   PRIMARY_ADMIN_EMAIL,
   getCustomAdminEmails,
@@ -700,7 +700,9 @@ export const localDb = {
   }): { success: boolean; transaction: Transaction } {
     const store = getStore();
     const userId = this.getUserId();
-    const fromAcc = store.accounts.find(a => a.id === data.fromAccountId && a.userId === userId);
+    const normalizedFromId = String(data.fromAccountId || '').trim();
+    const normalizedToId = String(data.toAccountId || '').trim();
+    const fromAcc = store.accounts.find(a => a.id === normalizedFromId && a.userId === userId);
     if (!fromAcc) throw new Error('Source account not found');
 
     const amount = Math.abs(Number(data.amountIdr));
@@ -754,7 +756,14 @@ export const localDb = {
     }
 
     // Account to Account
-    const toAcc = store.accounts.find(a => a.id === data.toAccountId && a.userId === userId);
+    if (!normalizedToId) {
+      throw new Error('Please choose a destination account.');
+    }
+    if (normalizedFromId === normalizedToId) {
+      throw new Error(formatSameAccountTransferError(fromAcc.name));
+    }
+
+    const toAcc = store.accounts.find(a => a.id === normalizedToId && a.userId === userId);
     if (!toAcc) throw new Error('Destination account not found');
 
     fromAcc.balance -= amount;
@@ -765,8 +774,8 @@ export const localDb = {
       userId,
       type: 'transfer',
       amount,
-      accountId: data.fromAccountId,
-      toAccountId: data.toAccountId,
+      accountId: normalizedFromId,
+      toAccountId: normalizedToId,
       category: `Transfer to ${toAcc.name}`,
       date: txDate,
       notes: data.notes || `Transfer from ${fromAcc.name} to ${toAcc.name}`,

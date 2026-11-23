@@ -1118,7 +1118,10 @@ app.post('/api/transfers', authenticateToken, (req: AuthenticatedRequest, res: R
       return;
     }
 
-    const sourceAccount = db.data.accounts.find(a => a.id === fromAccountId && a.userId === userId);
+    const normalizedFromId = String(fromAccountId || '').trim();
+    const normalizedToId = String(toAccountId || '').trim();
+
+    const sourceAccount = db.data.accounts.find(a => a.id === normalizedFromId && a.userId === userId);
     if (!sourceAccount) {
       res.status(404).json({ error: 'Source account not found' });
       return;
@@ -1216,17 +1219,22 @@ app.post('/api/transfers', authenticateToken, (req: AuthenticatedRequest, res: R
     }
 
     // Scenario 2: Account to Account (e.g. Bank to Cash, Cash to Bank, Bank to Bank)
-    if (!toAccountId) {
-      res.status(400).json({ error: 'Destination account is required' });
+    if (!normalizedToId) {
+      res.status(400).json({ error: 'Please choose a destination account.' });
       return;
     }
 
-    if (fromAccountId === toAccountId) {
-      res.status(400).json({ error: 'Source and destination accounts must be different' });
+    if (normalizedFromId === normalizedToId) {
+      const accountLabel = sourceAccount.name?.trim();
+      res.status(400).json({
+        error: accountLabel
+          ? `Cannot transfer to the same account ("${accountLabel}"). Please choose a different destination account.`
+          : 'Source and destination accounts cannot be the same. Please choose a different destination account.',
+      });
       return;
     }
 
-    const destAccount = db.data.accounts.find(a => a.id === toAccountId && a.userId === userId);
+    const destAccount = db.data.accounts.find(a => a.id === normalizedToId && a.userId === userId);
     if (!destAccount) {
       res.status(404).json({ error: 'Destination account not found' });
       return;
@@ -1243,8 +1251,8 @@ app.post('/api/transfers', authenticateToken, (req: AuthenticatedRequest, res: R
       userId,
       type: 'transfer',
       amount,
-      accountId: fromAccountId,
-      toAccountId,
+      accountId: normalizedFromId,
+      toAccountId: normalizedToId,
       category: `Transfer to ${destAccount.name}`,
       date: txDate,
       notes: notes ? String(notes).trim() : `Transfer from ${sourceAccount.name} to ${destAccount.name}`,

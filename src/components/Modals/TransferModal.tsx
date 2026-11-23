@@ -3,6 +3,7 @@ import {
   X,
   Check,
   ArrowRightLeft,
+  ArrowUpDown,
   TrendingUp,
   AlertCircle,
   RotateCcw,
@@ -16,7 +17,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
-import { formatIdr, formatUsd } from '../../lib/formatters';
+import { formatIdr, formatUsd, formatSameAccountTransferError } from '../../lib/formatters';
 import { InvestmentCategory } from '../../types';
 
 const DEFAULT_CATEGORY_OPTIONS: { id: InvestmentCategory; label: string; badge: string; isUsd: boolean }[] = [
@@ -74,6 +75,17 @@ export const TransferModal: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [swapRotated, setSwapRotated] = useState(false);
+
+  const transferableAccounts = React.useMemo(
+    () => accounts.filter((a) => a.type === 'bank' || a.type === 'cash'),
+    [accounts]
+  );
+
+  const destinationAccounts = React.useMemo(
+    () => transferableAccounts.filter((a) => a.id !== fromAccountId),
+    [transferableAccounts, fromAccountId]
+  );
 
   const wasOpenRef = React.useRef(false);
   const lastInitialModeRef = React.useRef<string | null | undefined>(undefined);
@@ -97,28 +109,42 @@ export const TransferModal: React.FC = () => {
     }
   }, [isTransferOpen, transferInitialMode]);
 
-  // Bind default accounts/investments if modal opened while data was still syncing, without resetting typed inputs
+  // Keep selected source/destination accounts valid and distinct without resetting typed inputs
   useEffect(() => {
     if (!isTransferOpen) return;
-    if (!fromAccountId && accounts.length > 0) {
-      setFromAccountId(accounts[0].id);
+
+    const hasValidFrom = transferableAccounts.some((a) => a.id === fromAccountId);
+    const effectiveFromId = hasValidFrom
+      ? fromAccountId
+      : transferableAccounts[0]?.id || '';
+
+    if (effectiveFromId !== fromAccountId) {
+      setFromAccountId(effectiveFromId);
     }
-    if (!toAccountId && accounts.length > 1) {
-      setToAccountId(accounts[1].id);
+
+    const hasValidTo = transferableAccounts.some(
+      (a) => a.id === toAccountId && a.id !== effectiveFromId
+    );
+    if (!hasValidTo) {
+      const nextDest =
+        transferableAccounts.find((a) => a.id !== effectiveFromId)?.id || '';
+      if (nextDest !== toAccountId) {
+        setToAccountId(nextDest);
+      }
     }
+
     if (!toInvestmentId && investments.length > 0) {
       setToInvestmentId(investments[0].id);
     }
-  }, [isTransferOpen, accounts, investments, fromAccountId, toAccountId, toInvestmentId]);
+  }, [isTransferOpen, transferableAccounts, investments, fromAccountId, toAccountId, toInvestmentId]);
 
   const resetFields = () => {
     setIsSubmitting(false);
-    setFromAccountId(accounts.length > 0 ? accounts[0].id : '');
-    if (accounts.length > 1) {
-      setToAccountId(accounts[1].id);
-    } else {
-      setToAccountId('');
-    }
+    const defaultFrom = transferableAccounts[0]?.id || '';
+    const defaultTo =
+      transferableAccounts.find((a) => a.id !== defaultFrom)?.id || '';
+    setFromAccountId(defaultFrom);
+    setToAccountId(defaultTo);
 
     const firstInv = investments.length > 0 ? investments[0] : null;
     setToInvestmentId(firstInv ? firstInv.id : '');
@@ -135,6 +161,33 @@ export const TransferModal: React.FC = () => {
     setDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setError('');
+  };
+
+  const handleFromAccountChange = (newFromId: string) => {
+    const previousFromId = fromAccountId;
+    setFromAccountId(newFromId);
+    if (error) setError('');
+
+    if (!toAccountId || toAccountId === newFromId) {
+      const swappedDest =
+        previousFromId &&
+        previousFromId !== newFromId &&
+        transferableAccounts.some((a) => a.id === previousFromId)
+          ? previousFromId
+          : transferableAccounts.find((a) => a.id !== newFromId)?.id || '';
+      setToAccountId(swappedDest);
+    }
+  };
+
+  const handleSwapAccounts = () => {
+    if (isSubmitting || transferableAccounts.length < 2) return;
+    const trimmedFrom = fromAccountId.trim();
+    const trimmedTo = toAccountId.trim();
+    if (!trimmedFrom || !trimmedTo || trimmedFrom === trimmedTo) return;
+    setFromAccountId(trimmedTo);
+    setToAccountId(trimmedFrom);
+    setSwapRotated((prev) => !prev);
+    if (error) setError('');
   };
 
   const handleClose = () => {
@@ -238,7 +291,10 @@ export const TransferModal: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!fromAccountId) {
+    const trimmedFromId = fromAccountId.trim();
+    const trimmedToId = toAccountId.trim();
+
+    if (!trimmedFromId) {
       setError('Select source account (Bank or Cash)');
       return;
     }
@@ -249,12 +305,17 @@ export const TransferModal: React.FC = () => {
     }
 
     if (mode === 'account_to_account') {
-      if (!toAccountId) {
-        setError('Select destination account');
+      if (transferableAccounts.length < 2) {
+        setError('You need at least two different bank or cash accounts to make a transfer.');
         return;
       }
-      if (fromAccountId === toAccountId) {
-        setError('Source and destination accounts cannot be the same');
+      if (!trimmedToId) {
+        setError('Please choose a destination account.');
+        return;
+      }
+      if (trimmedFromId === trimmedToId) {
+        const conflictingAcc = accounts.find((a) => a.id === trimmedFromId) || selectedSourceAccount;
+        setError(formatSameAccountTransferError(conflictingAcc?.name));
         return;
       }
     } else {
@@ -279,8 +340,8 @@ export const TransferModal: React.FC = () => {
 
       await transferFunds({
         type: mode,
-        fromAccountId,
-        toAccountId: mode === 'account_to_account' ? toAccountId : undefined,
+        fromAccountId: trimmedFromId,
+        toAccountId: mode === 'account_to_account' ? trimmedToId : undefined,
         toInvestmentId: mode === 'bank_to_investment' && targetType === 'existing' ? toInvestmentId : undefined,
         newInvestment:
           mode === 'bank_to_investment' && targetType === 'new'
@@ -300,8 +361,8 @@ export const TransferModal: React.FC = () => {
         notes: notes.trim() || undefined,
       });
 
-      const fromAcc = accounts.find((a) => a.id === fromAccountId);
-      const toAcc = accounts.find((a) => a.id === toAccountId);
+      const fromAcc = accounts.find((a) => a.id === trimmedFromId);
+      const toAcc = accounts.find((a) => a.id === trimmedToId);
       const toInv = investments.find((i) => i.id === toInvestmentId);
       const targetLabel = mode === 'account_to_account'
         ? (toAcc?.name || 'Destination Account')
@@ -403,7 +464,10 @@ export const TransferModal: React.FC = () => {
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => setMode('bank_to_investment')}
+              onClick={() => {
+                setMode('bank_to_investment');
+                if (error) setError('');
+              }}
               className={`py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
                 mode === 'bank_to_investment'
                   ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a3960]'
@@ -421,7 +485,10 @@ export const TransferModal: React.FC = () => {
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => setMode('account_to_account')}
+              onClick={() => {
+                setMode('account_to_account');
+                if (error) setError('');
+              }}
               className={`py-1.5 rounded-md text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 ${
                 mode === 'account_to_account'
                   ? 'bg-white dark:bg-[#18233e] text-slate-900 dark:text-white shadow-xs border border-slate-200/80 dark:border-[#2a3960]'
@@ -522,17 +589,15 @@ export const TransferModal: React.FC = () => {
             <select
               value={fromAccountId}
               disabled={isSubmitting}
-              onChange={(e) => setFromAccountId(e.target.value)}
+              onChange={(e) => handleFromAccountChange(e.target.value)}
               className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
               required
             >
-              {accounts
-                .filter((a) => a.type === 'bank' || a.type === 'cash')
-                .map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} — {formatIdr(acc.balance)}
-                  </option>
-                ))}
+              {transferableAccounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name} — {formatIdr(acc.balance)}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -717,35 +782,72 @@ export const TransferModal: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
-                  <Wallet className="w-3 h-3 text-slate-400" />
-                  <span>To Account</span>
-                </label>
-                {selectedDestAccount && (
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-                    Balance:{' '}
-                    <strong className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                      {formatIdr(selectedDestAccount.balance)}
-                    </strong>
-                  </span>
+            <div className="space-y-2">
+              {/* Quick Swap Divider Row */}
+              <div className="relative flex items-center justify-center py-0.5">
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-slate-200/80 dark:border-[#1e2946]" />
+                <button
+                  type="button"
+                  onClick={handleSwapAccounts}
+                  disabled={
+                    isSubmitting ||
+                    transferableAccounts.length < 2 ||
+                    !fromAccountId ||
+                    !toAccountId
+                  }
+                  title="Swap source and destination accounts"
+                  aria-label="Swap From and To accounts"
+                  className="relative z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] hover:border-indigo-500 dark:hover:border-indigo-400 text-[11px] font-medium text-slate-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-xs transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ArrowUpDown
+                    className={`w-3 h-3 transition-transform duration-200 ${
+                      swapRotated ? 'rotate-180' : ''
+                    }`}
+                  />
+                  <span>Swap</span>
+                </button>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <label className="font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                    <Wallet className="w-3 h-3 text-slate-400" />
+                    <span>To Account</span>
+                  </label>
+                  {selectedDestAccount && (
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Balance:{' '}
+                      <strong className="font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {formatIdr(selectedDestAccount.balance)}
+                      </strong>
+                    </span>
+                  )}
+                </div>
+
+                {transferableAccounts.length < 2 ? (
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                    <Info className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                    <span>Add another bank or cash account to transfer funds.</span>
+                  </div>
+                ) : (
+                  <select
+                    value={toAccountId}
+                    disabled={isSubmitting}
+                    onChange={(e) => {
+                      setToAccountId(e.target.value);
+                      if (error) setError('');
+                    }}
+                    className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
+                    required
+                  >
+                    {destinationAccounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name} — {formatIdr(acc.balance)}
+                      </option>
+                    ))}
+                  </select>
                 )}
               </div>
-              <select
-                value={toAccountId}
-                onChange={(e) => setToAccountId(e.target.value)}
-                className="w-full h-9 bg-white dark:bg-[#0f1629] border border-slate-200 dark:border-[#1e2946] focus:border-indigo-500 rounded-lg px-2.5 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors"
-                required
-              >
-                {accounts
-                  .filter((a) => a.id !== fromAccountId && a.type !== 'credit_card' && a.type !== 'paylater')
-                  .map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name} — {formatIdr(acc.balance)}
-                    </option>
-                  ))}
-              </select>
             </div>
           )}
 
