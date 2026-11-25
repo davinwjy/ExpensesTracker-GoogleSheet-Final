@@ -49,14 +49,8 @@ export const BudgetModal: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const availableCategories = React.useMemo(() => {
-    const set = new Set<string>(expenseCategories);
-    transactions.forEach((tx) => {
-      if (tx.type === 'expense' && tx.category && tx.category.trim()) {
-        set.add(tx.category.trim());
-      }
-    });
-    return Array.from(set);
-  }, [transactions, expenseCategories]);
+    return Array.from(new Set<string>(expenseCategories));
+  }, [expenseCategories]);
 
   // Compute last month & current month spending for the currently selected category
   const categoryBenchmark = React.useMemo(() => {

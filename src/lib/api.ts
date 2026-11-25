@@ -471,18 +471,28 @@ export const api = {
     return localDb.updateInvestment(id, data);
   },
 
-  async deleteInvestment(id: string): Promise<{ success: boolean }> {
+  async deleteInvestment(
+    id: string,
+    options?: { refundToBank?: boolean; refundAccountId?: string; refundAmountIdr?: number }
+  ): Promise<{ success: boolean }> {
+    const params = new URLSearchParams();
+    if (options?.refundToBank) params.set('refundToBank', 'true');
+    if (options?.refundAccountId?.trim()) params.set('refundAccountId', options.refundAccountId.trim());
+    if (options?.refundAmountIdr !== undefined && options.refundAmountIdr > 0) {
+      params.set('refundAmountIdr', String(Math.round(options.refundAmountIdr)));
+    }
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
     const hasServer = await checkServer();
     if (hasServer) {
       try {
-        return await request<{ success: boolean }>(`/api/investments/${id}`, {
+        return await request<{ success: boolean }>(`/api/investments/${id}${queryStr}`, {
           method: 'DELETE',
         });
       } catch (err) {
         isServerAvailable = false;
       }
     }
-    return localDb.deleteInvestment(id);
+    return localDb.deleteInvestment(id, options);
   },
 
   // Holding Types (Master Data)

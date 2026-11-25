@@ -1,4 +1,5 @@
 import { Account, Transaction, Investment, DashboardStats } from '../types';
+import { isExcludedSystemExpenseTransaction } from './formatters';
 
 export function computeStats(
   accounts: Account[],
@@ -92,9 +93,9 @@ export function computeStats(
 
   const expenseByCategory: Record<string, number> = {};
   thisMonthTxs
-    .filter(isActualExpense)
+    .filter((t) => isActualExpense(t) && !isExcludedSystemExpenseTransaction(t, accounts))
     .forEach((t) => {
-      const cat = t.category || 'Other Expense';
+      const cat = (t.category || 'Other Expense').trim();
       expenseByCategory[cat] = (expenseByCategory[cat] || 0) + t.amount;
     });
 

@@ -260,4 +260,60 @@ export function formatSameAccountTransferError(accountName?: string): string {
   return 'Source and destination accounts cannot be the same. Please choose a different destination account.';
 }
 
+export function findCanonicalMasterCategory(
+  category: string | undefined | null,
+  masterCategories: readonly string[]
+): string | null {
+  const normalized = (category || '').trim().toLowerCase();
+  if (!normalized) return null;
+  const match = masterCategories.find((c) => c.trim().toLowerCase() === normalized);
+  return match || null;
+}
+
+export function isMasterCategory(
+  category: string | undefined | null,
+  masterCategories: readonly string[]
+): boolean {
+  return findCanonicalMasterCategory(category, masterCategories) !== null;
+}
+
+export function isExcludedSystemExpenseTransaction(
+  tx: {
+    type?: string;
+    category?: string;
+    accountId?: string;
+    toAccountId?: string;
+    toInvestmentId?: string;
+  },
+  accounts: Array<{ id: string; type: string }> = []
+): boolean {
+  // Only genuine expense entries belong on expense/budget charts (exclude transfer, bank_to_investment, cc_debt, income)
+  if (tx.type !== 'expense') return true;
+  // Exclude transfers or bill settlements that target another account or investment
+  if (tx.toAccountId || tx.toInvestmentId) return true;
+  // Exclude transactions charged directly on credit card or PayLater accounts
+  const sourceAcc = accounts.find((a) => a.id === tx.accountId);
+  if (sourceAcc && (sourceAcc.type === 'credit_card' || sourceAcc.type === 'paylater')) {
+    return true;
+  }
+  const cat = (tx.category || '').trim().toLowerCase();
+  if (
+    !cat ||
+    cat.startsWith('transfer') ||
+    cat.startsWith('credit card payment') ||
+    cat.startsWith('credit card bill') ||
+    cat.startsWith('tagihan kartu kredit') ||
+    cat.startsWith('paylater payment') ||
+    cat.startsWith('paylater bill') ||
+    cat.startsWith('paylater') ||
+    cat.startsWith('funded ') ||
+    cat.startsWith('investment:') ||
+    cat === 'admin / settlement fee'
+  ) {
+    return true;
+  }
+  return false;
+}
+
+
 

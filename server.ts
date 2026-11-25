@@ -1056,31 +1056,59 @@ app.delete('/api/transactions/:id', authenticateToken, (req: AuthenticatedReques
     }
 
     const tx = db.data.transactions[txIndex];
+    const txType: string = tx.type;
+    const now = new Date().toISOString();
 
-    // Revert account balance
+    // Revert source account balance
     const account = db.data.accounts.find(a => a.id === tx.accountId && a.userId === userId);
     if (account) {
       if (account.type === 'credit_card' || account.type === 'paylater') {
-        if (tx.type === 'expense') {
+        if (txType === 'expense' || txType === 'cc_debt') {
           account.balance -= tx.amount;
-        } else if (tx.type === 'income') {
+        } else if (txType === 'income') {
           account.balance += tx.amount;
         }
       } else {
-        if (tx.type === 'expense') {
+        if (
+          txType === 'expense' ||
+          txType === 'cc_debt' ||
+          txType === 'transfer' ||
+          txType === 'bank_to_investment'
+        ) {
           account.balance += tx.amount;
-        } else if (tx.type === 'income') {
+        } else if (txType === 'income') {
           account.balance -= tx.amount;
         }
       }
-      account.updatedAt = new Date().toISOString();
+      account.updatedAt = now;
     }
 
-    // If it was transfer to account
-    if (tx.type === 'transfer' && tx.toAccountId) {
+    // If it was transfer to another account
+    if (tx.type === 'transfer' && tx.toAccountId && tx.toAccountId !== tx.accountId) {
       const toAccount = db.data.accounts.find(a => a.id === tx.toAccountId && a.userId === userId);
       if (toAccount) {
-        toAccount.balance -= tx.amount;
+        if (toAccount.type === 'credit_card' || toAccount.type === 'paylater') {
+          toAccount.balance += tx.amount;
+        } else {
+          toAccount.balance -= tx.amount;
+        }
+        toAccount.updatedAt = now;
+      }
+    }
+
+    // If it was bank_to_investment and the investment still exists
+    if (tx.type === 'bank_to_investment' && tx.toInvestmentId) {
+      const investment = db.data.investments.find(inv => inv.id === tx.toInvestmentId && inv.userId === userId);
+      if (investment) {
+        const isUsd = investment.currency === 'USD';
+        const effectiveRate = tx.exchangeRate || investment.customExchangeRate || getUserRate(userId) || 15850;
+        const deductVal = isUsd
+          ? (tx.amountUsd && tx.amountUsd > 0 ? tx.amountUsd : Number((tx.amount / effectiveRate).toFixed(2)))
+          : tx.amount;
+        const decimals = isUsd ? 2 : 0;
+        investment.amountInvested = Math.max(0, Number(((investment.amountInvested || 0) - deductVal).toFixed(decimals)));
+        investment.currentValue = Math.max(0, Number(((investment.currentValue || 0) - deductVal).toFixed(decimals)));
+        investment.updatedAt = now;
       }
     }
 
@@ -1376,10 +1404,67 @@ app.delete('/api/investments/:id', authenticateToken, (req: AuthenticatedRequest
     const userId = req.user!.id;
     const { id } = req.params;
 
+    const refundToBank = req.query.refundToBank === 'true';
+    const normalizedRefundAccountId =
+      typeof req.query.refundAccountId === 'string' ? req.query.refundAccountId.trim() : '';
+    const parsedRefundAmount =
+      typeof req.query.refundAmountIdr === 'string' ? Number(req.query.refundAmountIdr) : NaN;
+
     const index = db.data.investments.findIndex(i => i.id === id && i.userId === userId);
     if (index === -1) {
       res.status(404).json({ error: 'Investment not found' });
       return;
+    }
+
+    const targetInv = db.data.investments[index];
+
+    if (refundToBank) {
+      const now = new Date().toISOString();
+      const linkedTxs = db.data.transactions.filter(
+        t => t.userId === userId && t.type === 'bank_to_investment' && t.toInvestmentId === id
+      );
+      const linkedTotalIdr = linkedTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+      const fallbackAssetIdr =
+        targetInv.currency === 'USD'
+          ? Math.round(
+              (targetInv.currentValue || targetInv.amountInvested || 0) *
+                (targetInv.customExchangeRate || getUserRate(userId) || 15850)
+            )
+          : Math.round(targetInv.currentValue || targetInv.amountInvested || 0);
+      const effectiveRefundAmount =
+        !isNaN(parsedRefundAmount) && parsedRefundAmount > 0
+          ? Math.round(parsedRefundAmount)
+          : linkedTotalIdr > 0
+            ? linkedTotalIdr
+            : fallbackAssetIdr;
+
+      if (effectiveRefundAmount > 0 && normalizedRefundAccountId) {
+        const account = db.data.accounts.find(a => a.id === normalizedRefundAccountId && a.userId === userId);
+        if (account) {
+          if (account.type === 'credit_card' || account.type === 'paylater') {
+            account.balance -= effectiveRefundAmount;
+          } else {
+            account.balance += effectiveRefundAmount;
+          }
+          account.updatedAt = now;
+        }
+      } else {
+        for (const tx of linkedTxs) {
+          const account = db.data.accounts.find(a => a.id === tx.accountId && a.userId === userId);
+          if (account) {
+            if (account.type === 'credit_card' || account.type === 'paylater') {
+              account.balance -= tx.amount;
+            } else {
+              account.balance += tx.amount;
+            }
+            account.updatedAt = now;
+          }
+        }
+      }
+
+      db.data.transactions = db.data.transactions.filter(
+        t => !(t.userId === userId && t.type === 'bank_to_investment' && t.toInvestmentId === id)
+      );
     }
 
     db.data.investments.splice(index, 1);
@@ -1777,12 +1862,34 @@ app.get('/api/stats/dashboard', authenticateToken, (req: AuthenticatedRequest, r
       .filter(t => t.type === 'bank_to_investment')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    // Expenses by category
+    // Expenses by category (exclude transfers, credit card/PayLater bills & PayLater/CC accounts)
     const expenseByCategory: Record<string, number> = {};
     thisMonthTxs
-      .filter(t => t.type === 'expense')
+      .filter(t => {
+        if (t.type !== 'expense') return false;
+        if (t.toAccountId || t.toInvestmentId) return false;
+        const acc = userAccounts.find(a => a.id === t.accountId);
+        if (acc && (acc.type === 'credit_card' || acc.type === 'paylater')) return false;
+        const catLower = (t.category || '').trim().toLowerCase();
+        if (
+          !catLower ||
+          catLower.startsWith('transfer') ||
+          catLower.startsWith('credit card payment') ||
+          catLower.startsWith('credit card bill') ||
+          catLower.startsWith('tagihan kartu kredit') ||
+          catLower.startsWith('paylater payment') ||
+          catLower.startsWith('paylater bill') ||
+          catLower.startsWith('paylater') ||
+          catLower.startsWith('funded ') ||
+          catLower.startsWith('investment:') ||
+          catLower === 'admin / settlement fee'
+        ) {
+          return false;
+        }
+        return true;
+      })
       .forEach(t => {
-        const cat = t.category || 'Other';
+        const cat = (t.category || 'Other Expense').trim();
         expenseByCategory[cat] = (expenseByCategory[cat] || 0) + t.amount;
       });
 

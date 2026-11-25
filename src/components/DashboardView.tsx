@@ -18,6 +18,7 @@ import {
   CATEGORY_COLORS,
   sortTransactionsNewestFirst,
   isTransactionLocked,
+  isMasterCategory,
 } from '../lib/formatters';
 import { GoogleSheetConnectBanner } from './GoogleSheetConnectBanner';
 
@@ -36,6 +37,7 @@ export const DashboardView: React.FC = () => {
     setIsBudgetModalOpen,
     setEditingBudget,
     getBudgetProgressForMonth,
+    expenseCategories,
   } = useFinance();
 
   const netWorthIdr = stats?.totalNetWorthIdr || 0;
@@ -74,7 +76,7 @@ export const DashboardView: React.FC = () => {
     const raw: Array<{ category: string; amount: number; limit: number; hasBudget: boolean }> = [];
 
     budgetSummary.items.forEach((item) => {
-      if (item.actualSpent > 0) {
+      if (item.actualSpent > 0 && isMasterCategory(item.category, expenseCategories)) {
         raw.push({
           category: item.category,
           amount: item.actualSpent,
@@ -85,7 +87,7 @@ export const DashboardView: React.FC = () => {
     });
 
     budgetSummary.unbudgetedItems.forEach((item) => {
-      if (item.actualSpent > 0) {
+      if (item.actualSpent > 0 && isMasterCategory(item.category, expenseCategories)) {
         raw.push({
           category: item.category,
           amount: item.actualSpent,
@@ -132,7 +134,7 @@ export const DashboardView: React.FC = () => {
         color,
       };
     });
-  }, [budgetSummary]);
+  }, [budgetSummary, expenseCategories]);
 
   return (
     <div className="space-y-4 animate-in fade-in pb-10 min-w-0">

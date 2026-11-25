@@ -18,11 +18,18 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatIdr, formatMasked, formatDate, CATEGORY_COLORS } from '../lib/formatters';
+import {
+  formatIdr,
+  formatMasked,
+  formatDate,
+  CATEGORY_COLORS,
+  isExcludedSystemExpenseTransaction,
+} from '../lib/formatters';
 import { BudgetProgress } from '../types';
 
 export const BudgetingView: React.FC = () => {
   const {
+    accounts,
     budgets,
     transactions,
     isPrivacyMode,
@@ -142,12 +149,13 @@ export const BudgetingView: React.FC = () => {
     });
   }, [items, filterStatus, searchQuery]);
 
-  // Get transactions for expanded category
+  // Get transactions for expanded category (matching master-category chart rules)
   const getCategoryTransactions = (catName: string) => {
+    const targetLower = catName.trim().toLowerCase();
     return transactions.filter(
       (tx) =>
-        tx.type === 'expense' &&
-        tx.category === catName &&
+        !isExcludedSystemExpenseTransaction(tx, accounts) &&
+        (tx.category || '').trim().toLowerCase() === targetLower &&
         tx.date &&
         tx.date.startsWith(selectedMonth)
     );

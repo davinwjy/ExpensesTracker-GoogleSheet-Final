@@ -664,21 +664,52 @@ export const localDb = {
       throw new Error(lockStatus.reason || 'This transaction is locked and cannot be deleted.');
     }
 
+    const now = new Date().toISOString();
     const acc = store.accounts.find(a => a.id === tx.accountId && a.userId === userId);
     if (acc) {
       if (acc.type === 'credit_card' || acc.type === 'paylater') {
-        if (tx.type === 'expense') acc.balance -= tx.amount;
+        if (tx.type === 'expense' || tx.type === 'cc_debt') acc.balance -= tx.amount;
         else if (tx.type === 'income') acc.balance += tx.amount;
       } else {
-        if (tx.type === 'expense') acc.balance += tx.amount;
-        else if (tx.type === 'income') acc.balance -= tx.amount;
+        if (
+          tx.type === 'expense' ||
+          tx.type === 'cc_debt' ||
+          tx.type === 'transfer' ||
+          tx.type === 'bank_to_investment'
+        ) {
+          acc.balance += tx.amount;
+        } else if (tx.type === 'income') {
+          acc.balance -= tx.amount;
+        }
       }
-      acc.updatedAt = new Date().toISOString();
+      acc.updatedAt = now;
     }
 
-    if (tx.type === 'transfer' && tx.toAccountId) {
+    if (tx.type === 'transfer' && tx.toAccountId && tx.toAccountId !== tx.accountId) {
       const dest = store.accounts.find(a => a.id === tx.toAccountId && a.userId === userId);
-      if (dest) dest.balance -= tx.amount;
+      if (dest) {
+        if (dest.type === 'credit_card' || dest.type === 'paylater') {
+          dest.balance += tx.amount;
+        } else {
+          dest.balance -= tx.amount;
+        }
+        dest.updatedAt = now;
+      }
+    }
+
+    if (tx.type === 'bank_to_investment' && tx.toInvestmentId) {
+      const inv = store.investments.find(i => i.id === tx.toInvestmentId && i.userId === userId);
+      if (inv) {
+        const isUsd = inv.currency === 'USD';
+        const effectiveRate = tx.exchangeRate || inv.customExchangeRate || 15850;
+        const deductVal = isUsd
+          ? (tx.amountUsd && tx.amountUsd > 0 ? tx.amountUsd : Number((tx.amount / effectiveRate).toFixed(2)))
+          : tx.amount;
+        const decimals = isUsd ? 2 : 0;
+        inv.amountInvested = Math.max(0, Number(((inv.amountInvested || 0) - deductVal).toFixed(decimals)));
+        inv.currentValue = Math.max(0, Number(((inv.currentValue || 0) - deductVal).toFixed(decimals)));
+        inv.updatedAt = now;
+      }
     }
 
     store.transactions.splice(idx, 1);
@@ -918,11 +949,66 @@ export const localDb = {
     return { investment: inv };
   },
 
-  deleteInvestment(id: string): { success: boolean } {
+  deleteInvestment(
+    id: string,
+    options?: { refundToBank?: boolean; refundAccountId?: string; refundAmountIdr?: number }
+  ): { success: boolean } {
     const store = getStore();
     const userId = this.getUserId();
     const idx = store.investments.findIndex(i => i.id === id && i.userId === userId);
     if (idx === -1) throw new Error('Investment not found');
+
+    const targetInv = store.investments[idx];
+
+    if (options?.refundToBank) {
+      const now = new Date().toISOString();
+      const linkedTxs = store.transactions.filter(
+        t => t.userId === userId && t.type === 'bank_to_investment' && t.toInvestmentId === id
+      );
+      const linkedTotalIdr = linkedTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+      const fallbackAssetIdr =
+        targetInv.currency === 'USD'
+          ? Math.round(
+              (targetInv.currentValue || targetInv.amountInvested || 0) *
+                (targetInv.customExchangeRate || 15850)
+            )
+          : Math.round(targetInv.currentValue || targetInv.amountInvested || 0);
+      const effectiveRefundAmount =
+        options.refundAmountIdr !== undefined && Number(options.refundAmountIdr) > 0
+          ? Math.round(Number(options.refundAmountIdr))
+          : linkedTotalIdr > 0
+            ? linkedTotalIdr
+            : fallbackAssetIdr;
+      const normalizedRefundAccountId = options.refundAccountId?.trim() || '';
+
+      if (effectiveRefundAmount > 0 && normalizedRefundAccountId) {
+        const acc = store.accounts.find(a => a.id === normalizedRefundAccountId && a.userId === userId);
+        if (acc) {
+          if (acc.type === 'credit_card' || acc.type === 'paylater') {
+            acc.balance -= effectiveRefundAmount;
+          } else {
+            acc.balance += effectiveRefundAmount;
+          }
+          acc.updatedAt = now;
+        }
+      } else {
+        for (const tx of linkedTxs) {
+          const acc = store.accounts.find(a => a.id === tx.accountId && a.userId === userId);
+          if (acc) {
+            if (acc.type === 'credit_card' || acc.type === 'paylater') {
+              acc.balance -= tx.amount;
+            } else {
+              acc.balance += tx.amount;
+            }
+            acc.updatedAt = now;
+          }
+        }
+      }
+
+      store.transactions = store.transactions.filter(
+        t => !(t.userId === userId && t.type === 'bank_to_investment' && t.toInvestmentId === id)
+      );
+    }
 
     store.investments.splice(idx, 1);
     saveStore(store);

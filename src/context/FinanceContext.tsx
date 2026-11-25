@@ -29,6 +29,9 @@ import {
   INCOME_CATEGORIES,
   CATEGORY_COLORS,
   formatSameAccountTransferError,
+  findCanonicalMasterCategory,
+  isMasterCategory,
+  isExcludedSystemExpenseTransaction,
 } from '../lib/formatters';
 import {
   googleSheetsService,
@@ -185,7 +188,10 @@ interface FinanceContextType {
     notes?: string;
   }) => Promise<void>;
   updateInvestment: (id: string, data: Partial<Investment>) => Promise<void>;
-  deleteInvestment: (id: string) => Promise<void>;
+  deleteInvestment: (
+    id: string,
+    options?: { refundToBank?: boolean; refundAccountId?: string; refundAmountIdr?: number }
+  ) => Promise<void>;
   // Holding Types (Master Data)
   holdingTypes: HoldingType[];
   addHoldingType: (data: {
@@ -2152,45 +2158,114 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       throw new Error(lockStatus.reason || 'This transaction is locked and cannot be deleted.');
     }
 
-    const targetAcc = accounts.find((a) => a.id === target.accountId);
+    const now = new Date().toISOString();
     let updatedAccounts = [...accounts];
-    let modAcc: Account | null = null;
+    const modifiedAccounts: Account[] = [];
 
+    // 1. Revert source account balance
+    const targetAcc = updatedAccounts.find((a) => a.id === target.accountId);
     if (targetAcc) {
       let newBal = targetAcc.balance;
-      if (targetAcc.type === 'credit_card' || targetAcc.type === 'paylater') {
-        newBal = (target.type === 'expense' || target.type === 'cc_debt') ? targetAcc.balance - target.amount : targetAcc.balance + target.amount;
+      const isLiability = targetAcc.type === 'credit_card' || targetAcc.type === 'paylater';
+      if (isLiability) {
+        if (target.type === 'expense' || target.type === 'cc_debt') {
+          newBal = targetAcc.balance - target.amount;
+        } else if (target.type === 'income') {
+          newBal = targetAcc.balance + target.amount;
+        }
       } else {
-        newBal = (target.type === 'expense' || target.type === 'cc_debt') ? targetAcc.balance + target.amount : targetAcc.balance - target.amount;
+        // Outflows from bank/cash (expense, cc_debt, inter-account transfer, bank_to_investment) refund (+) on delete
+        if (
+          target.type === 'expense' ||
+          target.type === 'cc_debt' ||
+          target.type === 'transfer' ||
+          target.type === 'bank_to_investment'
+        ) {
+          newBal = targetAcc.balance + target.amount;
+        } else if (target.type === 'income') {
+          newBal = targetAcc.balance - target.amount;
+        }
       }
-      modAcc = {
+
+      const modAcc: Account = {
         ...targetAcc,
         balance: newBal,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
       };
-      updatedAccounts = updatedAccounts.map((a) => (a.id === modAcc!.id ? modAcc! : a));
+      modifiedAccounts.push(modAcc);
+      updatedAccounts = updatedAccounts.map((a) => (a.id === modAcc.id ? modAcc : a));
+    }
+
+    // 2. Revert destination account balance if inter-account transfer
+    if (target.type === 'transfer' && target.toAccountId && target.toAccountId !== target.accountId) {
+      const destAcc = updatedAccounts.find((a) => a.id === target.toAccountId);
+      if (destAcc) {
+        const isDestLiability = destAcc.type === 'credit_card' || destAcc.type === 'paylater';
+        const destNewBal = isDestLiability
+          ? destAcc.balance + target.amount
+          : destAcc.balance - target.amount;
+        const modDest: Account = {
+          ...destAcc,
+          balance: destNewBal,
+          updatedAt: now,
+        };
+        modifiedAccounts.push(modDest);
+        updatedAccounts = updatedAccounts.map((a) => (a.id === modDest.id ? modDest : a));
+      }
+    }
+
+    // 3. Revert target investment if bank_to_investment and the investment still exists
+    let updatedInvestments = [...investments];
+    let modInv: Investment | null = null;
+    if (target.type === 'bank_to_investment' && target.toInvestmentId) {
+      const targetInv = updatedInvestments.find((inv) => inv.id === target.toInvestmentId);
+      if (targetInv) {
+        const isUsd = targetInv.currency === 'USD';
+        const effectiveRate = target.exchangeRate || targetInv.customExchangeRate || usdIdrRate || 15850;
+        const deductAmount = isUsd
+          ? (target.amountUsd && target.amountUsd > 0
+              ? target.amountUsd
+              : Number((target.amount / effectiveRate).toFixed(2)))
+          : target.amount;
+        const decimals = isUsd ? 2 : 0;
+        modInv = {
+          ...targetInv,
+          amountInvested: Math.max(0, Number(((targetInv.amountInvested || 0) - deductAmount).toFixed(decimals))),
+          currentValue: Math.max(0, Number(((targetInv.currentValue || 0) - deductAmount).toFixed(decimals))),
+          updatedAt: now,
+        };
+        updatedInvestments = updatedInvestments.map((inv) => (inv.id === modInv!.id ? modInv! : inv));
+      }
     }
 
     // Immediate optimistic update
     const nextTxs = transactions.filter((t) => t.id !== id);
     setAccounts(updatedAccounts);
     setTransactions(nextTxs);
-    const nextStats = computeStats(updatedAccounts, nextTxs, investments, usdIdrRate);
+    if (modInv) {
+      setInvestments(updatedInvestments);
+    }
+    const nextStats = computeStats(updatedAccounts, nextTxs, updatedInvestments, usdIdrRate);
     setStats(nextStats);
 
     offlineSyncManager.saveSnapshot({
       accounts: updatedAccounts,
       transactions: nextTxs,
-      investments,
+      investments: updatedInvestments,
       stats: nextStats,
     });
 
     // Auto sync to Google Sheets / Apps Script
     syncToSheets(SHEET_TAB_NAMES.EXPENSES, 'DELETE', id);
-    if (modAcc) {
-      syncToSheets(SHEET_TAB_NAMES.ACCOUNTS, 'UPDATE', modAcc.id, [
-        modAcc.id, modAcc.name, modAcc.type, modAcc.balance, 'IDR',
-        modAcc.accountNumber || '', modAcc.creditLimit || 0, modAcc.billingDate || '', modAcc.dueDate || '', modAcc.cardNetwork || '', modAcc.last4Digits || '', modAcc.createdAt, modAcc.updatedAt
+    for (const acc of modifiedAccounts) {
+      syncToSheets(SHEET_TAB_NAMES.ACCOUNTS, 'UPDATE', acc.id, [
+        acc.id, acc.name, acc.type, acc.balance, 'IDR',
+        acc.accountNumber || '', acc.creditLimit || 0, acc.billingDate || '', acc.dueDate || '', acc.cardNetwork || '', acc.last4Digits || '', acc.createdAt, acc.updatedAt
+      ]);
+    }
+    if (modInv) {
+      syncToSheets(SHEET_TAB_NAMES.INVESTMENTS, 'UPDATE', modInv.id, [
+        modInv.id, modInv.name, modInv.category, modInv.units || 1, modInv.amountInvested, modInv.currentValue, modInv.currency || 'IDR', modInv.customExchangeRate || '', modInv.platform || '', modInv.notes || '', modInv.createdAt, modInv.updatedAt
       ]);
     }
 
@@ -2205,12 +2280,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         action: 'delete',
         data: { id },
       });
-      if (modAcc) {
+      for (const acc of modifiedAccounts) {
         offlineSyncManager.queueItem({
-          id: modAcc.id,
+          id: acc.id,
           type: 'account',
           action: 'update',
-          data: modAcc,
+          data: acc,
+        });
+      }
+      if (modInv) {
+        offlineSyncManager.queueItem({
+          id: modInv.id,
+          type: 'investment',
+          action: 'update',
+          data: modInv,
         });
       }
       return;
@@ -2218,8 +2301,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (isFirebase && user) {
       const promises: Promise<any>[] = [firestoreService.deleteTransaction(id)];
-      if (modAcc) {
-        promises.push(firestoreService.saveAccount(modAcc));
+      for (const acc of modifiedAccounts) {
+        promises.push(firestoreService.saveAccount(acc));
+      }
+      if (modInv) {
+        promises.push(firestoreService.saveInvestment(modInv));
       }
       await Promise.all(promises);
       return;
@@ -2624,21 +2710,160 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await refreshData();
   };
 
-  const deleteInvestment = async (id: string) => {
+  const deleteInvestment = async (
+    id: string,
+    options?: { refundToBank?: boolean; refundAccountId?: string; refundAmountIdr?: number }
+  ) => {
     assertOnline('Deleting an investment');
+    const refundToBank = Boolean(options?.refundToBank);
+    const normalizedRefundAccountId = options?.refundAccountId?.trim() || '';
+    const now = new Date().toISOString();
+
+    const targetInv = investments.find((inv) => inv.id === id);
+    const linkedTxs = refundToBank
+      ? transactions.filter((t) => t.type === 'bank_to_investment' && t.toInvestmentId === id)
+      : [];
+
+    const linkedTotalIdr = linkedTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+    const fallbackAssetIdr = targetInv
+      ? targetInv.currency === 'USD'
+        ? Math.round(
+            (targetInv.currentValue || targetInv.amountInvested || 0) *
+              (targetInv.customExchangeRate || usdIdrRate || 15850)
+          )
+        : Math.round(targetInv.currentValue || targetInv.amountInvested || 0)
+      : 0;
+    const effectiveRefundAmount =
+      options?.refundAmountIdr !== undefined && Number(options.refundAmountIdr) > 0
+        ? Math.round(Number(options.refundAmountIdr))
+        : linkedTotalIdr > 0
+          ? linkedTotalIdr
+          : fallbackAssetIdr;
+
+    let updatedAccounts = [...accounts];
+    const modifiedAccounts: Account[] = [];
+
+    if (refundToBank && effectiveRefundAmount > 0) {
+      if (normalizedRefundAccountId) {
+        updatedAccounts = updatedAccounts.map((acc) => {
+          if (acc.id !== normalizedRefundAccountId) return acc;
+          const isLiability = acc.type === 'credit_card' || acc.type === 'paylater';
+          const modAcc: Account = {
+            ...acc,
+            balance: isLiability
+              ? acc.balance - effectiveRefundAmount
+              : acc.balance + effectiveRefundAmount,
+            updatedAt: now,
+          };
+          modifiedAccounts.push(modAcc);
+          return modAcc;
+        });
+      } else if (linkedTxs.length > 0) {
+        const refundByAccountId = new Map<string, number>();
+        for (const tx of linkedTxs) {
+          if (tx.accountId && tx.amount > 0) {
+            refundByAccountId.set(tx.accountId, (refundByAccountId.get(tx.accountId) || 0) + tx.amount);
+          }
+        }
+
+        updatedAccounts = updatedAccounts.map((acc) => {
+          const refundAmount = refundByAccountId.get(acc.id);
+          if (!refundAmount) return acc;
+          const isLiability = acc.type === 'credit_card' || acc.type === 'paylater';
+          const modAcc: Account = {
+            ...acc,
+            balance: isLiability ? acc.balance - refundAmount : acc.balance + refundAmount,
+            updatedAt: now,
+          };
+          modifiedAccounts.push(modAcc);
+          return modAcc;
+        });
+      }
+    }
+
+    const linkedTxIds = new Set(linkedTxs.map((t) => t.id));
+    const nextInvestments = investments.filter((inv) => inv.id !== id);
+    const nextTransactions = linkedTxIds.size > 0
+      ? transactions.filter((t) => !linkedTxIds.has(t.id))
+      : transactions;
+
+    // Immediate optimistic update
+    setInvestments(nextInvestments);
+    if (modifiedAccounts.length > 0) {
+      setAccounts(updatedAccounts);
+    }
+    if (linkedTxIds.size > 0) {
+      setTransactions(nextTransactions);
+    }
+    const nextStats = computeStats(updatedAccounts, nextTransactions, nextInvestments, usdIdrRate);
+    setStats(nextStats);
+
+    offlineSyncManager.saveSnapshot({
+      accounts: updatedAccounts,
+      transactions: nextTransactions,
+      investments: nextInvestments,
+      stats: nextStats,
+    });
+
     // Auto sync to Google Sheets / Apps Script
     syncToSheets(SHEET_TAB_NAMES.INVESTMENTS, 'DELETE', id);
+    for (const tx of linkedTxs) {
+      syncToSheets(SHEET_TAB_NAMES.EXPENSES, 'DELETE', tx.id);
+    }
+    for (const acc of modifiedAccounts) {
+      syncToSheets(SHEET_TAB_NAMES.ACCOUNTS, 'UPDATE', acc.id, [
+        acc.id, acc.name, acc.type, acc.balance, 'IDR',
+        acc.accountNumber || '', acc.creditLimit || 0, acc.billingDate || '', acc.dueDate || '', acc.cardNetwork || '', acc.last4Digits || '', acc.createdAt, acc.updatedAt
+      ]);
+    }
 
     if (appsScriptUrl || spreadsheetId) {
       return;
     }
 
-    if (isFirebase) {
-      await firestoreService.deleteInvestment(id);
+    if (!isOnline) {
+      offlineSyncManager.queueItem({
+        id,
+        type: 'investment',
+        action: 'delete',
+        data: { id },
+      });
+      for (const tx of linkedTxs) {
+        offlineSyncManager.queueItem({
+          id: tx.id,
+          type: 'transaction',
+          action: 'delete',
+          data: { id: tx.id },
+        });
+      }
+      for (const acc of modifiedAccounts) {
+        offlineSyncManager.queueItem({
+          id: acc.id,
+          type: 'account',
+          action: 'update',
+          data: acc,
+        });
+      }
       return;
     }
 
-    await api.deleteInvestment(id);
+    if (isFirebase && user) {
+      const promises: Promise<any>[] = [firestoreService.deleteInvestment(id)];
+      for (const tx of linkedTxs) {
+        promises.push(firestoreService.deleteTransaction(tx.id));
+      }
+      for (const acc of modifiedAccounts) {
+        promises.push(firestoreService.saveAccount(acc));
+      }
+      await Promise.all(promises);
+      return;
+    }
+
+    await api.deleteInvestment(id, {
+      refundToBank,
+      refundAccountId: normalizedRefundAccountId || undefined,
+      refundAmountIdr: refundToBank && effectiveRefundAmount > 0 ? effectiveRefundAmount : undefined,
+    });
     await refreshData();
   };
 
@@ -2915,22 +3140,25 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       let totalPrevMonthSpent = 0;
 
       transactions.forEach((tx) => {
-        if (tx.type !== 'expense' || !tx.date) return;
-        const rawCat = (tx.category || 'Other Expense').trim();
-        const catKey = rawCat.toLowerCase();
-        // Exclude credit card bill settlement pseudo-expenses to prevent double counting
-        if (catKey === 'credit card bill' || catKey === 'tagihan kartu kredit') return;
+        if (!tx.date) return;
+        // Exclude transfers, credit card/PayLater payments, PayLater/CC account entries, and settlement fees
+        if (isExcludedSystemExpenseTransaction(tx, accounts)) return;
 
+        // Only include master expense categories (default + custom master expense categories)
+        const canonicalMasterCat = findCanonicalMasterCategory(tx.category, expenseCategories);
+        if (!canonicalMasterCat) return;
+
+        const catKey = canonicalMasterCat.toLowerCase();
         const cleanDate = tx.date.trim();
         if (cleanDate.startsWith(month)) {
           if (!spentByCatKey[catKey]) {
-            spentByCatKey[catKey] = { displayCategory: rawCat, total: 0, count: 0 };
+            spentByCatKey[catKey] = { displayCategory: canonicalMasterCat, total: 0, count: 0 };
           }
           spentByCatKey[catKey].total += tx.amount;
           spentByCatKey[catKey].count += 1;
         } else if (cleanDate.startsWith(prevMonthStr)) {
           if (!prevSpentByCatKey[catKey]) {
-            prevSpentByCatKey[catKey] = { displayCategory: rawCat, total: 0, count: 0 };
+            prevSpentByCatKey[catKey] = { displayCategory: canonicalMasterCat, total: 0, count: 0 };
           }
           prevSpentByCatKey[catKey].total += tx.amount;
           prevSpentByCatKey[catKey].count += 1;
@@ -2938,14 +3166,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       });
 
-      // Filter budgets that apply to this month
+      // Filter budgets that apply to this month (master expense categories only)
       const activeBudgets: CategoryBudget[] = [];
       const categorySeen = new Set<string>();
       const budgetByCatLower: Record<string, CategoryBudget> = {};
 
       // Month-specific budgets first
       budgets
-        .filter((b) => parseSheetMonth(b.month, b.id) === month)
+        .filter((b) => parseSheetMonth(b.month, b.id) === month && isMasterCategory(b.category, expenseCategories))
         .forEach((b) => {
           const key = b.category.trim().toLowerCase();
           if (!categorySeen.has(key)) {
@@ -2957,7 +3185,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       // Generic recurring budgets if not overridden for this month
       budgets
-        .filter((b) => !parseSheetMonth(b.month, b.id))
+        .filter((b) => !parseSheetMonth(b.month, b.id) && isMasterCategory(b.category, expenseCategories))
         .forEach((b) => {
           const key = b.category.trim().toLowerCase();
           if (!categorySeen.has(key)) {
@@ -3097,7 +3325,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         overBudgetCount,
       };
     },
-    [budgets, transactions]
+    [budgets, transactions, accounts, expenseCategories]
   );
 
   const saveBudgetsToSheet = useCallback(async (): Promise<{ savedCount: number }> => {

@@ -12,14 +12,17 @@ import {
   X,
   Layers,
   ChevronRight,
+  Wallet,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatMasked } from '../lib/formatters';
+import { formatIdr, formatMasked } from '../lib/formatters';
 import { Investment } from '../types';
 
 export const InvestmentsView: React.FC = () => {
   const {
+    accounts,
     investments,
+    transactions,
     stats,
     holdingTypes,
     isPrivacyMode,
@@ -36,6 +39,10 @@ export const InvestmentsView: React.FC = () => {
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
   const [selectedAsset, setSelectedAsset] = useState<Investment | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [refundAccountId, setRefundAccountId] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const bankCashAccounts = accounts.filter((a) => a.type === 'bank' || a.type === 'cash');
 
   const categoryAllocations = stats?.categoryAllocations || {};
 
@@ -91,14 +98,67 @@ export const InvestmentsView: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const selectedAssetFundingTxs = selectedAsset
+    ? transactions.filter(
+        (t) => t.type === 'bank_to_investment' && t.toInvestmentId === selectedAsset.id
+      )
+    : [];
+  const selectedAssetFundingTotalIdr = selectedAssetFundingTxs.reduce(
+    (sum, t) => sum + (t.amount || 0),
+    0
+  );
+  const selectedAssetFallbackIdr = selectedAsset
+    ? selectedAsset.currency === 'USD'
+      ? Math.round(
+          (selectedAsset.currentValue || selectedAsset.amountInvested || 0) *
+            (selectedAsset.customExchangeRate || usdIdrRate || 15850)
+        )
+      : Math.round(selectedAsset.currentValue || selectedAsset.amountInvested || 0)
+    : 0;
+  const selectedAssetRefundAmountIdr =
+    selectedAssetFundingTotalIdr > 0 ? selectedAssetFundingTotalIdr : selectedAssetFallbackIdr;
+
+  const openDeleteConfirm = (asset: Investment) => {
+    if (deletingId === asset.id) {
+      setDeletingId(null);
+      return;
+    }
+    const linked = transactions.filter(
+      (t) => t.type === 'bank_to_investment' && t.toInvestmentId === asset.id
+    );
+    const preferredAccountId = linked[0]?.accountId;
+    const defaultAccountId =
+      (preferredAccountId && bankCashAccounts.some((a) => a.id === preferredAccountId)
+        ? preferredAccountId
+        : bankCashAccounts[0]?.id) || '';
+    setRefundAccountId(defaultAccountId);
+    setDeletingId(asset.id);
+  };
+
+  const handleDelete = async (id: string, refundToBank: boolean = false) => {
+    if (isDeleting) return;
+    setIsDeleting(true);
     try {
       const target = investments.find((i) => i.id === id);
-      await deleteInvestment(id);
+      const refundAmount = refundToBank ? selectedAssetRefundAmountIdr : 0;
+      const targetBankAcc = refundToBank
+        ? bankCashAccounts.find((a) => a.id === refundAccountId)
+        : undefined;
+
+      await deleteInvestment(id, {
+        refundToBank,
+        refundAccountId: refundToBank ? refundAccountId : undefined,
+        refundAmountIdr: refundToBank && refundAmount > 0 ? refundAmount : undefined,
+      });
       showNotification({
-        type: 'info',
-        title: 'Asset Position Deleted',
-        accountName: target?.name,
+        type: refundToBank && refundAmount > 0 ? 'success' : 'info',
+        title: refundToBank && refundAmount > 0 ? 'Asset Deleted & Refunded' : 'Asset Position Deleted',
+        message:
+          refundToBank && refundAmount > 0
+            ? `Refunded ${formatIdr(refundAmount)} to ${targetBankAcc?.name || 'selected account'}`
+            : undefined,
+        amount: refundToBank && refundAmount > 0 ? refundAmount : undefined,
+        accountName: targetBankAcc?.name || target?.name,
       });
       if (selectedAsset?.id === id) {
         setSelectedAsset(null);
@@ -106,6 +166,8 @@ export const InvestmentsView: React.FC = () => {
       setDeletingId(null);
     } catch (err) {
       console.error('Delete investment failed:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -687,23 +749,95 @@ export const InvestmentsView: React.FC = () => {
                     <span>Edit Asset</span>
                   </button>
 
-                  {deletingId === selectedAsset.id ? (
-                    <button
-                      onClick={() => handleDelete(selectedAsset.id)}
-                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-rose-600 text-white text-xs font-semibold cursor-pointer"
-                    >
-                      <span>Confirm?</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setDeletingId(selectedAsset.id)}
-                      className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-[#11192e] hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Delete</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => openDeleteConfirm(selectedAsset)}
+                    disabled={isDeleting}
+                    className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg bg-slate-100 dark:bg-[#11192e] hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-medium border border-slate-200 dark:border-[#222f4d] transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>{deletingId === selectedAsset.id ? 'Cancel' : 'Delete'}</span>
+                  </button>
                 </div>
+
+                {deletingId === selectedAsset.id && (
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-rose-200 dark:border-rose-500/30 space-y-2.5 animate-in fade-in">
+                    {selectedAssetRefundAmountIdr > 0 && bankCashAccounts.length > 0 ? (
+                      <>
+                        {/* Refund Amount Highlight */}
+                        <div className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+                          <div className="min-w-0">
+                            <span className="text-[11px] font-medium text-slate-700 dark:text-zinc-200 block">
+                              Refund Amount
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 block">
+                              {selectedAssetFundingTxs.length > 0
+                                ? `From ${selectedAssetFundingTxs.length} funding ${selectedAssetFundingTxs.length === 1 ? 'transaction' : 'transactions'}`
+                                : 'Based on asset value (IDR)'}
+                            </span>
+                          </div>
+                          <strong className="font-mono text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
+                            +{formatMasked(selectedAssetRefundAmountIdr, 'IDR', isPrivacyMode)}
+                          </strong>
+                        </div>
+
+                        {/* Manual Refund Target Account Selector */}
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                            <Wallet className="w-3 h-3 text-slate-400" />
+                            <span>Refund Target Account</span>
+                          </label>
+                          <select
+                            value={refundAccountId}
+                            disabled={isDeleting}
+                            onChange={(e) => setRefundAccountId(e.target.value)}
+                            className="w-full h-8.5 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#1e2946] focus:border-emerald-500 rounded-lg px-2 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
+                          >
+                            {bankCashAccounts.map((acc) => (
+                              <option key={acc.id} value={acc.id}>
+                                {acc.name} — {formatMasked(acc.balance, 'IDR', isPrivacyMode)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <button
+                            type="button"
+                            disabled={isDeleting || !refundAccountId}
+                            onClick={() => handleDelete(selectedAsset.id, true)}
+                            className="w-full py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {isDeleting
+                              ? 'Refunding...'
+                              : `Delete & Refund ${formatMasked(selectedAssetRefundAmountIdr, 'IDR', isPrivacyMode)}`}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isDeleting}
+                            onClick={() => handleDelete(selectedAsset.id, false)}
+                            className="w-full py-1.5 px-2.5 rounded-lg bg-rose-600/10 hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 dark:hover:text-white border border-rose-500/30 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            Delete Asset Only
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-slate-600 dark:text-zinc-400">
+                          Delete this asset?
+                        </span>
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={() => handleDelete(selectedAsset.id, false)}
+                          className="py-1 px-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold cursor-pointer disabled:opacity-50"
+                        >
+                          {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

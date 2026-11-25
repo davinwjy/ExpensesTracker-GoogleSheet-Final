@@ -248,13 +248,20 @@ export const ExpensesView: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       const target = transactions.find((t) => t.id === id);
+      const sourceAccName = accounts.find((a) => a.id === target?.accountId)?.name;
       await deleteTransaction(id);
       showNotification({
         type: 'info',
         title: 'Transaksi Dihapus',
+        message:
+          target?.type === 'bank_to_investment'
+            ? `Refunded back to ${sourceAccName || 'source account'}`
+            : target?.type === 'transfer'
+              ? `Reversed transfer balances`
+              : undefined,
         amount: target?.amount,
         category: target?.category,
-        accountName: accounts.find((a) => a.id === target?.accountId)?.name,
+        accountName: sourceAccName,
       });
       setDeletingId(null);
     } catch (err) {

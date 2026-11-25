@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useFinance } from '../context/FinanceContext';
-import { formatIdr, formatUsd, formatMasked, CATEGORY_COLORS } from '../lib/formatters';
+import { formatIdr, formatUsd, formatMasked, CATEGORY_COLORS, isMasterCategory } from '../lib/formatters';
 import { IncomeInvestmentTracker } from './Analytics/IncomeInvestmentTracker';
 
 export const StatsView: React.FC = () => {
@@ -24,6 +24,8 @@ export const StatsView: React.FC = () => {
     stats,
     accounts,
     investments,
+    expenseCategories,
+    incomeCategories,
     isPrivacyMode,
     usdIdrRate,
     rateSource,
@@ -83,11 +85,18 @@ export const StatsView: React.FC = () => {
   const netWorth = stats?.totalNetWorthIdr || 0;
   const liquidCash = stats?.totalLiquidCashIdr || 0;
   const totalInvestment = stats?.totalInvestmentValueIdr || 0;
-  const expenseByCategory = stats?.expenseByCategory || {};
-  const incomeByCategory = stats?.incomeByCategory || {};
+  const rawExpenseByCategory = stats?.expenseByCategory || {};
+  const rawIncomeByCategory = stats?.incomeByCategory || {};
+  const masterExpenseEntries = Object.entries(rawExpenseByCategory)
+    .filter(([category, amount]) => amount > 0 && isMasterCategory(category, expenseCategories))
+    .sort((a, b) => b[1] - a[1]);
+  const masterIncomeEntries = Object.entries(rawIncomeByCategory)
+    .filter(([category, amount]) => amount > 0 && isMasterCategory(category, incomeCategories))
+    .sort((a, b) => b[1] - a[1]);
+  const chartExpenseTotal = masterExpenseEntries.reduce((sum, [, amount]) => sum + amount, 0);
+  const chartIncomeTotal = masterIncomeEntries.reduce((sum, [, amount]) => sum + amount, 0);
   const expenseByAccount = stats?.expenseByAccount || {};
   const monthlyExpenses = stats?.monthlyExpenses || 0;
-  const monthlyIncomes = stats?.monthlyIncomes || 0;
   const categoryAllocations = stats?.categoryAllocations || {};
 
   // Asset allocation percentages
@@ -259,76 +268,72 @@ export const StatsView: React.FC = () => {
                 }`}
               >
                 {formatIdr(
-                  categoryTab === 'expense' ? monthlyExpenses : monthlyIncomes
+                  categoryTab === 'expense' ? chartExpenseTotal : chartIncomeTotal
                 )}
               </span>
             </div>
           </div>
 
           {categoryTab === 'expense' ? (
-            Object.keys(expenseByCategory).length === 0 ? (
+            masterExpenseEntries.length === 0 ? (
               <p className="text-xs text-slate-500 dark:text-zinc-500 py-4 text-center">No expenses recorded this month.</p>
             ) : (
               <div className="space-y-2">
-                {Object.entries(expenseByCategory)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([category, amount]) => {
-                    const pct = monthlyExpenses > 0 ? (amount / monthlyExpenses) * 100 : 0;
-                    const color = CATEGORY_COLORS[category] || '#1d64e8';
+                {masterExpenseEntries.map(([category, amount]) => {
+                  const pct = chartExpenseTotal > 0 ? (amount / chartExpenseTotal) * 100 : 0;
+                  const color = CATEGORY_COLORS[category] || '#1d64e8';
 
-                    return (
-                      <div key={category} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-slate-900 dark:text-zinc-200">{category}</span>
-                          <div className="flex items-center gap-2 font-mono">
-                            <span className="text-slate-500 dark:text-zinc-500 tabular-nums">{pct.toFixed(1)}%</span>
-                            <span className="font-bold text-slate-800 dark:text-zinc-300 tabular-nums">
-                              {formatIdr(amount)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#121622] overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${pct}%`, backgroundColor: color }}
-                          />
+                  return (
+                    <div key={category} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-slate-900 dark:text-zinc-200">{category}</span>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="text-slate-500 dark:text-zinc-500 tabular-nums">{pct.toFixed(1)}%</span>
+                          <span className="font-bold text-slate-800 dark:text-zinc-300 tabular-nums">
+                            {formatIdr(amount)}
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#121622] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )
           ) : (
-            Object.keys(incomeByCategory).length === 0 ? (
+            masterIncomeEntries.length === 0 ? (
               <p className="text-xs text-slate-500 dark:text-zinc-500 py-4 text-center">No income recorded this month.</p>
             ) : (
               <div className="space-y-2">
-                {Object.entries(incomeByCategory)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([category, amount]) => {
-                    const pct = monthlyIncomes > 0 ? (amount / monthlyIncomes) * 100 : 0;
-                    const color = CATEGORY_COLORS[category] || '#10b981';
+                {masterIncomeEntries.map(([category, amount]) => {
+                  const pct = chartIncomeTotal > 0 ? (amount / chartIncomeTotal) * 100 : 0;
+                  const color = CATEGORY_COLORS[category] || '#10b981';
 
-                    return (
-                      <div key={category} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-slate-900 dark:text-zinc-200">{category}</span>
-                          <div className="flex items-center gap-2 font-mono">
-                            <span className="text-slate-500 dark:text-zinc-500 tabular-nums">{pct.toFixed(1)}%</span>
-                            <span className="font-bold text-slate-800 dark:text-zinc-300 tabular-nums">
-                              {formatIdr(amount)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#121622] overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${pct}%`, backgroundColor: color }}
-                          />
+                  return (
+                    <div key={category} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-slate-900 dark:text-zinc-200">{category}</span>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="text-slate-500 dark:text-zinc-500 tabular-nums">{pct.toFixed(1)}%</span>
+                          <span className="font-bold text-slate-800 dark:text-zinc-300 tabular-nums">
+                            {formatIdr(amount)}
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-[#121622] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${pct}%`, backgroundColor: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )
           )}

@@ -9,6 +9,7 @@ import {
   Layers,
   FileText,
   Loader2,
+  Wallet,
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { InvestmentCategory } from '../../types';
@@ -28,6 +29,8 @@ export const InvestmentModal: React.FC = () => {
     setIsAddInvestmentOpen,
     editingInvestment,
     setEditingInvestment,
+    accounts,
+    transactions,
     holdingTypes,
     setIsHoldingTypesModalOpen,
     addInvestment,
@@ -49,6 +52,12 @@ export const InvestmentModal: React.FC = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [refundAccountId, setRefundAccountId] = useState<string>('');
+
+  const bankCashAccounts = React.useMemo(
+    () => accounts.filter((a) => a.type === 'bank' || a.type === 'cash'),
+    [accounts]
+  );
 
   const categoriesList = React.useMemo(
     () =>
@@ -214,16 +223,60 @@ export const InvestmentModal: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const linkedFundingTxs = editingInvestment
+    ? transactions.filter(
+        (t) => t.type === 'bank_to_investment' && t.toInvestmentId === editingInvestment.id
+      )
+    : [];
+  const linkedFundingTotalIdr = linkedFundingTxs.reduce((sum, t) => sum + (t.amount || 0), 0);
+  const fallbackAssetIdr = editingInvestment
+    ? editingInvestment.currency === 'USD'
+      ? Math.round(
+          (editingInvestment.currentValue || editingInvestment.amountInvested || 0) *
+            (editingInvestment.customExchangeRate || usdIdrRate || 15850)
+        )
+      : Math.round(editingInvestment.currentValue || editingInvestment.amountInvested || 0)
+    : 0;
+  const refundAmountIdr = linkedFundingTotalIdr > 0 ? linkedFundingTotalIdr : fallbackAssetIdr;
+  const canRefundToBank = refundAmountIdr > 0 && bankCashAccounts.length > 0;
+
+  const toggleConfirmDelete = () => {
+    if (confirmDelete) {
+      setConfirmDelete(false);
+      return;
+    }
+    const preferredAccountId = linkedFundingTxs[0]?.accountId;
+    const defaultAccountId =
+      (preferredAccountId && bankCashAccounts.some((a) => a.id === preferredAccountId)
+        ? preferredAccountId
+        : bankCashAccounts[0]?.id) || '';
+    setRefundAccountId(defaultAccountId);
+    setConfirmDelete(true);
+  };
+
+  const handleDelete = async (refundToBank: boolean = false) => {
     if (!editingInvestment) return;
     const targetName = editingInvestment.name;
+    const refundTotal = refundToBank ? refundAmountIdr : 0;
+    const targetBankAcc = refundToBank
+      ? bankCashAccounts.find((a) => a.id === refundAccountId)
+      : undefined;
     setIsSubmitting(true);
     try {
-      await deleteInvestment(editingInvestment.id);
+      await deleteInvestment(editingInvestment.id, {
+        refundToBank,
+        refundAccountId: refundToBank ? refundAccountId : undefined,
+        refundAmountIdr: refundToBank && refundTotal > 0 ? refundTotal : undefined,
+      });
       showNotification({
-        type: 'info',
-        title: 'Holding Removed',
-        accountName: targetName,
+        type: refundToBank && refundTotal > 0 ? 'success' : 'info',
+        title: refundToBank && refundTotal > 0 ? 'Holding Deleted & Refunded' : 'Holding Removed',
+        message:
+          refundToBank && refundTotal > 0
+            ? `Refunded ${formatIdr(refundTotal)} to ${targetBankAcc?.name || 'selected account'}`
+            : undefined,
+        amount: refundToBank && refundTotal > 0 ? refundTotal : undefined,
+        accountName: targetBankAcc?.name || targetName,
       });
       handleClose();
     } catch (err: any) {
@@ -502,14 +555,83 @@ export const InvestmentModal: React.FC = () => {
           </div>
         </form>
 
+        {/* Inline Delete Confirmation Panel with Refund Amount & Target Account Picker */}
+        {editingInvestment && confirmDelete && canRefundToBank && (
+          <div className="shrink-0 mx-4 mb-2 p-2.5 rounded-lg bg-slate-50 dark:bg-[#0f1629] border border-rose-200 dark:border-rose-500/30 space-y-2.5 animate-in fade-in">
+            {/* Refund Amount Readout */}
+            <div className="flex items-center justify-between px-2.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+              <div className="min-w-0">
+                <span className="text-[11px] font-medium text-slate-700 dark:text-zinc-200 block">
+                  Refund Amount
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400 block">
+                  {linkedFundingTxs.length > 0
+                    ? `From ${linkedFundingTxs.length} linked funding ${linkedFundingTxs.length === 1 ? 'transaction' : 'transactions'}`
+                    : 'Based on asset value (IDR)'}
+                </span>
+              </div>
+              <strong className="font-mono text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0 ml-2">
+                +{formatIdr(refundAmountIdr)}
+              </strong>
+            </div>
+
+            {/* Manual Refund Target Account Selector */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                <Wallet className="w-3 h-3 text-slate-400" />
+                <span>Refund Target Account</span>
+              </label>
+              <select
+                value={refundAccountId}
+                disabled={isSubmitting}
+                onChange={(e) => setRefundAccountId(e.target.value)}
+                className="w-full h-8.5 bg-white dark:bg-[#080d1a] border border-slate-200 dark:border-[#1e2946] focus:border-emerald-500 rounded-lg px-2 text-xs font-medium text-slate-900 dark:text-zinc-100 focus:outline-none transition-colors disabled:opacity-60"
+              >
+                {bankCashAccounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} — {formatIdr(acc.balance)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleDelete(true)}
+                disabled={isSubmitting || !refundAccountId}
+                className="h-7 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-[11px] font-semibold text-white cursor-pointer disabled:opacity-50"
+              >
+                {isSubmitting ? 'Refunding...' : `Delete & Refund ${formatIdr(refundAmountIdr)}`}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(false)}
+                disabled={isSubmitting}
+                className="h-7 px-2.5 rounded-lg bg-rose-600/10 hover:bg-rose-600 text-rose-600 dark:text-rose-400 hover:text-white border border-rose-500/30 text-[11px] font-semibold cursor-pointer disabled:opacity-50"
+              >
+                Delete Asset Only
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={isSubmitting}
+                className="h-7 px-2 text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Compact Footer */}
         <div className="shrink-0 px-4 py-2.5 bg-slate-50/70 dark:bg-[#080d1a] border-t border-slate-100 dark:border-[#18223a] flex items-center justify-between gap-2">
           {editingInvestment ? (
-            confirmDelete ? (
+            confirmDelete && !canRefundToBank ? (
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={handleDelete}
+                  onClick={() => handleDelete(false)}
                   disabled={isSubmitting}
                   className="h-8 px-2.5 rounded-lg bg-rose-600 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
                 >
@@ -526,11 +648,11 @@ export const InvestmentModal: React.FC = () => {
             ) : (
               <button
                 type="button"
-                onClick={() => setConfirmDelete(true)}
+                onClick={toggleConfirmDelete}
                 className="h-8 px-2.5 flex items-center gap-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete</span>
+                <span>{confirmDelete ? 'Cancel' : 'Delete'}</span>
               </button>
             )
           ) : (
